@@ -1109,9 +1109,28 @@ function migrateImportedRecord(record){
   const r = Object.assign({}, record || {});
   if(!r.id) r.id = uid();
 
-  // Importované/starší protokoly zůstávají v původní logice sekce C:
+  // Starší zálohy měly u sekce C opačnou logiku:
   // ANO = závada/poškození, NE = bez závad.
-  r.cLogic = r.cLogic || 'legacy';
+  // Při importu se převedou do aktuální logiky:
+  // ANO = bez závad, NE = závada.
+  const map = oldCMapForRecord(r);
+  const migratedC = {};
+  Object.entries(map).forEach(([newKey, oldKey]) => {
+    if(oldKey && Object.prototype.hasOwnProperty.call(record, oldKey)){
+      migratedC[newKey] = invertOldCAnswer(record[oldKey]);
+      migratedC[newKey + '_p'] = record[oldKey + '_p'] || '';
+    } else {
+      migratedC[newKey] = 'ANO';
+      migratedC[newKey + '_p'] = '';
+    }
+  });
+
+  Object.keys(r).forEach(k => {
+    if(/^C[0-9]+(_p)?$/.test(k) || /^C_/.test(k)) delete r[k];
+  });
+  Object.assign(r, migratedC);
+
+  r.cLogic = 'positive';
   r.importedFrom = r.importedFrom || '5.2';
   if(!r.savedAt) r.savedAt = new Date().toISOString();
   return r;
@@ -1278,7 +1297,10 @@ function isRevizeExpired(r){
 function syncRevizeIssue(r){ if(!isRevizeExpired(r)) return; r.B2 = 'NE'; r.zaverOprava = 'ANO'; r.zaverBezpecny = 'NE'; const msg = 'Prošlá platnost revize.'; const cur = String(r.B2_p||'').trim(); r.B2_p = !cur ? msg : (cur.toLowerCase().includes('prošlá platnost revize') ? cur : cur + ' ' + msg); }
 function isInvertedIssueKey(key){ return key === 'zaverServis' || key === 'zaverOprava'; }
 function getCLogic(record){
-  return record && record.cLogic === 'positive' ? 'positive' : 'legacy';
+  // Aktuální stav databáze: starší importované protokoly už byly při importu
+  // převedené do nové pozitivní logiky. Proto se i staré záznamy bez příznaku
+  // vyhodnocují stejně: ANO = bez závad, NE = závada.
+  return 'positive';
 }
 function isCProblemAnswer(record, value){
   if(value !== 'ANO' && value !== 'NE') return false;
@@ -1389,9 +1411,7 @@ function showStep(){
   els.stepChip.textContent = sectionLabel(s.section||'Úvodní údaje');
   els.title.textContent = s.t;
   els.stepDesc.textContent = isGeneralCheckKey(s.k)
-    ? (getCLogic(rec) === 'positive'
-      ? 'Logika sekce C: ANO = bez závad, NE = závada.'
-      : 'Starší protokol: původní logika sekce C – ANO = závada, NE = bez závad.')
+    ? 'Logika sekce C: ANO = bez závad, NE = závada.'
     : '';
   els.nextBtn.textContent = stepIndex === activeSteps.length-1 ? 'Uložit protokol' : 'Další';
 
@@ -1989,7 +2009,7 @@ function renderPaper(r){
           </div>
         </div>
         <div class="section-card">
-          <div class="section-head">C. Všeobecná kontrola zařízení <span class="section-note">${getCLogic(r) === 'positive' ? 'ANO = bez závad &nbsp;&nbsp; NE = závada' : 'Starší logika: ANO = závada &nbsp;&nbsp; NE = bez závad'}</span></div>
+          <div class="section-head">C. Všeobecná kontrola zařízení <span class="section-note">ANO = bez závad &nbsp;&nbsp; NE = závada</span></div>
           <table class="proto-table"><thead><tr><th class="num-col">Č.</th><th class="item-col">Kontrolovaná položka</th><th class="yn-col">ANO</th><th class="yn-col">NE</th><th class="note-col">Poznámka</th></tr></thead><tbody>${rowsHtml(sections.C,r,{numbered:true})}</tbody></table>
         </div>
         <div class="page-number">Strana 1 z 2</div>
