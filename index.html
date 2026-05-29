@@ -466,21 +466,74 @@ body.dark .upcoming-item{background:var(--panel2);border-color:var(--line)}
 body.dark .upcoming-empty{background:var(--panel2)}
 @media(max-width:640px){.upcoming-item{grid-template-columns:1fr}.upcoming-date{text-align:left}}
 
+
+/* hotfix: visible sidebar collapse controls */
+header{
+  z-index:70!important;
+}
+.menu-toggle{
+  position:relative;
+  z-index:80!important;
+}
+.side-brand{
+  position:relative;
+  padding-right:40px!important;
+}
+.side-brand-text{
+  min-width:0;
+}
+.side-close{
+  position:absolute;
+  right:2px;
+  top:4px;
+  width:32px;
+  height:32px;
+  border-radius:10px;
+  padding:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,255,255,.08);
+  color:#e5e7eb;
+  border:1px solid rgba(255,255,255,.14);
+  font-size:22px;
+  line-height:1;
+  font-weight:700;
+}
+.side-close:hover{
+  background:rgba(255,255,255,.14);
+}
+@media (min-width:921px){
+  body.side-collapsed .side-panel{
+    transform:translateX(-245px)!important;
+  }
+}
+
+
+/* hotfix: single version label + clear app purpose */
+header .header-sub{
+  font-size:.78rem;
+  color:#cbd5e1;
+  margin-top:2px;
+  font-weight:500;
+}
+
 </style>
 </head>
 <body>
 <header>
   <button id="sideToggleBtn" class="settings-btn menu-toggle" type="button" aria-label="Menu">☰</button>
-  <div class="header-title">LiftCheck CZ <span class="test-badge">1.0 / 5.26</span></div>
+  <div><div class="header-title">LiftCheck CZ</div><div class="header-sub">Čtvrtletní kontroly pracovních plošin</div></div>
 </header>
 <div id="sideOverlay" class="side-overlay"></div>
 <aside id="sidePanel" class="side-panel">
   <div class="side-brand">
     <div class="side-logo">✓</div>
-    <div>
+    <div class="side-brand-text">
       <div class="side-title">LiftCheck CZ</div>
-      <div class="side-sub">verze 1.0 / 5.26</div>
+      <div class="side-sub">Čtvrtletní kontroly</div>
     </div>
+    <button id="sideCloseBtn" class="side-close" type="button" aria-label="Zasunout panel">×</button>
   </div>
   <nav class="side-nav">
     <button type="button" class="side-link active" data-side-action="overview">Přehled</button>
@@ -2107,6 +2160,13 @@ function closeSidePanel(){
 }
 sideToggleBtn?.addEventListener('click', toggleSidePanel);
 sideOverlay?.addEventListener('click', closeSidePanel);
+document.getElementById('sideCloseBtn')?.addEventListener('click', () => {
+  if(window.matchMedia('(max-width:920px)').matches){
+    document.body.classList.remove('side-open');
+  } else {
+    document.body.classList.add('side-collapsed');
+  }
+});
 document.getElementById('sideSettingsBtn')?.addEventListener('click', () => { closeSidePanel(); openModal(document.getElementById('settingsModal')); });
 document.getElementById('sideThemeBtn')?.addEventListener('click', toggleTheme);
 document.querySelector('[data-side-action="protocols"]')?.addEventListener('click', () => { closeSidePanel(); document.querySelector('.toolbar')?.scrollIntoView({behavior:'smooth'}); });
