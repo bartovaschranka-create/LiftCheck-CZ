@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftcontrol-cz-test-v1-6-5-168';
+const CACHE_NAME = 'liftcontrol-cz-test-v1-6-5-169';
 const APP_SHELL = [
   './',
   './index.html',
