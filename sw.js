@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftcontrol-cz-v1-6-5-209';
+const CACHE_NAME = 'liftcontrol-cz-v1-6-5-210';
 const APP_SHELL = [
   './',
   './index.html',
@@ -6,7 +6,9 @@ const APP_SHELL = [
   './liftcontrol-backup-data.js',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  './assets/stamps/revizni-razitko-zz.png',
+  './assets/stamps/revizni-razitko-ez.png'
 ];
 
 self.addEventListener('install', event => {
