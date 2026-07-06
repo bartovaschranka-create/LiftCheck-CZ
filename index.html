@@ -1986,6 +1986,18 @@ body{position:relative!important}
   .revize-wizard-modal .preview-actions button{width:100%;min-height:44px}
   .revize-wizard-modal .smart-suggest-box{max-height:118px!important}
 }
+.repair-protocol-window,
+.repair-protocol-window body{
+  height:auto!important;
+  min-height:100%!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:auto!important;
+  -webkit-overflow-scrolling:touch!important;
+}
+.repair-protocol-window .repair-protocol-paper{
+  max-width:calc(100vw - 24px);
+}
 .revize-check-row .yn-btn,.revize-electro-yesno .yn-btn{pointer-events:auto;position:relative;z-index:2;opacity:.62;min-height:38px}
 .revize-check-row .yn-btn.active,.revize-electro-yesno .yn-btn.active{opacity:1;outline:3px solid #0f172a;outline-offset:2px;box-shadow:0 0 0 5px rgba(37,99,235,.18)}
 @media print{
@@ -2074,7 +2086,7 @@ body{position:relative!important}
     <button type="button" class="side-small" onclick="exportBackup()">Export zálohy</button>
     <button type="button" class="side-small" id="sideImportBtn">Import zálohy</button>
     <button type="button" class="side-small" id="sideAuditBtn">Historie změn</button>
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.210</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.211</div>
   </div>
 </aside>
 
@@ -2207,6 +2219,15 @@ body{position:relative!important}
   </div>
 </div></div></div>
 
+<div class="modal" id="repairArchiveModal"><div class="modal-content history-modal-content"><div class="preview-shell">
+  <div class="preview-header">
+    <div><div class="preview-title">Archiv z&aacute;pis&#367; o oprav&#283;</div><div class="card-sub" id="repairArchiveSubtitle">Ulo&#382;en&eacute; z&aacute;pisy o oprav&aacute;ch v tomto za&#345;&iacute;zen&iacute;.</div></div>
+    <button id="closeRepairArchiveTopBtn" class="secondary mini" type="button">Zav&#345;&iacute;t</button>
+  </div>
+  <div id="repairArchiveList" class="audit-list"></div>
+  <div class="preview-actions"><div class="preview-actions-left"><button id="closeRepairArchiveBtn" class="secondary" type="button">Zav&#345;&iacute;t</button></div><div class="preview-actions-right"><button id="newRepairFromArchiveBtn" class="primary" type="button">Nov&yacute; z&aacute;pis o oprav&#283;</button></div></div>
+</div></div></div>
+
 <div class="app-update-banner" id="appUpdateBanner" role="status" aria-live="polite">
   <span>Je dostupná nová verze aplikace.</span>
   <button class="primary" id="appUpdateNowBtn" type="button">Aktualizovat</button>
@@ -2232,6 +2253,7 @@ body{position:relative!important}
           <button type="button" class="ghost small" id="homePartsBtn">Náhradní díly</button>
           <button type="button" class="ghost small" id="homeFaultsBtn">Hlášení poruch</button>
           <button type="button" class="ghost small" id="homeRepairBtn">Z&aacute;pis o oprav&#283;</button>
+          <button type="button" class="ghost small" id="homeRepairArchiveBtn">Archiv oprav</button>
           <button type="button" class="ghost small" id="homeMachineCardBtn">Karta stroje</button>
         </div>
         <div id="homeMachineSearchWrap" class="home-machine-search hidden">
@@ -3557,7 +3579,7 @@ async function exportBackup(){
     }
     const payload = {
       app: 'LiftControl CZ',
-      appVersion: '1.6 / 5.210',
+      appVersion: '1.6 / 5.211',
       backupType: 'complete',
       schemaVersion: 2,
       exportedAt: new Date().toISOString(),
@@ -4234,10 +4256,10 @@ installMainWheelScroll();
 function openWizard(editId=null, prefill={}){
   protocolSaveInProgress = false;
   if(els.nextBtn) els.nextBtn.disabled = false;
-  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.210'};
+  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.211'};
   rec = Object.assign({}, rec, prefill || {});
   if(!editId && !rec.cLogic) rec.cLogic = 'legacy';
-  if(!editId && !rec.appVersion) rec.appVersion = '1.6 / 5.210';
+  if(!editId && !rec.appVersion) rec.appVersion = '1.6 / 5.211';
 
   // Auto doplneni z historie podle vyrobniho cisla.
   if(rec.vc){
@@ -4661,7 +4683,7 @@ async function nextStep(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    if(!rec.appVersion) rec.appVersion = '1.6 / 5.210';
+    if(!rec.appVersion) rec.appVersion = '1.6 / 5.211';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -4734,7 +4756,7 @@ async function logAuditAction(action, entity, record, by, detail, beforeRecord){
       serial: record?.vc || record?.serial || '',
       type: record?.typ || record?.type || '',
       createdAt: new Date().toISOString(),
-      appVersion: '1.6 / 5.210',
+      appVersion: '1.6 / 5.211',
       restoreVersion: 1,
       before: beforeSnapshot ? cloneForAuditSnapshot(beforeSnapshot) : null,
       after: afterSnapshot ? cloneForAuditSnapshot(afterSnapshot) : null
@@ -4912,7 +4934,9 @@ function getMachineRows(serial){
   return {
     protocols: (data || []).filter(r => normalizeSerial(r.vc) === normalizeSerial(s)).sort((a,b)=>String(b.datum||'').localeCompare(String(a.datum||''))),
     faults: (faultsData || []).filter(r => normalizeSerial(r.serial) === normalizeSerial(s)).sort((a,b)=>String(b.createdAt||b.date||'').localeCompare(String(a.createdAt||a.date||''))),
-    parts: (partsData || []).filter(r => normalizeSerial(r.serial) === normalizeSerial(s)).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')))
+    parts: (partsData || []).filter(r => normalizeSerial(r.serial) === normalizeSerial(s)).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))),
+    repairs: loadLocalRepairs().filter(r => normalizeSerial(r.serial) === normalizeSerial(s)).sort((a,b)=>String(b.savedAt||b.finishedAt||'').localeCompare(String(a.savedAt||a.finishedAt||''))),
+    revize: (revizeData || []).filter(r => normalizeSerial(r.vyrobni_cislo) === normalizeSerial(s)).sort((a,b)=>String(b.datum_kontroly||'').localeCompare(String(a.datum_kontroly||'')))
   };
 }
 function getMachineState(serial){
@@ -4940,7 +4964,9 @@ function allKnownMachines(){
   const serials = [
     ...(data || []).map(r => r.vc),
     ...(faultsData || []).map(r => r.serial),
-    ...(partsData || []).map(r => r.serial)
+    ...(partsData || []).map(r => r.serial),
+    ...loadLocalRepairs().map(r => r.serial),
+    ...(revizeData || []).map(r => r.vyrobni_cislo)
   ].map(v => String(v || '').trim()).filter(Boolean);
   return [...new Set(serials)];
 }
@@ -5568,6 +5594,13 @@ function openHistoryModal(serial){
     </div>
 
     <div class="machine-card-block">
+      <h4>Revize ZZ</h4>
+      <div class="machine-card-list">
+        ${rows.revize.length ? rows.revize.slice(0,8).map(r => `<div class="machine-card-row"><span>${escapeHtml(formatDate(r.datum_kontroly)||'Bez data')} &middot; ${escapeHtml(r.protokol||'Bez cisla')} &middot; ${escapeHtml(revizeResult(r))}</span><button class="secondary mini" data-revize-print="${escapeHtml(r.id)}">Nahled / tisk</button></div>`).join('') : '<div class="part-sub">Bez ulozenych revizi ZZ.</div>'}
+      </div>
+    </div>
+
+    <div class="machine-card-block">
       <h4>Poruchy</h4>
       <div class="machine-card-list">
         ${rows.faults.length ? rows.faults.slice(0,8).map(f => `<div class="machine-card-row"><span>${escapeHtml(f.date||'Bez data')} · ${escapeHtml(getFaultStatus(f).txt)} · ${escapeHtml(getFaultCategoryLabel(f))} · ${escapeHtml(f.description||'')}</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button class="secondary mini" data-fault-open="${f.id}">Upravit</button>${faultIsRepaired(f) ? `<button class="primary mini" data-fault-protocol="${f.id}">Protokol</button><button class="secondary mini" data-fault-create-protocol="${f.id}">Kontrolní protokol</button>` : ''}</span></div>`).join('') : '<div class="part-sub">Bez hlášených poruch.</div>'}
@@ -5580,12 +5613,22 @@ function openHistoryModal(serial){
         ${rows.parts.length ? rows.parts.slice(0,8).map(p => `<div class="machine-card-row"><span>${escapeHtml(p.partNumber||'Bez PN')} · ${escapeHtml(getPartStatus(p).txt)} · ${escapeHtml(p.partName||'')}</span><button class="secondary mini" data-part-open="${p.id}">Upravit</button></div>`).join('') : '<div class="part-sub">Bez požadavků na ND.</div>'}
       </div>
     </div>
+    <div class="machine-card-block">
+      <h4>Zapis o oprave</h4>
+      <div class="machine-card-list">
+        ${rows.repairs.length ? rows.repairs.slice(0,8).map(r => `<div class="machine-card-row"><span>${escapeHtml(formatDateTime(r.finishedAt || r.savedAt)||'Bez data')} &middot; ${escapeHtml(r.tech||'Bez technika')} &middot; ${escapeHtml(repairPlaceInputValue(r.place, !!r.externalCustomer)||'Bez mista')}</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button class="secondary mini" data-repair-load="${escapeHtml(r.id)}">Nacist</button><button class="primary mini" data-repair-print="${escapeHtml(r.id)}">Nahled / tisk</button><button class="secondary mini" data-repair-part="${escapeHtml(r.id)}">Objednat ND</button></span></div>`).join('') : '<div class="part-sub">Bez zapisu o oprave.</div>'}
+      </div>
+    </div>
   `;
   els.historyBody.querySelectorAll('[data-open-id]').forEach(btn => btn.addEventListener('click', () => openPreviewById(btn.dataset.openId)));
+  els.historyBody.querySelectorAll('[data-revize-print]').forEach(btn => btn.addEventListener('click', () => printRevizeById(btn.dataset.revizePrint)));
   els.historyBody.querySelectorAll('[data-fault-open]').forEach(btn => btn.addEventListener('click', () => { closeHistoryModal(); openFaultsModal(); openFaultForm(btn.dataset.faultOpen); }));
   els.historyBody.querySelectorAll('[data-fault-protocol]').forEach(btn => btn.addEventListener('click', () => printRepairProtocol(btn.dataset.faultProtocol)));
   els.historyBody.querySelectorAll('[data-fault-create-protocol]').forEach(btn => btn.addEventListener('click', () => { closeHistoryModal(); createProtocolFromFault(btn.dataset.faultCreateProtocol); }));
   els.historyBody.querySelectorAll('[data-part-open]').forEach(btn => btn.addEventListener('click', () => { closeHistoryModal(); openPartsModal(); closePartForm(); scrollToPartCard(btn.dataset.partOpen); }));
+  els.historyBody.querySelectorAll('[data-repair-load]').forEach(btn => btn.addEventListener('click', () => { const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairLoad)); if(rec){ closeHistoryModal(); openRepairModal(rec); } }));
+  els.historyBody.querySelectorAll('[data-repair-print]').forEach(btn => btn.addEventListener('click', () => { const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairPrint)); if(rec) printRepairRecord(rec); }));
+  els.historyBody.querySelectorAll('[data-repair-part]').forEach(btn => btn.addEventListener('click', () => { const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairPart)); if(rec){ closeHistoryModal(); openPartFromRepair(rec); } }));
   openModal(els.historyModal);
   requestAnimationFrame(() => {
     const scroller = els.historyModal?.querySelector('.history-modal-content');
@@ -6453,7 +6496,7 @@ async function saveWorkPlanFromForm(){
       place,
       extraPlaces,
       note,
-      appVersion:'1.6 / 5.210'
+      appVersion:'1.6 / 5.211'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     await saveWorkPlan(record);
@@ -7162,7 +7205,7 @@ async function saveFaultFromForm(){
       inService: status === 'service' ? true : (existing ? !!existing.inService : false),
       waitingParts: status === 'waiting_parts' ? true : (existing ? !!existing.waitingParts : false),
       photos: currentFaultPhotos,
-      appVersion:'1.6 / 5.210'
+      appVersion:'1.6 / 5.211'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     setLastEnteredBy(record.enteredBy);
@@ -7416,7 +7459,7 @@ function printRepairRecord(record){
   if(!w){ alert('Prohlizec zablokoval otevreni protokolu.'); return; }
   const style = Array.from(document.querySelectorAll('style')).map(st => st.innerHTML).join('\n');
   w.document.open();
-  w.document.write(html.replace('</head>', '<style>' + style + '</style></head>'));
+  w.document.write(html.replace('<html>', '<html class="repair-protocol-window">').replace('<body>', '<body class="repair-protocol-window">').replace('</head>', '<style>' + style + '</style></head><script>window.addEventListener("wheel",function(e){ if(!document.scrollingElement) return; e.preventDefault(); document.scrollingElement.scrollTop += e.deltaY; },{passive:false});<\/script>'));
   w.document.close();
   try { w.focus(); } catch(e){}
 }
@@ -7540,11 +7583,12 @@ function saveLocalRepairs(rows){ localStorage.setItem('liftcheck_repairs_local',
 function repairUid(){ return 'repair_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
 function saveRepairRecordLocal(record){
   const rows = loadLocalRepairs();
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.210'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.211'});
   const idx = rows.findIndex(x => String(x.id) === String(rec.id));
   if(idx >= 0) rows[idx] = rec; else rows.unshift(rec);
   saveLocalRepairs(rows.slice(0,200));
   renderRepairSavedList();
+  renderRepairArchiveList();
   return rec;
 }
 function renderRepairSavedList(){
@@ -7570,6 +7614,43 @@ function renderRepairSavedList(){
     const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairPart));
     if(rec) openPartFromRepair(rec);
   }));
+}
+function renderRepairArchiveList(){
+  const wrap = document.getElementById('repairArchiveList');
+  const subtitle = document.getElementById('repairArchiveSubtitle');
+  if(!wrap) return;
+  const rows = loadLocalRepairs();
+  if(subtitle) subtitle.textContent = 'Ulozene zapisy o opravach v tomto zarizeni: ' + rows.length;
+  if(!rows.length){
+    wrap.innerHTML = '<div class="empty">Zatim neni ulozeny zadny zapis o oprave.</div>';
+    return;
+  }
+  wrap.innerHTML = rows.map(r => `
+    <div class="audit-item">
+      <div class="audit-title">${escapeHtml(r.serial || r.type || r.model || 'Zapis o oprave')}</div>
+      <div class="audit-sub">${escapeHtml([r.type || r.model, r.maker, repairPlaceInputValue(r.place, !!r.externalCustomer), formatDateTime(r.savedAt)].filter(Boolean).join(' · '))}</div>
+      <div class="card-actions"><button class="secondary mini" type="button" data-repair-archive-load="${escapeHtml(r.id)}">Nacist</button><button class="primary mini" type="button" data-repair-archive-print="${escapeHtml(r.id)}">Nahled / tisk</button><button class="secondary mini" type="button" data-repair-archive-part="${escapeHtml(r.id)}">Objednat ND</button></div>
+    </div>`).join('');
+  wrap.querySelectorAll('[data-repair-archive-load]').forEach(btn => btn.addEventListener('click', () => {
+    const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairArchiveLoad));
+    if(rec){ closeModal(document.getElementById('repairArchiveModal')); openRepairModal(rec); }
+  }));
+  wrap.querySelectorAll('[data-repair-archive-print]').forEach(btn => btn.addEventListener('click', () => {
+    const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairArchivePrint));
+    if(rec) printRepairRecord(rec);
+  }));
+  wrap.querySelectorAll('[data-repair-archive-part]').forEach(btn => btn.addEventListener('click', () => {
+    const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairArchivePart));
+    if(rec){ closeModal(document.getElementById('repairArchiveModal')); openPartFromRepair(rec); }
+  }));
+}
+function openRepairArchiveModal(){
+  renderRepairArchiveList();
+  openModal(document.getElementById('repairArchiveModal'));
+  requestAnimationFrame(() => {
+    const scroller = document.querySelector('#repairArchiveModal .history-modal-content');
+    if(scroller) scroller.scrollTop = 0;
+  });
 }
 function getRepairTextSuggestionsAll(){
   return uniqueNonEmpty([
@@ -8259,7 +8340,7 @@ async function savePartFromForm(){
       orderedAt: (statusVal === 'ordered' || statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.orderedAt) || new Date().toISOString()) : '',
       sentAt: (statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.sentAt) || new Date().toISOString()) : '',
       resolvedAt: statusVal === 'resolved' ? ((existing && existing.resolvedAt) || new Date().toISOString()) : '',
-      appVersion:'1.6 / 5.210'
+      appVersion:'1.6 / 5.211'
     });
     record.photos = JSON.parse(JSON.stringify(currentPartPhotos || []));
     record.photo = record.photos[0] || null;
@@ -8412,7 +8493,7 @@ function saveLocalRevize(rows){ try { localStorage.setItem('revize_zz_local', JS
 function revizeNextNumber(){ const year2=String(new Date().getFullYear()).slice(-2); const nums=(revizeData||[]).map(r=>String(r.protokol||'').match(/(\d+)\s*RZ\s*\/\s*\d{2,4}/i)?.[1]).filter(Boolean).map(Number); const max=Math.max(0,...nums); return `${max+1}RZ/${year2}`; }
 function revizeDefaultMeter(){ try{ return localStorage.getItem('revize_last_meter') || 'Přístroj: REVEX plus v.č.011134 kal.do 1.6.2026, Eurotest XE v.č.17200404 kal.do 1.7.2027'; }catch(e){ return 'Přístroj: REVEX plus v.č.011134 kal.do 1.6.2026, Eurotest XE v.č.17200404 kal.do 1.7.2027'; } }
 function revizeMeterInfo(text){ const s=String(text||''); const ev=[...s.matchAll(/v\.?\s*č\.?\s*[:.]?\s*([A-Za-z0-9/.-]+)/gi)].map(m=>m[1]); const kal=[...s.matchAll(/kal\.?\s*do\s*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{2,4})/gi)].map(m=>m[1]); return {ev:ev.join(', '), kalibrace:kal.join(', ')}; }
-function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.210'}; }
+function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.211'}; }
 function revizeAnswerValue(value){ return String(value||'').trim().toUpperCase()==='NE' ? 'NE' : 'ANO'; }
 function revizeResult(r){
   r = r || {};
@@ -8955,7 +9036,7 @@ async function syncQuarterlyAfterRevize(r){
   last.typ=last.typ||r.model||r.typ||'';
   last.rok=last.rok||r.rok_vyroby||'';
   last.umisteni=r.umisteni||last.umisteni||'';
-  last.appVersion='1.6 / 5.210';
+  last.appVersion='1.6 / 5.211';
   const replaceByIdOrSerial=(arr, updated)=>{
     const idx=(arr||[]).findIndex(x=>(updated.id && x.id===updated.id) || matchesSerial(x));
     if(idx>=0) arr[idx]={...arr[idx],...updated};
@@ -9019,7 +9100,7 @@ function renderRevizeForm(r){ const type = r.typ_zarizeni || 'scissor'; const de
 function revizeFieldLabel(k){ const unit=revizeNumericUnit(k); const label=({hmotnost:'Hmotnost',nosnost:'Nosnost',pracovni_vyska:'Pracovní výška',vyska_podlahy:'Výška podlahy',bocni_dosah:'Boční dosah',naklon:'Max. náklon',staticka_zatez:'Statická zátěž 125 %',dynamicka_zatez:'Dynamická zátěž 110 %',pohon:'Pohon',napajeni:'Napájení',stabilizatory:'Stabilizátory',deck:'Výsuvný deck',nabijec:'Nabíječ',zasuvka_kos:'Zásuvka v koši',rcd:'RCD'})[k]||k; return unit ? `${label} (${unit})` : label; }
 function revizeCheckRows(items,r,prefix){ return items.map(([k,l])=>{ const v=(r.checks||{})[k]||'ANO'; const n=(r.notes||{})[k]||''; return `<div class="revize-check-row"><strong>${escapeHtml(l)}</strong><div class="yesno"><button type="button" class="yn-btn ${v==='ANO'?'yes active':'yes'}" data-rz-check="${k}" data-rz-val="ANO">ANO</button><button type="button" class="yn-btn ${v==='NE'?'no active':'no'}" data-rz-check="${k}" data-rz-val="NE">NE</button></div><input data-rz-note="${k}" value="${escapeHtml(n)}" placeholder="Poznámka / opatření"></div>`; }).join(''); }
 function revizeElectroTable(r){ return `<table class="revize-mini-table"><thead><tr><th>Měřená část</th><th>Hodnota</th><th>Vyhovuje</th><th>Poznámka</th></tr></thead><tbody>${REVIZE_ELECTRO.map(([k,l,u])=>{ const e=(r.electro||{})[k]||{}; return `<tr><td>${escapeHtml(l)}</td><td><input data-rz-electro-val="${k}" value="${escapeHtml(e.value||'')}" placeholder="${escapeHtml(u)}"></td><td><select data-rz-electro-ok="${k}"><option ${e.ok==='ANO'?'selected':''}>ANO</option><option ${e.ok==='NE'?'selected':''}>NE</option></select></td><td><input data-rz-electro-note="${k}" value="${escapeHtml(e.note||'')}"></td></tr>`; }).join('')}</tbody></table>`; }
-function collectRevizeDraft(){ syncRevizeMeterFields(); const r=window.currentRevizeDraft||revizeDefaultRecord(); ['protokol','datum_kontroly','platnost','druh_kontroly','provozovatel','umisteni','typ_zarizeni','vyrobce','model','vyrobni_cislo','evidencni_cislo','rok_vyroby','norma','normy_revize','skupina','hmotnost','nosnost','pracovni_vyska','vyska_podlahy','bocni_dosah','naklon','staticka_zatez','dynamicka_zatez','pohon','napajeni','stabilizatory','deck','nabijec','zasuvka_kos','rcd','rt_jmeno','rt_zz_osvedceni','rt_zz_opravneni','rt_ez_osvedceni','pristroj','pristroj_ev','kalibrace','zavady','predal','prevzal'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el) r[k]=revizeInputValue(k,el.value); }); if(!String(r.normy_revize||'').trim()) r.normy_revize=revizeDefaultNormy(r.norma); delete r.rozmer_plosiny; delete r.typ_kol; delete r.pothole; delete r.rt_ez; delete r.termin_odstraneni; const cfg=REVIZE_DEVICE_TYPES[r.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; r.typ=cfg.label; r.checks=r.checks||{}; r.notes=r.notes||{}; document.querySelectorAll('[data-rz-check].active').forEach(b=>r.checks[b.dataset.rzCheck]=b.dataset.rzVal); document.querySelectorAll('[data-rz-note]').forEach(i=>r.notes[i.dataset.rzNote]=i.value); r.electro=r.electro||{}; REVIZE_ELECTRO.forEach(([k])=>{ r.electro[k]={value:document.querySelector(`[data-rz-electro-val="${k}"]`)?.value||'',ok:document.querySelector(`[data-rz-electro-ok="${k}"]`)?.value||'ANO',note:document.querySelector(`[data-rz-electro-note="${k}"]`)?.value||''}; }); r.vysledek=revizeResult(r); r.updatedAt=new Date().toISOString(); r.appVersion='1.6 / 5.210'; try{ if(r.pristroj) localStorage.setItem('revize_last_meter', r.pristroj); }catch(e){} window.currentRevizeDraft=r; return r; }
+function collectRevizeDraft(){ syncRevizeMeterFields(); const r=window.currentRevizeDraft||revizeDefaultRecord(); ['protokol','datum_kontroly','platnost','druh_kontroly','provozovatel','umisteni','typ_zarizeni','vyrobce','model','vyrobni_cislo','evidencni_cislo','rok_vyroby','norma','normy_revize','skupina','hmotnost','nosnost','pracovni_vyska','vyska_podlahy','bocni_dosah','naklon','staticka_zatez','dynamicka_zatez','pohon','napajeni','stabilizatory','deck','nabijec','zasuvka_kos','rcd','rt_jmeno','rt_zz_osvedceni','rt_zz_opravneni','rt_ez_osvedceni','pristroj','pristroj_ev','kalibrace','zavady','predal','prevzal'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el) r[k]=revizeInputValue(k,el.value); }); if(!String(r.normy_revize||'').trim()) r.normy_revize=revizeDefaultNormy(r.norma); delete r.rozmer_plosiny; delete r.typ_kol; delete r.pothole; delete r.rt_ez; delete r.termin_odstraneni; const cfg=REVIZE_DEVICE_TYPES[r.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; r.typ=cfg.label; r.checks=r.checks||{}; r.notes=r.notes||{}; document.querySelectorAll('[data-rz-check].active').forEach(b=>r.checks[b.dataset.rzCheck]=b.dataset.rzVal); document.querySelectorAll('[data-rz-note]').forEach(i=>r.notes[i.dataset.rzNote]=i.value); r.electro=r.electro||{}; REVIZE_ELECTRO.forEach(([k])=>{ r.electro[k]={value:document.querySelector(`[data-rz-electro-val="${k}"]`)?.value||'',ok:document.querySelector(`[data-rz-electro-ok="${k}"]`)?.value||'ANO',note:document.querySelector(`[data-rz-electro-note="${k}"]`)?.value||''}; }); r.vysledek=revizeResult(r); r.updatedAt=new Date().toISOString(); r.appVersion='1.6 / 5.211'; try{ if(r.pristroj) localStorage.setItem('revize_last_meter', r.pristroj); }catch(e){} window.currentRevizeDraft=r; return r; }
 async function saveRevizeFromForm(){
   if(revizeSaveInProgress) return;
   const r=collectRevizeDraft();
@@ -9378,12 +9459,15 @@ document.getElementById('homeOpenWeekPlanBtn')?.addEventListener('click', openWo
 document.getElementById('homePartsBtn')?.addEventListener('click', openPartsModal);
 document.getElementById('homeFaultsBtn')?.addEventListener('click', openFaultsModal);
 document.getElementById('homeRepairBtn')?.addEventListener('click', () => openRepairModal());
+document.getElementById('homeRepairArchiveBtn')?.addEventListener('click', openRepairArchiveModal);
 document.getElementById('closeRepairBtn')?.addEventListener('click', () => closeModal(document.getElementById('repairModal')));
 document.getElementById('closeRepairTopBtn')?.addEventListener('click', () => closeModal(document.getElementById('repairModal')));
 document.getElementById('repairArchiveBtn')?.addEventListener('click', () => {
-  renderRepairSavedList();
-  document.getElementById('repairSavedList')?.scrollIntoView({behavior:'smooth', block:'start'});
+  openRepairArchiveModal();
 });
+document.getElementById('closeRepairArchiveBtn')?.addEventListener('click', () => closeModal(document.getElementById('repairArchiveModal')));
+document.getElementById('closeRepairArchiveTopBtn')?.addEventListener('click', () => closeModal(document.getElementById('repairArchiveModal')));
+document.getElementById('newRepairFromArchiveBtn')?.addEventListener('click', () => { closeModal(document.getElementById('repairArchiveModal')); openRepairModal(); });
 document.getElementById('printRepairBtn')?.addEventListener('click', () => printRepairRecord(collectRepairRecordFromForm()));
 document.getElementById('saveRepairBtn')?.addEventListener('click', () => {
   const rec = saveRepairRecordLocal(collectRepairRecordFromForm());
