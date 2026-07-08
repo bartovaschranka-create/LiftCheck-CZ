@@ -2003,7 +2003,7 @@ body{position:relative!important}
 }
 .revize-check-row .yn-btn,.revize-electro-yesno .yn-btn{pointer-events:auto;position:relative;z-index:2;opacity:.62;min-height:38px}
 .revize-check-row .yn-btn.active,.revize-electro-yesno .yn-btn.active{opacity:1;outline:3px solid #0f172a;outline-offset:2px;box-shadow:0 0 0 5px rgba(37,99,235,.18)}
-/* v1.6 / 5.228: revize ZZ modal ma vlastni scrollovatelnou cast pro kolecko mysi. */
+/* v1.6 / 5.229: revize ZZ modal ma vlastni scrollovatelnou cast pro kolecko mysi. */
 .revize-wizard-modal.show{overflow:hidden!important;align-items:center!important;justify-content:center!important}
 .revize-wizard-modal .modal-content{max-height:calc(100dvh - 32px)!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
 .revize-wizard-modal .revize-form{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important}
@@ -2095,7 +2095,7 @@ body{position:relative!important}
     <button type="button" class="side-small" onclick="exportBackup()">Export zálohy</button>
     <button type="button" class="side-small" id="sideImportBtn">Import zálohy</button>
     <button type="button" class="side-small" id="sideAuditBtn">Historie změn</button>
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.228</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.229</div>
   </div>
 </aside>
 
@@ -3600,7 +3600,7 @@ async function exportBackup(){
     }
     const payload = {
       app: 'LiftControl CZ',
-      appVersion: '1.6 / 5.228',
+      appVersion: '1.6 / 5.229',
       backupType: 'complete',
       schemaVersion: 2,
       exportedAt: new Date().toISOString(),
@@ -4280,10 +4280,10 @@ installMainWheelScroll();
 function openWizard(editId=null, prefill={}){
   protocolSaveInProgress = false;
   if(els.nextBtn) els.nextBtn.disabled = false;
-  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.228'};
+  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.229'};
   rec = Object.assign({}, rec, prefill || {});
   if(!editId && !rec.cLogic) rec.cLogic = 'legacy';
-  if(!editId && !rec.appVersion) rec.appVersion = '1.6 / 5.228';
+  if(!editId && !rec.appVersion) rec.appVersion = '1.6 / 5.229';
 
   // Auto doplneni z historie podle vyrobniho cisla.
   if(rec.vc){
@@ -4735,7 +4735,7 @@ async function nextStep(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    if(!rec.appVersion) rec.appVersion = '1.6 / 5.228';
+    if(!rec.appVersion) rec.appVersion = '1.6 / 5.229';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -4808,7 +4808,7 @@ async function logAuditAction(action, entity, record, by, detail, beforeRecord){
       serial: record?.vc || record?.serial || '',
       type: record?.typ || record?.type || '',
       createdAt: new Date().toISOString(),
-      appVersion: '1.6 / 5.228',
+      appVersion: '1.6 / 5.229',
       restoreVersion: 1,
       before: beforeSnapshot ? cloneForAuditSnapshot(beforeSnapshot) : null,
       after: afterSnapshot ? cloneForAuditSnapshot(afterSnapshot) : null
@@ -5669,7 +5669,7 @@ function openHistoryModal(serial){
     <div class="machine-card-block">
       <h4>Zapis o oprave</h4>
       <div class="machine-card-list">
-        ${rows.repairs.length ? rows.repairs.slice(0,8).map(r => `<div class="machine-card-row"><span>${escapeHtml(formatDateTime(r.finishedAt || r.savedAt)||'Bez data')} &middot; ${escapeHtml(r.tech||'Bez technika')} &middot; ${escapeHtml(repairPlaceInputValue(r.place, !!r.externalCustomer)||'Bez mista')}</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button class="secondary mini" data-repair-load="${escapeHtml(r.id)}">Nacist</button><button class="primary mini" data-repair-print="${escapeHtml(r.id)}">Nahled / tisk</button><button class="secondary mini" data-repair-part="${escapeHtml(r.id)}">Objednat ND</button></span></div>`).join('') : '<div class="part-sub">Bez zapisu o oprave.</div>'}
+        ${rows.repairs.length ? rows.repairs.slice(0,8).map(r => `<div class="machine-card-row"><span>${escapeHtml(formatDateTime(r.finishedAt || r.savedAt)||'Bez data')} &middot; ${escapeHtml(r.tech||'Bez technika')} &middot; ${escapeHtml(repairPlaceInputValue(r.place, !!r.externalCustomer)||'Bez mista')}</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button class="secondary mini" data-repair-load="${escapeHtml(r.id)}">Nacist</button><button class="primary mini" data-repair-print="${escapeHtml(r.id)}">Nahled / tisk</button><button class="secondary mini" data-repair-part="${escapeHtml(r.id)}">Objednat ND</button><button class="danger mini" data-repair-delete="${escapeHtml(r.id)}">Smazat</button></span></div>`).join('') : '<div class="part-sub">Bez zapisu o oprave.</div>'}
       </div>
     </div>
   `;
@@ -5682,6 +5682,7 @@ function openHistoryModal(serial){
   els.historyBody.querySelectorAll('[data-repair-load]').forEach(btn => btn.addEventListener('click', () => { const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairLoad)); if(rec){ closeHistoryModal(); openRepairModal(rec); } }));
   els.historyBody.querySelectorAll('[data-repair-print]').forEach(btn => btn.addEventListener('click', () => { const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairPrint)); if(rec) printRepairRecord(rec); }));
   els.historyBody.querySelectorAll('[data-repair-part]').forEach(btn => btn.addEventListener('click', () => { const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairPart)); if(rec){ closeHistoryModal(); openPartFromRepair(rec); } }));
+  els.historyBody.querySelectorAll('[data-repair-delete]').forEach(btn => btn.addEventListener('click', () => deleteRepairRecord(btn.dataset.repairDelete)));
   openModal(els.historyModal);
   requestAnimationFrame(() => {
     const scroller = els.historyModal?.querySelector('.history-modal-content');
@@ -6553,7 +6554,7 @@ async function saveWorkPlanFromForm(){
       place,
       extraPlaces,
       note,
-      appVersion:'1.6 / 5.228'
+      appVersion:'1.6 / 5.229'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     const saveResult = await saveWorkPlan(record);
@@ -7268,7 +7269,7 @@ async function saveFaultFromForm(){
       inService: status === 'service' ? true : (existing ? !!existing.inService : false),
       waitingParts: status === 'waiting_parts' ? true : (existing ? !!existing.waitingParts : false),
       photos: currentFaultPhotos,
-      appVersion:'1.6 / 5.228'
+      appVersion:'1.6 / 5.229'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     setLastEnteredBy(record.enteredBy);
@@ -7762,7 +7763,7 @@ function mergeRepairCloudWithLocal(cloudRows=[], localRows=[]){
 }
 function upsertLocalRepairRow(record){
   const rows = loadLocalRepairs();
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.228'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.229'});
   const idx = rows.findIndex(x => String(x.id) === String(rec.id));
   if(idx >= 0) rows[idx] = rec; else rows.unshift(rec);
   const localResult = saveLocalRepairs(rows.slice(0,300));
@@ -7777,7 +7778,7 @@ async function saveRepairRecord(record){
   record.id = record.id || repairUid();
   record.savedAt = new Date().toISOString();
   record.updatedAt = record.savedAt;
-  record.appVersion = '1.6 / 5.228';
+  record.appVersion = '1.6 / 5.229';
   markRepairSyncState(record, false, null);
   const localSave = upsertLocalRepairRow(record);
   if(!localSave.localResult || !localSave.localResult.ok){
@@ -7834,10 +7835,37 @@ function startLocalRepairsMode(){
   renderRepairArchiveList();
 }
 function saveRepairRecordLocal(record){
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.228'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.229'});
   markRepairSyncState(rec, false, new Error('Starsí lokální uložení čeká na synchronizaci.'));
   upsertLocalRepairRow(rec);
   return rec;
+}
+async function deleteRepairRecord(id){
+  if(!id) return;
+  const record = loadLocalRepairs().find(x => String(x.id) === String(id));
+  const label = record ? [record.serial, record.type || record.model, formatDateTime(record.savedAt || record.finishedAt)].filter(Boolean).join(' · ') : 'tento zápis o opravě';
+  if(!confirm('Opravdu smazat zápis o opravě?\n\n' + label)) return;
+  const nextRows = loadLocalRepairs().filter(x => String(x.id) !== String(id));
+  const localResult = saveLocalRepairs(nextRows);
+  renderRepairSavedList();
+  renderRepairArchiveList();
+  updateMainOverview();
+  if(currentRepairId && String(currentRepairId) === String(id)){
+    currentRepairId = '';
+    closeModal(document.getElementById('repairModal'));
+  }
+  if(!localResult || !localResult.ok){
+    alert('Zápis se nepodařilo smazat v tomto zařízení: ' + errorText(localResult?.error));
+    return;
+  }
+  if(firebaseAvailable && db){
+    try{
+      await withTimeout(db.collection(REPAIRS_COLLECTION_NAME).doc(id).delete(), 12000, 'Smazání zápisu o opravě ve Firebase');
+    }catch(err){
+      console.error('Firebase delete repair error:', err);
+      alert('Zápis je smazaný v tomto zařízení, ale nepodařilo se ho smazat ve Firebase: ' + errorText(err));
+    }
+  }
 }
 function renderRepairSavedList(){
   const wrap = document.getElementById('repairSavedList');
@@ -7848,7 +7876,7 @@ function renderRepairSavedList(){
     <div class="audit-item">
       <div class="audit-title">${escapeHtml(r.serial || r.type || r.model || 'Z&aacute;pis o oprav&#283;')} ${repairSyncBadgeHtml(r)}</div>
       <div class="audit-sub">${escapeHtml([r.type || r.model, r.maker, repairPlaceInputValue(r.place, !!r.externalCustomer), formatDateTime(r.savedAt)].filter(Boolean).join(' · '))}</div>
-      <div class="card-actions"><button class="secondary mini" type="button" data-repair-load="${escapeHtml(r.id)}">Na&#269;&iacute;st</button><button class="primary mini" type="button" data-repair-print="${escapeHtml(r.id)}">N&aacute;hled / tisk</button><button class="secondary mini" type="button" data-repair-part="${escapeHtml(r.id)}">Objednat ND</button></div>
+      <div class="card-actions"><button class="secondary mini" type="button" data-repair-load="${escapeHtml(r.id)}">Na&#269;&iacute;st</button><button class="primary mini" type="button" data-repair-print="${escapeHtml(r.id)}">N&aacute;hled / tisk</button><button class="secondary mini" type="button" data-repair-part="${escapeHtml(r.id)}">Objednat ND</button><button class="danger mini" type="button" data-repair-delete="${escapeHtml(r.id)}">Smazat</button></div>
     </div>`).join('');
   wrap.querySelectorAll('[data-repair-load]').forEach(btn => btn.addEventListener('click', () => {
     const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairLoad));
@@ -7862,6 +7890,7 @@ function renderRepairSavedList(){
     const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairPart));
     if(rec) openPartFromRepair(rec);
   }));
+  wrap.querySelectorAll('[data-repair-delete]').forEach(btn => btn.addEventListener('click', () => deleteRepairRecord(btn.dataset.repairDelete)));
 }
 function renderRepairArchiveList(){
   const wrap = document.getElementById('repairArchiveList');
@@ -7877,7 +7906,7 @@ function renderRepairArchiveList(){
     <div class="audit-item">
       <div class="audit-title">${escapeHtml(r.serial || r.type || r.model || 'Zapis o oprave')} ${repairSyncBadgeHtml(r)}</div>
       <div class="audit-sub">${escapeHtml([r.type || r.model, r.maker, repairPlaceInputValue(r.place, !!r.externalCustomer), formatDateTime(r.savedAt)].filter(Boolean).join(' · '))}</div>
-      <div class="card-actions"><button class="secondary mini" type="button" data-repair-archive-load="${escapeHtml(r.id)}">Nacist</button><button class="primary mini" type="button" data-repair-archive-print="${escapeHtml(r.id)}">Nahled / tisk</button><button class="secondary mini" type="button" data-repair-archive-part="${escapeHtml(r.id)}">Objednat ND</button></div>
+      <div class="card-actions"><button class="secondary mini" type="button" data-repair-archive-load="${escapeHtml(r.id)}">Nacist</button><button class="primary mini" type="button" data-repair-archive-print="${escapeHtml(r.id)}">Nahled / tisk</button><button class="secondary mini" type="button" data-repair-archive-part="${escapeHtml(r.id)}">Objednat ND</button><button class="danger mini" type="button" data-repair-archive-delete="${escapeHtml(r.id)}">Smazat</button></div>
     </div>`).join('');
   wrap.querySelectorAll('[data-repair-archive-load]').forEach(btn => btn.addEventListener('click', () => {
     const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairArchiveLoad));
@@ -7891,6 +7920,7 @@ function renderRepairArchiveList(){
     const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairArchivePart));
     if(rec){ closeModal(document.getElementById('repairArchiveModal')); openPartFromRepair(rec); }
   }));
+  wrap.querySelectorAll('[data-repair-archive-delete]').forEach(btn => btn.addEventListener('click', () => deleteRepairRecord(btn.dataset.repairArchiveDelete)));
 }
 function openRepairArchiveModal(){
   renderRepairArchiveList();
@@ -8590,7 +8620,7 @@ async function savePartFromForm(){
       orderedAt: (statusVal === 'ordered' || statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.orderedAt) || new Date().toISOString()) : '',
       sentAt: (statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.sentAt) || new Date().toISOString()) : '',
       resolvedAt: statusVal === 'resolved' ? ((existing && existing.resolvedAt) || new Date().toISOString()) : '',
-      appVersion:'1.6 / 5.228'
+      appVersion:'1.6 / 5.229'
     });
     record.photos = JSON.parse(JSON.stringify(currentPartPhotos || []));
     record.photo = record.photos[0] || null;
@@ -8744,7 +8774,7 @@ function revizeNextNumber(){ const year2=String(new Date().getFullYear()).slice(
 const REVIZE_DEFAULT_METER = 'Přístroj: REVEX plus v.č.011134 kal.do 1.7.2029';
 function revizeDefaultMeter(){ try{ const stored=localStorage.getItem('revize_last_meter') || ''; if(!stored || /REVEX plus v\.č\.011134 kal\.do 1\.6\.2026/i.test(stored)) return REVIZE_DEFAULT_METER; return stored; }catch(e){ return REVIZE_DEFAULT_METER; } }
 function revizeMeterInfo(text){ const s=String(text||''); const ev=[...s.matchAll(/v\.?\s*č\.?\s*[:.]?\s*([A-Za-z0-9/.-]+)/gi)].map(m=>m[1]); const kal=[...s.matchAll(/kal\.?\s*do\s*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{2,4})/gi)].map(m=>m[1]); return {ev:ev.join(', '), kalibrace:kal.join(', ')}; }
-function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.228'}; }
+function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.229'}; }
 function revizeAnswerValue(value){ return String(value||'').trim().toUpperCase()==='NE' ? 'NE' : 'ANO'; }
 function revizeResult(r){
   r = r || {};
@@ -9287,7 +9317,7 @@ async function syncQuarterlyAfterRevize(r){
   last.typ=last.typ||r.model||r.typ||'';
   last.rok=last.rok||r.rok_vyroby||'';
   last.umisteni=r.umisteni||last.umisteni||'';
-  last.appVersion='1.6 / 5.228';
+  last.appVersion='1.6 / 5.229';
   const replaceByIdOrSerial=(arr, updated)=>{
     const idx=(arr||[]).findIndex(x=>(updated.id && x.id===updated.id) || matchesSerial(x));
     if(idx>=0) arr[idx]={...arr[idx],...updated};
@@ -9479,7 +9509,7 @@ function renderRevizeForm(r){ const type = r.typ_zarizeni || 'scissor'; const de
 function revizeFieldLabel(k){ const unit=revizeNumericUnit(k); const label=({hmotnost:'Hmotnost',nosnost:'Nosnost',pracovni_vyska:'Pracovní výška',vyska_podlahy:'Výška podlahy',bocni_dosah:'Boční dosah',naklon:'Max. náklon',staticka_zatez:'Statická zátěž 125 %',dynamicka_zatez:'Dynamická zátěž 110 %',pohon:'Pohon',napajeni:'Napájení',stabilizatory:'Stabilizátory',deck:'Výsuvný deck',nabijec:'Nabíječ',zasuvka_kos:'Zásuvka v koši',rcd:'RCD'})[k]||k; return unit ? `${label} (${unit})` : label; }
 function revizeCheckRows(items,r,prefix){ return items.map(([k,l])=>{ const v=(r.checks||{})[k]||'ANO'; const n=(r.notes||{})[k]||''; return `<div class="revize-check-row"><strong>${escapeHtml(l)}</strong><div class="yesno"><button type="button" class="yn-btn ${v==='ANO'?'yes active':'yes'}" data-rz-check="${k}" data-rz-val="ANO">ANO</button><button type="button" class="yn-btn ${v==='NE'?'no active':'no'}" data-rz-check="${k}" data-rz-val="NE">NE</button></div><input data-rz-note="${k}" value="${escapeHtml(n)}" placeholder="Poznámka / opatření"></div>`; }).join(''); }
 function revizeElectroTable(r){ return `<table class="revize-mini-table"><thead><tr><th>Měřená část</th><th>Hodnota</th><th>Vyhovuje</th><th>Poznámka</th></tr></thead><tbody>${REVIZE_ELECTRO.map(([k,l,u])=>{ const e=(r.electro||{})[k]||{}; return `<tr><td>${escapeHtml(l)}</td><td><input data-rz-electro-val="${k}" value="${escapeHtml(revizeNormalizeElectroValue(k,e.value||''))}" placeholder="Hodnota"></td><td><select data-rz-electro-ok="${k}"><option ${e.ok==='ANO'?'selected':''}>ANO</option><option ${e.ok==='NE'?'selected':''}>NE</option></select></td><td><input data-rz-electro-note="${k}" value="${escapeHtml(e.note||'')}"></td></tr>`; }).join('')}</tbody></table>`; }
-function collectRevizeDraft(){ syncRevizeMeterFields(); const r=window.currentRevizeDraft||revizeDefaultRecord(); ['protokol','datum_kontroly','platnost','druh_kontroly','provozovatel','umisteni','typ_zarizeni','vyrobce','model','vyrobni_cislo','evidencni_cislo','rok_vyroby','norma','normy_revize','skupina','hmotnost','nosnost','pracovni_vyska','vyska_podlahy','bocni_dosah','naklon','pohon','napajeni','stabilizatory','deck','nabijec','zasuvka_kos','rcd','rt_jmeno','rt_zz_osvedceni','rt_zz_opravneni','rt_ez_osvedceni','pristroj','pristroj_ev','kalibrace','zavady','predal','prevzal'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el) r[k]=revizeInputValue(k,el.value); }); if(!String(r.normy_revize||'').trim()) r.normy_revize=revizeDefaultNormy(r.norma); delete r.rozmer_plosiny; delete r.typ_kol; delete r.pothole; delete r.rt_ez; delete r.termin_odstraneni; const cfg=REVIZE_DEVICE_TYPES[r.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; r.typ=cfg.label; r.checks=r.checks||{}; r.notes=r.notes||{}; document.querySelectorAll('[data-rz-check].active').forEach(b=>r.checks[b.dataset.rzCheck]=b.dataset.rzVal); document.querySelectorAll('[data-rz-note]').forEach(i=>r.notes[i.dataset.rzNote]=i.value); r.electro=r.electro||{}; REVIZE_ELECTRO.forEach(([k])=>{ r.electro[k]={value:revizeNormalizeElectroValue(k, document.querySelector(`[data-rz-electro-val="${k}"]`)?.value||''),ok:document.querySelector(`[data-rz-electro-ok="${k}"]`)?.value||'ANO',note:document.querySelector(`[data-rz-electro-note="${k}"]`)?.value||''}; }); applyRevizeCalculatedLoads(r); syncRevizeLoadInputsFromCapacity(); r.vysledek=revizeResult(r); r.updatedAt=new Date().toISOString(); r.appVersion='1.6 / 5.228'; try{ if(r.pristroj) localStorage.setItem('revize_last_meter', r.pristroj); }catch(e){} window.currentRevizeDraft=r; return r; }
+function collectRevizeDraft(){ syncRevizeMeterFields(); const r=window.currentRevizeDraft||revizeDefaultRecord(); ['protokol','datum_kontroly','platnost','druh_kontroly','provozovatel','umisteni','typ_zarizeni','vyrobce','model','vyrobni_cislo','evidencni_cislo','rok_vyroby','norma','normy_revize','skupina','hmotnost','nosnost','pracovni_vyska','vyska_podlahy','bocni_dosah','naklon','pohon','napajeni','stabilizatory','deck','nabijec','zasuvka_kos','rcd','rt_jmeno','rt_zz_osvedceni','rt_zz_opravneni','rt_ez_osvedceni','pristroj','pristroj_ev','kalibrace','zavady','predal','prevzal'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el) r[k]=revizeInputValue(k,el.value); }); if(!String(r.normy_revize||'').trim()) r.normy_revize=revizeDefaultNormy(r.norma); delete r.rozmer_plosiny; delete r.typ_kol; delete r.pothole; delete r.rt_ez; delete r.termin_odstraneni; const cfg=REVIZE_DEVICE_TYPES[r.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; r.typ=cfg.label; r.checks=r.checks||{}; r.notes=r.notes||{}; document.querySelectorAll('[data-rz-check].active').forEach(b=>r.checks[b.dataset.rzCheck]=b.dataset.rzVal); document.querySelectorAll('[data-rz-note]').forEach(i=>r.notes[i.dataset.rzNote]=i.value); r.electro=r.electro||{}; REVIZE_ELECTRO.forEach(([k])=>{ r.electro[k]={value:revizeNormalizeElectroValue(k, document.querySelector(`[data-rz-electro-val="${k}"]`)?.value||''),ok:document.querySelector(`[data-rz-electro-ok="${k}"]`)?.value||'ANO',note:document.querySelector(`[data-rz-electro-note="${k}"]`)?.value||''}; }); applyRevizeCalculatedLoads(r); syncRevizeLoadInputsFromCapacity(); r.vysledek=revizeResult(r); r.updatedAt=new Date().toISOString(); r.appVersion='1.6 / 5.229'; try{ if(r.pristroj) localStorage.setItem('revize_last_meter', r.pristroj); }catch(e){} window.currentRevizeDraft=r; return r; }
 async function saveRevizeFromForm(){
   if(revizeSaveInProgress) return;
   const r=collectRevizeDraft();
