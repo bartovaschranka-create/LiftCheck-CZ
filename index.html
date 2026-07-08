@@ -2003,7 +2003,7 @@ body{position:relative!important}
 }
 .revize-check-row .yn-btn,.revize-electro-yesno .yn-btn{pointer-events:auto;position:relative;z-index:2;opacity:.62;min-height:38px}
 .revize-check-row .yn-btn.active,.revize-electro-yesno .yn-btn.active{opacity:1;outline:3px solid #0f172a;outline-offset:2px;box-shadow:0 0 0 5px rgba(37,99,235,.18)}
-/* v1.6 / 5.227: revize ZZ modal ma vlastni scrollovatelnou cast pro kolecko mysi. */
+/* v1.6 / 5.228: revize ZZ modal ma vlastni scrollovatelnou cast pro kolecko mysi. */
 .revize-wizard-modal.show{overflow:hidden!important;align-items:center!important;justify-content:center!important}
 .revize-wizard-modal .modal-content{max-height:calc(100dvh - 32px)!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
 .revize-wizard-modal .revize-form{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important}
@@ -2095,7 +2095,7 @@ body{position:relative!important}
     <button type="button" class="side-small" onclick="exportBackup()">Export zálohy</button>
     <button type="button" class="side-small" id="sideImportBtn">Import zálohy</button>
     <button type="button" class="side-small" id="sideAuditBtn">Historie změn</button>
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.227</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.228</div>
   </div>
 </aside>
 
@@ -3221,8 +3221,9 @@ function loadImageFromFile(file){
   return new Promise((resolve,reject)=>{
     const url = URL.createObjectURL(file);
     const img = new Image();
-    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
-    img.onerror = reject;
+    const cleanup = () => URL.revokeObjectURL(url);
+    img.onload = () => { cleanup(); resolve(img); };
+    img.onerror = err => { cleanup(); reject(err); };
     img.src = url;
   });
 }
@@ -3230,20 +3231,28 @@ async function compressPhoto(file, maxBytes=MAX_PHOTO_BYTES){
   const img = await loadImageFromFile(file);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
-  let maxSide = 1600;
-  let quality = 0.82;
+  const mobile = isMobile();
+  let maxSide = mobile ? 1100 : 1600;
+  let quality = mobile ? 0.72 : 0.82;
+  const targetBytes = mobile ? Math.min(maxBytes, 320 * 1024) : maxBytes;
   let out = '';
-  for(let attempt=0; attempt<14; attempt++){
-    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-    canvas.width = Math.max(1, Math.round(img.width * scale));
-    canvas.height = Math.max(1, Math.round(img.height * scale));
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.drawImage(img,0,0,canvas.width,canvas.height);
-    out = canvas.toDataURL('image/jpeg', quality);
-    if(dataUrlBytes(out) <= maxBytes) return {dataUrl:out, bytes:dataUrlBytes(out), width:canvas.width, height:canvas.height};
-    if(quality > 0.55) quality -= 0.08; else maxSide = Math.round(maxSide * 0.82);
+  try{
+    for(let attempt=0; attempt<14; attempt++){
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      out = canvas.toDataURL('image/jpeg', quality);
+      if(dataUrlBytes(out) <= targetBytes) return {dataUrl:out, bytes:dataUrlBytes(out), width:canvas.width, height:canvas.height};
+      if(quality > 0.5) quality -= 0.08; else maxSide = Math.round(maxSide * 0.78);
+    }
+    return {dataUrl:out, bytes:dataUrlBytes(out), width:canvas.width, height:canvas.height};
+  }finally{
+    canvas.width = 1;
+    canvas.height = 1;
+    try{ img.src = ''; }catch(_e){}
   }
-  return {dataUrl:out, bytes:dataUrlBytes(out), width:canvas.width, height:canvas.height};
 }
 
 function iconHtml(kind){ return ''; }
@@ -3591,7 +3600,7 @@ async function exportBackup(){
     }
     const payload = {
       app: 'LiftControl CZ',
-      appVersion: '1.6 / 5.227',
+      appVersion: '1.6 / 5.228',
       backupType: 'complete',
       schemaVersion: 2,
       exportedAt: new Date().toISOString(),
@@ -4271,10 +4280,10 @@ installMainWheelScroll();
 function openWizard(editId=null, prefill={}){
   protocolSaveInProgress = false;
   if(els.nextBtn) els.nextBtn.disabled = false;
-  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.227'};
+  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.228'};
   rec = Object.assign({}, rec, prefill || {});
   if(!editId && !rec.cLogic) rec.cLogic = 'legacy';
-  if(!editId && !rec.appVersion) rec.appVersion = '1.6 / 5.227';
+  if(!editId && !rec.appVersion) rec.appVersion = '1.6 / 5.228';
 
   // Auto doplneni z historie podle vyrobniho cisla.
   if(rec.vc){
@@ -4424,13 +4433,17 @@ function showStep(){
   const photoInput = document.getElementById('photoInput');
   if(photoInput){
     photoInput.addEventListener('change', async (e) => {
+      if(photoInput.dataset.processing === '1') return;
       const file = e.target.files && e.target.files[0];
       if(!file) return;
+      photoInput.dataset.processing = '1';
+      photoInput.disabled = true;
       els.stepDesc.textContent = 'Zpracovávám fotku...';
       try{
         const out = await compressPhoto(file, MAX_PHOTO_BYTES);
         rec.photos = rec.photos || {};
         rec.photos[s.photoKey] = {dataUrl:out.dataUrl, bytes:out.bytes, label:PHOTO_LABELS[s.photoKey], width:out.width, height:out.height};
+        e.target.value = '';
         if(stepIndex < activeSteps.length - 1){
           stepIndex++;
           showStep();
@@ -4440,6 +4453,10 @@ function showStep(){
       }catch(err){
         console.error(err);
         alert('Fotku se nepodařilo zpracovat. Zkus jinou fotku.');
+      }finally{
+        photoInput.dataset.processing = '';
+        photoInput.disabled = false;
+        e.target.value = '';
       }
     });
   }
@@ -4456,6 +4473,7 @@ function showStep(){
   const issuePhotoInput = document.getElementById('issuePhotoInput');
   if(issuePhotoInput){
     issuePhotoInput.addEventListener('change', async (e) => {
+      if(issuePhotoInput.dataset.processing === '1') return;
       const file = e.target.files && e.target.files[0];
       if(!file) return;
       const currentList = getIssuePhotoList(rec.issuePhotos, s.k);
@@ -4464,6 +4482,8 @@ function showStep(){
         e.target.value = '';
         return;
       }
+      issuePhotoInput.dataset.processing = '1';
+      issuePhotoInput.disabled = true;
       els.stepDesc.textContent = 'Zpracovávám fotku závady...';
       try{
         const out = await compressPhoto(file, MAX_PHOTO_BYTES);
@@ -4475,6 +4495,10 @@ function showStep(){
       }catch(err){
         console.error(err);
         alert('Fotku závady se nepodařilo zpracovat. Zkus jinou fotku.');
+      }finally{
+        issuePhotoInput.dataset.processing = '';
+        issuePhotoInput.disabled = false;
+        e.target.value = '';
       }
     });
   }
@@ -4711,7 +4735,7 @@ async function nextStep(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    if(!rec.appVersion) rec.appVersion = '1.6 / 5.227';
+    if(!rec.appVersion) rec.appVersion = '1.6 / 5.228';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -4784,7 +4808,7 @@ async function logAuditAction(action, entity, record, by, detail, beforeRecord){
       serial: record?.vc || record?.serial || '',
       type: record?.typ || record?.type || '',
       createdAt: new Date().toISOString(),
-      appVersion: '1.6 / 5.227',
+      appVersion: '1.6 / 5.228',
       restoreVersion: 1,
       before: beforeSnapshot ? cloneForAuditSnapshot(beforeSnapshot) : null,
       after: afterSnapshot ? cloneForAuditSnapshot(afterSnapshot) : null
@@ -6529,7 +6553,7 @@ async function saveWorkPlanFromForm(){
       place,
       extraPlaces,
       note,
-      appVersion:'1.6 / 5.227'
+      appVersion:'1.6 / 5.228'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     const saveResult = await saveWorkPlan(record);
@@ -6933,6 +6957,10 @@ function attachSmartSuggest(input, getItems, onPick){
 
   input.addEventListener('input', open);
   input.addEventListener('focus', () => {
+    if(input.dataset.smartSuggestNoAutoScroll === '1'){
+      setTimeout(open, 120);
+      return;
+    }
     if(window.matchMedia('(max-width: 920px)').matches){
       setTimeout(() => {
         try{ input.scrollIntoView({behavior:'smooth', block:'start'}); }catch(_e){}
@@ -7240,7 +7268,7 @@ async function saveFaultFromForm(){
       inService: status === 'service' ? true : (existing ? !!existing.inService : false),
       waitingParts: status === 'waiting_parts' ? true : (existing ? !!existing.waitingParts : false),
       photos: currentFaultPhotos,
-      appVersion:'1.6 / 5.227'
+      appVersion:'1.6 / 5.228'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     setLastEnteredBy(record.enteredBy);
@@ -7454,6 +7482,20 @@ function repairSyncPlaceCustomer(){
     placeEl.value = branchShortName(branch);
     if(!String(customerEl.value || '').trim()) customerEl.value = 'Zeppelin CZ s.r.o.';
   }
+}
+function keepRepairPlaceFieldVisible(){
+  const placeEl = document.getElementById('repairPlace');
+  const scroller = document.querySelector('#repairModal .modal-content');
+  if(!placeEl || !scroller) return;
+  const adjust = () => {
+    if(!document.getElementById('repairModal')?.classList.contains('show')) return;
+    const sRect = scroller.getBoundingClientRect();
+    const pRect = placeEl.getBoundingClientRect();
+    const target = scroller.scrollTop + (pRect.top - sRect.top) - 80;
+    scroller.scrollTop = Math.max(0, target);
+  };
+  setTimeout(adjust, 80);
+  setTimeout(adjust, 320);
 }
 function wireRepairExternalDetails(){
   const chk = document.getElementById('repairExternalCustomer');
@@ -7720,7 +7762,7 @@ function mergeRepairCloudWithLocal(cloudRows=[], localRows=[]){
 }
 function upsertLocalRepairRow(record){
   const rows = loadLocalRepairs();
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.227'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.228'});
   const idx = rows.findIndex(x => String(x.id) === String(rec.id));
   if(idx >= 0) rows[idx] = rec; else rows.unshift(rec);
   const localResult = saveLocalRepairs(rows.slice(0,300));
@@ -7735,7 +7777,7 @@ async function saveRepairRecord(record){
   record.id = record.id || repairUid();
   record.savedAt = new Date().toISOString();
   record.updatedAt = record.savedAt;
-  record.appVersion = '1.6 / 5.227';
+  record.appVersion = '1.6 / 5.228';
   markRepairSyncState(record, false, null);
   const localSave = upsertLocalRepairRow(record);
   if(!localSave.localResult || !localSave.localResult.ok){
@@ -7792,7 +7834,7 @@ function startLocalRepairsMode(){
   renderRepairArchiveList();
 }
 function saveRepairRecordLocal(record){
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.227'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.228'});
   markRepairSyncState(rec, false, new Error('Starsí lokální uložení čeká na synchronizaci.'));
   upsertLocalRepairRow(rec);
   return rec;
@@ -7926,7 +7968,9 @@ function attachRepairSmartSuggests(){
   attachSmartSuggest(document.getElementById('repairMaker'), getRepairMakerSuggestionsAll);
   attachSmartSuggest(document.getElementById('repairSerial'), getRepairSerialSuggestionsAll, applyMachineInfoToRepair);
   attachSmartSuggest(document.getElementById('repairEvidence'), getRepairEvidenceSuggestionsAll);
-  attachSmartSuggest(document.getElementById('repairPlace'), getRepairPlaceSuggestionsAll);
+  const repairPlaceInput = document.getElementById('repairPlace');
+  if(repairPlaceInput) repairPlaceInput.dataset.smartSuggestNoAutoScroll = '1';
+  attachSmartSuggest(repairPlaceInput, getRepairPlaceSuggestionsAll);
   attachSmartSuggest(document.getElementById('repairCustomer'), getCompanyNameSuggestionsAll);
 }
 function openPartFromRepair(record){
@@ -8546,7 +8590,7 @@ async function savePartFromForm(){
       orderedAt: (statusVal === 'ordered' || statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.orderedAt) || new Date().toISOString()) : '',
       sentAt: (statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.sentAt) || new Date().toISOString()) : '',
       resolvedAt: statusVal === 'resolved' ? ((existing && existing.resolvedAt) || new Date().toISOString()) : '',
-      appVersion:'1.6 / 5.227'
+      appVersion:'1.6 / 5.228'
     });
     record.photos = JSON.parse(JSON.stringify(currentPartPhotos || []));
     record.photo = record.photos[0] || null;
@@ -8700,7 +8744,7 @@ function revizeNextNumber(){ const year2=String(new Date().getFullYear()).slice(
 const REVIZE_DEFAULT_METER = 'Přístroj: REVEX plus v.č.011134 kal.do 1.7.2029';
 function revizeDefaultMeter(){ try{ const stored=localStorage.getItem('revize_last_meter') || ''; if(!stored || /REVEX plus v\.č\.011134 kal\.do 1\.6\.2026/i.test(stored)) return REVIZE_DEFAULT_METER; return stored; }catch(e){ return REVIZE_DEFAULT_METER; } }
 function revizeMeterInfo(text){ const s=String(text||''); const ev=[...s.matchAll(/v\.?\s*č\.?\s*[:.]?\s*([A-Za-z0-9/.-]+)/gi)].map(m=>m[1]); const kal=[...s.matchAll(/kal\.?\s*do\s*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{2,4})/gi)].map(m=>m[1]); return {ev:ev.join(', '), kalibrace:kal.join(', ')}; }
-function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.227'}; }
+function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.228'}; }
 function revizeAnswerValue(value){ return String(value||'').trim().toUpperCase()==='NE' ? 'NE' : 'ANO'; }
 function revizeResult(r){
   r = r || {};
@@ -9243,7 +9287,7 @@ async function syncQuarterlyAfterRevize(r){
   last.typ=last.typ||r.model||r.typ||'';
   last.rok=last.rok||r.rok_vyroby||'';
   last.umisteni=r.umisteni||last.umisteni||'';
-  last.appVersion='1.6 / 5.227';
+  last.appVersion='1.6 / 5.228';
   const replaceByIdOrSerial=(arr, updated)=>{
     const idx=(arr||[]).findIndex(x=>(updated.id && x.id===updated.id) || matchesSerial(x));
     if(idx>=0) arr[idx]={...arr[idx],...updated};
@@ -9435,7 +9479,7 @@ function renderRevizeForm(r){ const type = r.typ_zarizeni || 'scissor'; const de
 function revizeFieldLabel(k){ const unit=revizeNumericUnit(k); const label=({hmotnost:'Hmotnost',nosnost:'Nosnost',pracovni_vyska:'Pracovní výška',vyska_podlahy:'Výška podlahy',bocni_dosah:'Boční dosah',naklon:'Max. náklon',staticka_zatez:'Statická zátěž 125 %',dynamicka_zatez:'Dynamická zátěž 110 %',pohon:'Pohon',napajeni:'Napájení',stabilizatory:'Stabilizátory',deck:'Výsuvný deck',nabijec:'Nabíječ',zasuvka_kos:'Zásuvka v koši',rcd:'RCD'})[k]||k; return unit ? `${label} (${unit})` : label; }
 function revizeCheckRows(items,r,prefix){ return items.map(([k,l])=>{ const v=(r.checks||{})[k]||'ANO'; const n=(r.notes||{})[k]||''; return `<div class="revize-check-row"><strong>${escapeHtml(l)}</strong><div class="yesno"><button type="button" class="yn-btn ${v==='ANO'?'yes active':'yes'}" data-rz-check="${k}" data-rz-val="ANO">ANO</button><button type="button" class="yn-btn ${v==='NE'?'no active':'no'}" data-rz-check="${k}" data-rz-val="NE">NE</button></div><input data-rz-note="${k}" value="${escapeHtml(n)}" placeholder="Poznámka / opatření"></div>`; }).join(''); }
 function revizeElectroTable(r){ return `<table class="revize-mini-table"><thead><tr><th>Měřená část</th><th>Hodnota</th><th>Vyhovuje</th><th>Poznámka</th></tr></thead><tbody>${REVIZE_ELECTRO.map(([k,l,u])=>{ const e=(r.electro||{})[k]||{}; return `<tr><td>${escapeHtml(l)}</td><td><input data-rz-electro-val="${k}" value="${escapeHtml(revizeNormalizeElectroValue(k,e.value||''))}" placeholder="Hodnota"></td><td><select data-rz-electro-ok="${k}"><option ${e.ok==='ANO'?'selected':''}>ANO</option><option ${e.ok==='NE'?'selected':''}>NE</option></select></td><td><input data-rz-electro-note="${k}" value="${escapeHtml(e.note||'')}"></td></tr>`; }).join('')}</tbody></table>`; }
-function collectRevizeDraft(){ syncRevizeMeterFields(); const r=window.currentRevizeDraft||revizeDefaultRecord(); ['protokol','datum_kontroly','platnost','druh_kontroly','provozovatel','umisteni','typ_zarizeni','vyrobce','model','vyrobni_cislo','evidencni_cislo','rok_vyroby','norma','normy_revize','skupina','hmotnost','nosnost','pracovni_vyska','vyska_podlahy','bocni_dosah','naklon','pohon','napajeni','stabilizatory','deck','nabijec','zasuvka_kos','rcd','rt_jmeno','rt_zz_osvedceni','rt_zz_opravneni','rt_ez_osvedceni','pristroj','pristroj_ev','kalibrace','zavady','predal','prevzal'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el) r[k]=revizeInputValue(k,el.value); }); if(!String(r.normy_revize||'').trim()) r.normy_revize=revizeDefaultNormy(r.norma); delete r.rozmer_plosiny; delete r.typ_kol; delete r.pothole; delete r.rt_ez; delete r.termin_odstraneni; const cfg=REVIZE_DEVICE_TYPES[r.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; r.typ=cfg.label; r.checks=r.checks||{}; r.notes=r.notes||{}; document.querySelectorAll('[data-rz-check].active').forEach(b=>r.checks[b.dataset.rzCheck]=b.dataset.rzVal); document.querySelectorAll('[data-rz-note]').forEach(i=>r.notes[i.dataset.rzNote]=i.value); r.electro=r.electro||{}; REVIZE_ELECTRO.forEach(([k])=>{ r.electro[k]={value:revizeNormalizeElectroValue(k, document.querySelector(`[data-rz-electro-val="${k}"]`)?.value||''),ok:document.querySelector(`[data-rz-electro-ok="${k}"]`)?.value||'ANO',note:document.querySelector(`[data-rz-electro-note="${k}"]`)?.value||''}; }); applyRevizeCalculatedLoads(r); syncRevizeLoadInputsFromCapacity(); r.vysledek=revizeResult(r); r.updatedAt=new Date().toISOString(); r.appVersion='1.6 / 5.227'; try{ if(r.pristroj) localStorage.setItem('revize_last_meter', r.pristroj); }catch(e){} window.currentRevizeDraft=r; return r; }
+function collectRevizeDraft(){ syncRevizeMeterFields(); const r=window.currentRevizeDraft||revizeDefaultRecord(); ['protokol','datum_kontroly','platnost','druh_kontroly','provozovatel','umisteni','typ_zarizeni','vyrobce','model','vyrobni_cislo','evidencni_cislo','rok_vyroby','norma','normy_revize','skupina','hmotnost','nosnost','pracovni_vyska','vyska_podlahy','bocni_dosah','naklon','pohon','napajeni','stabilizatory','deck','nabijec','zasuvka_kos','rcd','rt_jmeno','rt_zz_osvedceni','rt_zz_opravneni','rt_ez_osvedceni','pristroj','pristroj_ev','kalibrace','zavady','predal','prevzal'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el) r[k]=revizeInputValue(k,el.value); }); if(!String(r.normy_revize||'').trim()) r.normy_revize=revizeDefaultNormy(r.norma); delete r.rozmer_plosiny; delete r.typ_kol; delete r.pothole; delete r.rt_ez; delete r.termin_odstraneni; const cfg=REVIZE_DEVICE_TYPES[r.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; r.typ=cfg.label; r.checks=r.checks||{}; r.notes=r.notes||{}; document.querySelectorAll('[data-rz-check].active').forEach(b=>r.checks[b.dataset.rzCheck]=b.dataset.rzVal); document.querySelectorAll('[data-rz-note]').forEach(i=>r.notes[i.dataset.rzNote]=i.value); r.electro=r.electro||{}; REVIZE_ELECTRO.forEach(([k])=>{ r.electro[k]={value:revizeNormalizeElectroValue(k, document.querySelector(`[data-rz-electro-val="${k}"]`)?.value||''),ok:document.querySelector(`[data-rz-electro-ok="${k}"]`)?.value||'ANO',note:document.querySelector(`[data-rz-electro-note="${k}"]`)?.value||''}; }); applyRevizeCalculatedLoads(r); syncRevizeLoadInputsFromCapacity(); r.vysledek=revizeResult(r); r.updatedAt=new Date().toISOString(); r.appVersion='1.6 / 5.228'; try{ if(r.pristroj) localStorage.setItem('revize_last_meter', r.pristroj); }catch(e){} window.currentRevizeDraft=r; return r; }
 async function saveRevizeFromForm(){
   if(revizeSaveInProgress) return;
   const r=collectRevizeDraft();
@@ -9832,6 +9876,8 @@ document.getElementById('repairSerial')?.addEventListener('change', () => applyM
 document.getElementById('repairSerial')?.addEventListener('blur', () => applyMachineInfoToRepair(document.getElementById('repairSerial')?.value, true));
 document.getElementById('repairPlace')?.addEventListener('change', repairSyncPlaceCustomer);
 document.getElementById('repairPlace')?.addEventListener('blur', repairSyncPlaceCustomer);
+document.getElementById('repairPlace')?.addEventListener('focus', keepRepairPlaceFieldVisible);
+document.getElementById('repairPlace')?.addEventListener('click', keepRepairPlaceFieldVisible);
 document.getElementById('repairExternalCustomer')?.addEventListener('change', wireRepairExternalDetails);
 document.getElementById('openRepairSignatureBtn')?.addEventListener('click', openRepairSignaturePad);
 document.getElementById('clearRepairSignatureBtn')?.addEventListener('click', () => { currentRepairSignature = ''; updateRepairSignaturePreview(); });
