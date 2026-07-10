@@ -1245,11 +1245,11 @@ body.dark .day-row .place-pill{background:rgba(2,6,23,.66)!important;color:#f8fa
 .repair-protocol-paper .rp-final{border:2px solid #111;padding:6px 7px;margin:7px 0;font-size:12px}
 .repair-protocol-paper .rp-sign-table{margin-top:7px}
 .repair-protocol-paper .rp-sign-table th{text-align:center}
-.repair-protocol-paper .rp-sign-table td{height:34mm}
+.repair-protocol-paper .rp-sign-table td{height:43mm;vertical-align:top}
 .repair-protocol-paper .rp-sign-row{display:flex;gap:8px;margin-bottom:7px}
 .repair-protocol-paper .rp-sign-label{min-width:72px;font-weight:700}
 .repair-protocol-paper .rp-sign-line{display:inline-block;border-bottom:1px solid #111;min-width:58mm;height:15px;flex:1}
-.repair-protocol-paper .rp-signature-img{display:block;width:auto;height:auto;max-width:78mm;max-height:22mm;object-fit:contain;margin:-10px 0 0 0}
+.repair-protocol-paper .rp-signature-img{display:block;width:auto;height:auto;max-width:78mm;max-height:25mm;object-fit:contain;margin:2px 0 0 0}
 .repair-protocol-paper .rp-distribution{font-size:10.5px;margin-top:6px}
 .repair-protocol-paper .rp-page-no{text-align:right;font-size:9px;color:#333;margin-top:5px}
 .repair-protocol-paper .rp-photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
@@ -2111,7 +2111,7 @@ body{position:relative!important}
     <button type="button" class="side-small" onclick="exportBackup()">Export zálohy</button>
     <button type="button" class="side-small" id="sideImportBtn">Import zálohy</button>
     <button type="button" class="side-small" id="sideAuditBtn">Historie změn</button>
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.246</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.247</div>
   </div>
 </aside>
 
@@ -7687,11 +7687,11 @@ body.repair-protocol-window{height:auto!important;min-height:100%!important;over
 .repair-protocol-paper .rp-final{border:2px solid #111;padding:6px 7px;margin:7px 0;font-size:12px}
 .repair-protocol-paper .rp-sign-table{margin-top:7px}
 .repair-protocol-paper .rp-sign-table th{text-align:center}
-.repair-protocol-paper .rp-sign-table td{height:34mm}
+.repair-protocol-paper .rp-sign-table td{height:43mm;vertical-align:top}
 .repair-protocol-paper .rp-sign-row{display:flex;gap:8px;margin-bottom:7px}
 .repair-protocol-paper .rp-sign-label{min-width:72px;font-weight:600}
 .repair-protocol-paper .rp-sign-line{display:inline-block;border-bottom:1px solid #111;min-width:58mm;height:15px;flex:1}
-.repair-protocol-paper .rp-signature-img{display:block;width:auto;height:auto;max-width:78mm;max-height:22mm;object-fit:contain;margin:-10px 0 0 0}
+.repair-protocol-paper .rp-signature-img{display:block;width:auto;height:auto;max-width:78mm;max-height:25mm;object-fit:contain;margin:2px 0 0 0}
 .repair-protocol-paper .rp-distribution{font-size:10.5px;margin-top:6px}
 .repair-protocol-paper .rp-page-no{text-align:right;font-size:9px;color:#333;margin-top:5px}
 .repair-protocol-paper .rp-photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
@@ -8954,10 +8954,16 @@ function revizeAllB(type){ const spec = {scissor:['Nůžkový mechanismus, výsu
 function loadLocalRevize(){ try { return normalizeRevizeLoadRows(JSON.parse(localStorage.getItem('revize_zz_local') || '[]')).rows; } catch(e){ return []; } }
 function saveLocalRevize(rows){ try { localStorage.setItem('revize_zz_local', JSON.stringify(normalizeRevizeLoadRows(rows).rows)); } catch(e){} }
 function revizeNextNumber(){ const year2=String(new Date().getFullYear()).slice(-2); const nums=(revizeData||[]).map(r=>String(r.protokol||'').match(/(\d+)\s*RZ\s*\/\s*\d{2,4}/i)?.[1]).filter(Boolean).map(Number); const max=Math.max(0,...nums); return `${max+1}RZ/${year2}`; }
-const REVIZE_DEFAULT_METER = 'Přístroj: REVEX plus v.č.011134 kal.do 1.7.2029';
-function revizeDefaultMeter(){ try{ const stored=localStorage.getItem('revize_last_meter') || ''; if(!stored || /REVEX plus v\.č\.011134 kal\.do 1\.6\.2026/i.test(stored)) return REVIZE_DEFAULT_METER; return stored; }catch(e){ return REVIZE_DEFAULT_METER; } }
+const REVIZE_DEFAULT_METER = 'Přístroj: REVEX plus v.č.011134 kal.do 1.7.2029, Eurotest XE v.č.17200404 kal.do 1.7.2027';
+function ensureRevizeMeterText(value){
+  let s=String(value||'').trim();
+  if(!s || /REVEX plus v\.č\.011134 kal\.do 1\.6\.2026/i.test(s)) s=REVIZE_DEFAULT_METER;
+  if(/REVEX plus/i.test(s) && !/Eurotest XE/i.test(s)) s += ', Eurotest XE v.č.17200404 kal.do 1.7.2027';
+  return s;
+}
+function revizeDefaultMeter(){ try{ return ensureRevizeMeterText(localStorage.getItem('revize_last_meter') || ''); }catch(e){ return REVIZE_DEFAULT_METER; } }
 function revizeMeterInfo(text){ const s=String(text||''); const ev=[...s.matchAll(/v\.?\s*č\.?\s*[:.]?\s*([A-Za-z0-9/.-]+)/gi)].map(m=>m[1]); const kal=[...s.matchAll(/kal\.?\s*do\s*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{2,4})/gi)].map(m=>m[1]); return {ev:ev.join(', '), kalibrace:kal.join(', ')}; }
-function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.246'}; }
+function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.247'}; }
 function revizeAnswerValue(value){ return String(value||'').trim().toUpperCase()==='NE' ? 'NE' : 'ANO'; }
 function revizeResult(r){
   r = r || {};
@@ -9327,7 +9333,7 @@ function applyRevizeDefaultsFromSerial(serial){
     window.revizeApplyingDefaults = true;
     const set=(id,val,force=false)=>{ const el=document.getElementById(id); if(!el || val===undefined || val===null || !String(val).trim()) return; const cur=String(el.value||'').trim(); if(force || !cur || el.dataset.rzAuto==='1'){ const key=id.replace(/^rz_/,''); el.value=revizeInputValue(key,val); el.dataset.rzAuto='1'; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); } };
     set('rz_vyrobni_cislo', info.serial || serial, true); set('rz_vyrobce', info.maker); set('rz_norma', info.norma); set('rz_normy_revize', info.normyRevize||revizeDefaultNormy(info.norma)); set('rz_model', info.model||info.type); set('rz_evidencni_cislo', info.evidencni); set('rz_rok_vyroby', info.year); set('rz_skupina', info.group); set('rz_umisteni', normalizeBranchAddress(info.place, info.owner)); set('rz_provozovatel', info.owner); set('rz_hmotnost', info.weight); set('rz_nosnost', info.capacity); set('rz_pracovni_vyska', info.workHeight); set('rz_vyska_podlahy', info.floorHeight); set('rz_bocni_dosah', info.reach); set('rz_naklon', normalizeRevizeTiltValue(info.tilt, info)); syncRevizeLoadInputsFromCapacity(); set('rz_pohon', info.drive); set('rz_napajeni', info.power); set('rz_stabilizatory', info.stabilizers); set('rz_deck', info.deck); set('rz_nabijec', info.charger); set('rz_zasuvka_kos', info.socket); set('rz_rcd', info.rcd);
-    ['stabilizatory','deck','nabijec','zasuvka_kos','rcd'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el && (el.dataset.rzAuto==='1' || !String(el.value||'').trim())) el.value=revizeYesNoValue(el.value); });
+    ['stabilizatory','deck','nabijec','zasuvka_kos','rcd'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el && (el.dataset.rzAuto==='1' || !String(el.value||'').trim())) el.value=(k==='nabijec'?revizeChargerValue(el.value):revizeYesNoValue(el.value)); });
     const type=document.getElementById('rz_typ_zarizeni'); const inferredType=info.deviceType||inferRevizeDeviceType([info.type,info.model].filter(Boolean).join(' ')); if(type && inferredType && REVIZE_DEVICE_TYPES[inferredType] && (!type.value || type.value==='scissor' || type.dataset.rzAuto==='1')){ type.value=inferredType; type.dataset.rzAuto='1'; }
     syncNormaFromRokVyroby(false);
   }catch(e){
@@ -9740,7 +9746,7 @@ function renderRevizeForm(r){ const type = r.typ_zarizeni || 'scissor'; const de
     <div class="revize-section-title">Elektro měření</div><div class="full">${revizeElectroTable(r)}</div>
     <div class="revize-section-title">Kontrolní body - Strana B / NV 378/2001 Sb.</div><div class="full"><div class="revize-check-grid">${revizeCheckRows(revizeAllB(type),r,'B')}</div></div>
     <div class="revize-section-title">Závady a podpisy</div><div class="field full"><label>Zjištěné závady / opatření</label><textarea id="rz_zavady">${rzVal('zavady')}</textarea></div><div class="field"><label>Předal</label><input id="rz_predal" value="${rzVal('predal')}"></div><div class="field"><label>Převzal</label><input id="rz_prevzal" value="${rzVal('prevzal')}"></div>
-  </div>`; ['stabilizatory','deck','nabijec','zasuvka_kos','rcd'].forEach(configureRevizeYesNoField); lockRevizeFixedFields(); arrangeRevizeDeviceFirst(); document.getElementById('rz_typ_zarizeni')?.addEventListener('change',()=>{ const d=safeCollectRevizeDraft('revize device type'); if(!d) return; const cfg=REVIZE_DEVICE_TYPES[d.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; d.typ=cfg.label; if(!d.skupina) d.skupina=cfg.skupina; window.currentRevizeDraft=d; }); setupRevizeWizard(); syncRevizeLoadInputsFromCapacity(); document.getElementById('rz_nosnost')?.addEventListener('input', syncRevizeLoadInputsFromCapacity); document.getElementById('rz_nosnost')?.addEventListener('change', syncRevizeLoadInputsFromCapacity); }
+  </div>`; ['stabilizatory','deck','nabijec','zasuvka_kos','rcd'].forEach(configureRevizeYesNoField); lockRevizeFixedFields(); arrangeRevizeDeviceFirst(); document.getElementById('rz_typ_zarizeni')?.addEventListener('change',()=>{ const d=safeCollectRevizeDraft('revize device type'); if(!d) return; const cfg=REVIZE_DEVICE_TYPES[d.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; d.typ=cfg.label; if(!d.skupina) d.skupina=cfg.skupina; window.currentRevizeDraft=d; }); const meterInput=document.getElementById('rz_pristroj'); if(meterInput){ meterInput.value=ensureRevizeMeterText(meterInput.value); syncRevizeMeterFields(); } const placeInput=document.getElementById('rz_umisteni'); const normalizePlaceInput=()=>{ if(placeInput?.value) placeInput.value=normalizeBranchAddress(placeInput.value, document.getElementById('rz_provozovatel')?.value||''); }; placeInput?.addEventListener('change', normalizePlaceInput); placeInput?.addEventListener('blur', normalizePlaceInput); setupRevizeWizard(); syncRevizeLoadInputsFromCapacity(); document.getElementById('rz_nosnost')?.addEventListener('input', syncRevizeLoadInputsFromCapacity); document.getElementById('rz_nosnost')?.addEventListener('change', syncRevizeLoadInputsFromCapacity); }
 function revizeFieldLabel(k){ const unit=revizeNumericUnit(k); const label=({hmotnost:'Hmotnost',nosnost:'Nosnost',pracovni_vyska:'Pracovní výška',vyska_podlahy:'Výška podlahy',bocni_dosah:'Boční dosah',naklon:'Max. náklon',staticka_zatez:'Statická zátěž 125 %',dynamicka_zatez:'Dynamická zátěž 110 %',pohon:'Pohon',napajeni:'Napájení',stabilizatory:'Stabilizátory',deck:'Výsuvný deck',nabijec:'Nabíječ',zasuvka_kos:'Zásuvka v koši',rcd:'RCD'})[k]||k; return unit ? `${label} (${unit})` : label; }
 function revizeCheckRows(items,r,prefix){ return items.map(([k,l])=>{ const v=(r.checks||{})[k]||'ANO'; const n=(r.notes||{})[k]||''; return `<div class="revize-check-row"><strong>${escapeHtml(l)}</strong><div class="yesno"><button type="button" class="yn-btn ${v==='ANO'?'yes active':'yes'}" data-rz-check="${k}" data-rz-val="ANO">ANO</button><button type="button" class="yn-btn ${v==='NE'?'no active':'no'}" data-rz-check="${k}" data-rz-val="NE">NE</button></div><input data-rz-note="${k}" value="${escapeHtml(n)}" placeholder="Poznámka / opatření"></div>`; }).join(''); }
 function revizeElectroTable(r){ return `<table class="revize-mini-table"><thead><tr><th>Měřená část</th><th>Hodnota</th><th>Vyhovuje</th><th>Poznámka</th></tr></thead><tbody>${REVIZE_ELECTRO.map(([k,l,u])=>{ const e=(r.electro||{})[k]||{}; return `<tr><td>${escapeHtml(l)}</td><td><input data-rz-electro-val="${k}" value="${escapeHtml(revizeNormalizeElectroValue(k,e.value||''))}" placeholder="Hodnota"></td><td><select data-rz-electro-ok="${k}"><option ${e.ok==='ANO'?'selected':''}>ANO</option><option ${e.ok==='NE'?'selected':''}>NE</option></select></td><td><input data-rz-electro-note="${k}" value="${escapeHtml(e.note||'')}"></td></tr>`; }).join('')}</tbody></table>`; }
@@ -9885,6 +9891,44 @@ function refreshRevizeElectroBlock(){
   const body = title?.nextElementSibling;
   if(body) body.innerHTML = revizeElectroTable(draft);
 }
+function revizeElectroUnit(k, fallback=''){
+  return ({riso:'MΩ', riso_nabijec:'MΩ', riso_zasuvka:'MΩ', rpe:'Ω', ipe:'mA', ipe_nabijec:'mA', rcd_hodnota:'ms / mA', baterie:'', nabijec_neosazen:'-', zasuvka_neosazena:'-', electro_neosazeno:'-'})[k] || fallback || '';
+}
+function revizeElectroRowsForRecord(r){
+  const charger = revizeChargerValue(r?.nabijec);
+  const socket = revizeYesNoValue(r?.zasuvka_kos);
+  const rcd = revizeYesNoValue(r?.rcd);
+  const rows = [];
+  const add = row => { if(!rows.some(([k]) => k === row[0])) rows.push(row); };
+  if(charger === 'ANO'){
+    add(['riso_nabijec','Izolační odpor nabíječe / el. části','MΩ']);
+    add(['rpe','Odpor ochranného vodiče / spojitost PE','Ω']);
+    add(['ipe_nabijec','Unikající / dotykový proud nabíječe','mA']);
+    add(['baterie','Baterie / nabíjení','']);
+  } else {
+    add(['nabijec_neosazen','Nabíječ','-',{disabled:true,note:'Bez nabíječe - nehodnoceno'}]);
+  }
+  if(socket === 'ANO'){
+    add(['riso_zasuvka','Izolační odpor zásuvky v koši / přívodu','MΩ']);
+    add(['rpe','Odpor ochranného vodiče / spojitost PE','Ω']);
+    if(rcd !== 'NE') add(['rcd_hodnota','RCD / zásuvka v koši / přívod','ms / mA']);
+  } else {
+    add(['zasuvka_neosazena','Zásuvka v koši','-',{disabled:true,note:'Zásuvka v koši není osazena'}]);
+  }
+  if(charger !== 'ANO' && socket !== 'ANO') add(['electro_neosazeno','Elektrická výbava pro měření','-',{disabled:true,note:'Bez nabíječe a zásuvky v koši - nehodnoceno'}]);
+  return rows;
+}
+function revizeElectroTable(r){
+  const rows = revizeElectroRowsForRecord(r);
+  return `<table class="revize-mini-table"><thead><tr><th>Měřená část</th><th>Hodnota</th><th>Vyhovuje</th><th>Poznámka</th></tr></thead><tbody>${rows.map(([k,l,u,opts={}])=>{
+    const e=(r.electro||{})[k]||{};
+    const disabled=!!opts.disabled;
+    const ok=String(e.ok||'ANO').toUpperCase()==='NE'?'NE':'ANO';
+    const value = disabled ? '-' : revizeDefaultElectroValue(k,e.value);
+    const note = disabled ? (opts.note || e.note || '') : (e.note||'');
+    return `<tr><td>${escapeHtml(l)}</td><td><input data-rz-electro-val="${k}" value="${escapeHtml(value)}" placeholder="Hodnota" ${disabled?'readonly':''}></td><td><input type="hidden" data-rz-electro-ok="${k}" value="${disabled?'ANO':ok}"><div class="yesno revize-electro-yesno"><button type="button" class="yn-btn yes ${ok==='ANO'?'active':''}" data-rz-electro-ok-choice="${k}" data-rz-val="ANO" ${disabled?'disabled':''}>ANO</button><button type="button" class="yn-btn no ${ok==='NE'?'active':''}" data-rz-electro-ok-choice="${k}" data-rz-val="NE" ${disabled?'disabled':''}>NE</button></div></td><td><input data-rz-electro-note="${k}" value="${escapeHtml(note)}" ${disabled?'readonly':''}></td></tr>`;
+  }).join('')}</tbody></table>`;
+}
 function arrangeRevizeDeviceFirst(){
   const grid=document.querySelector('#revizeFormBody .revize-form-grid');
   if(!grid) return;
@@ -9986,8 +10030,14 @@ function setupRevizeWizard(){
 const collectRevizeDraftOriginal5166 = collectRevizeDraft;
 collectRevizeDraft = function(){
   const r = collectRevizeDraftOriginal5166();
+  r.umisteni = normalizeBranchAddress(r.umisteni, r.provozovatel);
+  r.pristroj = ensureRevizeMeterText(r.pristroj);
+  const meterInfo = revizeMeterInfo(r.pristroj);
+  r.pristroj_ev = meterInfo.ev;
+  r.kalibrace = meterInfo.kalibrace;
   r.electro = r.electro || {};
-  const activeElectroKeys = new Set(revizeElectroRowsForRecord(r).map(([k])=>k));
+  const activeElectroRows = revizeElectroRowsForRecord(r);
+  const activeElectroKeys = new Set(activeElectroRows.map(([k])=>k));
   REVIZE_ELECTRO.forEach(([k])=>{
     if(!activeElectroKeys.has(k)){ r.electro[k] = {value:'', ok:'ANO', note:''}; return; }
     const hidden = document.querySelector(`[data-rz-electro-ok="${k}"]`);
@@ -9995,6 +10045,14 @@ collectRevizeDraft = function(){
     const note = document.querySelector(`[data-rz-electro-note="${k}"]`);
     r.electro[k] = {value:revizeDefaultElectroValue(k, val?.value || r.electro[k]?.value || ''), ok:hidden?.value || r.electro[k]?.ok || 'ANO', note:note?.value || r.electro[k]?.note || ''};
   });
+  activeElectroRows.forEach(([k,,u,opts={}])=>{
+    const hidden = document.querySelector(`[data-rz-electro-ok="${k}"]`);
+    const val = document.querySelector(`[data-rz-electro-val="${k}"]`);
+    const note = document.querySelector(`[data-rz-electro-note="${k}"]`);
+    if(opts.disabled) r.electro[k] = {value:'-', ok:'ANO', note:opts.note||''};
+    else r.electro[k] = {value:revizeDefaultElectroValue(k, val?.value || r.electro[k]?.value || ''), ok:hidden?.value || r.electro[k]?.ok || 'ANO', note:note?.value || r.electro[k]?.note || ''};
+  });
+  r.appVersion = '1.6 / 5.247';
   window.currentRevizeDraft = r;
   return r;
 };
@@ -10014,15 +10072,26 @@ function revizeHasEzStamp(r){
   if(revizeChargerValue(r?.nabijec) === 'ANO') return true;
   if(revizeYesNoValue(r?.zasuvka_kos) === 'ANO') return true;
   if(revizeYesNoValue(r?.rcd) === 'ANO') return true;
-  return Object.values(r?.electro || {}).some(e => String(e?.value || e?.note || '').trim());
+  return revizeElectroRowsForRecord(r).some(([k,,u,opts={}]) => !opts.disabled && String((r?.electro||{})[k]?.value || (r?.electro||{})[k]?.note || '').trim());
 }
 function revizeStampAreaHtml(r){
   const ez = revizeHasEzStamp(r) ? '<img class="revize-stamp-img" src="./assets/stamps/revizni-razitko-ez.png" alt="Razítko revizního technika EZ">' : '';
   const zz = '<img class="revize-stamp-img" src="./assets/stamps/revizni-razitko-zz.png" alt="Razítko revizního technika ZZ">';
   return `<div class="revize-stamp-area"><div class="revize-stamp-half">${zz}${ez}</div><div class="revize-stamp-half"></div></div>`;
 }
+function normalizeRevizeElectroForConfig(r){
+  r.electro = r.electro || {};
+  revizeElectroRowsForRecord(r).forEach(([k,,u,opts={}])=>{
+    if(opts.disabled) r.electro[k] = {value:'-', ok:'ANO', note:opts.note||''};
+    else if(!r.electro[k] && k === 'riso_nabijec' && r.electro.riso) r.electro[k] = {...r.electro.riso};
+    else if(!r.electro[k] && k === 'ipe_nabijec' && r.electro.ipe) r.electro[k] = {...r.electro.ipe};
+    else if(!r.electro[k] && k === 'riso_zasuvka' && r.electro.riso) r.electro[k] = {...r.electro.riso};
+  });
+  return r;
+}
 revizePaperHtml = function(r){
   const record = applyRevizeCalculatedLoads({...(r||{})});
+  normalizeRevizeElectroForConfig(record);
   const normalizedTilt = normalizeRevizeTiltValue(record.naklon, record);
   if(normalizedTilt) record.naklon = normalizedTilt;
   Object.keys(REVIZE_NUMERIC_UNITS).forEach(k=>{ record[k]=revizeFormatTechValue(k, record[k]); });
@@ -10895,7 +10964,7 @@ if ('serviceWorker' in navigator) {
   let appReloadingForUpdate = false;
   let appUpdateReloadTimer = null;
   const AUTO_APP_UPDATE = false;
-  const APP_UPDATE_ACK_KEY = 'liftcontrol_update_ack_5_246';
+  const APP_UPDATE_ACK_KEY = 'liftcontrol_update_ack_5_247';
   const appUpdateBanner = document.getElementById('appUpdateBanner');
   const appUpdateNowBtn = document.getElementById('appUpdateNowBtn');
   const appUpdateLaterBtn = document.getElementById('appUpdateLaterBtn');
