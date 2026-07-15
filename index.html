@@ -2111,7 +2111,7 @@ body{position:relative!important}
     <button type="button" class="side-small" onclick="exportBackup()">Export zálohy</button>
     <button type="button" class="side-small" id="sideImportBtn">Import zálohy</button>
     <button type="button" class="side-small" id="sideAuditBtn">Historie změn</button>
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.247</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.248</div>
   </div>
 </aside>
 
@@ -3257,7 +3257,7 @@ async function compressPhoto(file, maxBytes=MAX_PHOTO_BYTES){
   const mobile = isMobile();
   let maxSide = mobile ? 1100 : 1600;
   let quality = mobile ? 0.72 : 0.82;
-  const targetBytes = mobile ? Math.min(maxBytes, 320 * 1024) : maxBytes;
+  const targetBytes = mobile ? Math.min(maxBytes, 240 * 1024) : maxBytes;
   let out = '';
   try{
     for(let attempt=0; attempt<14; attempt++){
@@ -3268,7 +3268,7 @@ async function compressPhoto(file, maxBytes=MAX_PHOTO_BYTES){
       ctx.drawImage(img,0,0,canvas.width,canvas.height);
       out = canvas.toDataURL('image/jpeg', quality);
       if(dataUrlBytes(out) <= targetBytes) return {dataUrl:out, bytes:dataUrlBytes(out), width:canvas.width, height:canvas.height};
-      if(quality > 0.5) quality -= 0.08; else maxSide = Math.round(maxSide * 0.78);
+      if(quality > 0.46) quality -= 0.08; else maxSide = Math.round(maxSide * 0.72);
     }
     return {dataUrl:out, bytes:dataUrlBytes(out), width:canvas.width, height:canvas.height};
   }finally{
@@ -3921,6 +3921,59 @@ let partSaveInProgress = false;
 let revizeSaveInProgress = false;
 let revizeMode = 'new';
 let revizeStepIndex = 0;
+const QUARTERLY_DRAFT_KEY = 'liftcontrol_quarterly_protocol_draft_v2';
+let quarterlyDraftSaveTimer = null;
+
+function cloneQuarterlyDraftForStorage(record){
+  try{
+    const copy = JSON.parse(JSON.stringify(record || {}));
+    copy._draftStepIndex = stepIndex || 0;
+    copy._draftSavedAt = new Date().toISOString();
+    copy._draftAppVersion = '1.6 / 5.248';
+    return copy;
+  }catch(e){
+    return null;
+  }
+}
+function stripDraftPhotoData(value){
+  if(!value || typeof value !== 'object') return value;
+  if(Array.isArray(value)) return value.map(stripDraftPhotoData);
+  const out = {};
+  Object.keys(value).forEach(key => {
+    if(key === 'dataUrl') return;
+    out[key] = stripDraftPhotoData(value[key]);
+  });
+  return out;
+}
+function saveQuarterlyDraft(reason=''){
+  if(!rec || !rec.id) return;
+  const draft = cloneQuarterlyDraftForStorage(rec);
+  if(!draft) return;
+  draft._draftReason = reason || 'autosave';
+  try{
+    localStorage.setItem(QUARTERLY_DRAFT_KEY, JSON.stringify(draft));
+  }catch(err){
+    try{
+      localStorage.setItem(QUARTERLY_DRAFT_KEY, JSON.stringify(stripDraftPhotoData(draft)));
+    }catch(_e){}
+  }
+}
+function scheduleQuarterlyDraftSave(reason=''){
+  clearTimeout(quarterlyDraftSaveTimer);
+  quarterlyDraftSaveTimer = setTimeout(() => saveQuarterlyDraft(reason), 250);
+}
+function loadQuarterlyDraft(){
+  try{
+    const draft = JSON.parse(localStorage.getItem(QUARTERLY_DRAFT_KEY) || 'null');
+    return draft && draft.id ? draft : null;
+  }catch(e){
+    return null;
+  }
+}
+function clearQuarterlyDraft(){
+  clearTimeout(quarterlyDraftSaveTimer);
+  try{ localStorage.removeItem(QUARTERLY_DRAFT_KEY); }catch(e){}
+}
 
 const els = {
   list: document.getElementById('list'),
@@ -4303,10 +4356,24 @@ installMainWheelScroll();
 function openWizard(editId=null, prefill={}){
   protocolSaveInProgress = false;
   if(els.nextBtn) els.nextBtn.disabled = false;
-  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.246'};
+  let initialStepIndex = 0;
+  const hasPrefill = prefill && Object.keys(prefill).length > 0;
+  if(!editId && !hasPrefill){
+    const draft = loadQuarterlyDraft();
+    if(draft){
+      const label = [draft.typ, draft.vc, draft.datum].filter(Boolean).join(' - ') || 'rozpracovanem protokolu';
+      if(confirm('Nasel jsem rozpracovany protokol ctvrtletni kontroly. Chces v nem pokracovat?\n\n' + label)){
+        prefill = draft;
+        initialStepIndex = Math.max(0, Number(draft._draftStepIndex) || 0);
+      } else {
+        clearQuarterlyDraft();
+      }
+    }
+  }
+  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.248'};
   rec = Object.assign({}, rec, prefill || {});
   if(!editId && !rec.cLogic) rec.cLogic = 'legacy';
-  if(!editId && !rec.appVersion) rec.appVersion = '1.6 / 5.246';
+  if(!editId) rec.appVersion = '1.6 / 5.248';
 
   // Auto doplneni z historie podle vyrobniho cisla.
   if(rec.vc){
@@ -4333,9 +4400,11 @@ function openWizard(editId=null, prefill={}){
   }
 
   autoFillDefaults();
-  stepIndex = 0;
+  const steps = getStepsForRecord(rec);
+  stepIndex = Math.max(0, Math.min(initialStepIndex, Math.max(0, steps.length - 1)));
   showStep();
   openModal(els.wizard);
+  scheduleQuarterlyDraftSave('open');
 }
 window._openWizard = openWizard;
 function closeWizard(){
@@ -4429,29 +4498,29 @@ function showStep(){
   }
   const enteredBySelect = document.getElementById('enteredBySelect');
   if(enteredBySelect){
-    enteredBySelect.addEventListener('change', () => { rec.enteredBy = enteredBySelect.value; setLastEnteredBy(rec.enteredBy); });
+    enteredBySelect.addEventListener('change', () => { rec.enteredBy = enteredBySelect.value; setLastEnteredBy(rec.enteredBy); scheduleQuarterlyDraftSave('entered-by'); });
     rec.enteredBy = enteredBySelect.value;
   }
   if(s.type === 'protocolSignatures'){
     updateProtocolSignaturePreview();
     document.getElementById('openProtocolTechSignatureBtn')?.addEventListener('click', () => openSignaturePad('protocolTech'));
     document.getElementById('openProtocolCustomerSignatureBtn')?.addEventListener('click', () => openSignaturePad('protocolCustomer'));
-    document.getElementById('clearProtocolTechSignatureBtn')?.addEventListener('click', () => { rec.techSignature = ''; updateProtocolSignaturePreview(); });
-    document.getElementById('clearProtocolCustomerSignatureBtn')?.addEventListener('click', () => { rec.customerSignature = ''; updateProtocolSignaturePreview(); });
+    document.getElementById('clearProtocolTechSignatureBtn')?.addEventListener('click', () => { rec.techSignature = ''; updateProtocolSignaturePreview(); saveQuarterlyDraft('clear-tech-signature'); });
+    document.getElementById('clearProtocolCustomerSignatureBtn')?.addEventListener('click', () => { rec.customerSignature = ''; updateProtocolSignaturePreview(); saveQuarterlyDraft('clear-customer-signature'); });
   }
 
   if(mainInput){
-    mainInput.addEventListener('input', () => { rec[s.k] = mainInput.value; refreshSuggestions(); });
+    mainInput.addEventListener('input', () => { rec[s.k] = mainInput.value; refreshSuggestions(); scheduleQuarterlyDraftSave('input'); });
     mainInput.addEventListener('focus', refreshSuggestions);
-    mainInput.addEventListener('blur', () => { if(s.k === 'vc') applyProtocolDefaultsFromSerial(mainInput.value); setTimeout(hideSuggestions, 120); });
+    mainInput.addEventListener('blur', () => { if(s.k === 'vc') applyProtocolDefaultsFromSerial(mainInput.value); scheduleQuarterlyDraftSave('blur'); setTimeout(hideSuggestions, 120); });
   }
   if(mainTextarea){
-    mainTextarea.addEventListener('input', () => { rec[s.k] = mainTextarea.value; refreshSuggestions(); });
+    mainTextarea.addEventListener('input', () => { rec[s.k] = mainTextarea.value; refreshSuggestions(); scheduleQuarterlyDraftSave('textarea'); });
     mainTextarea.addEventListener('focus', refreshSuggestions);
-    mainTextarea.addEventListener('blur', () => setTimeout(hideSuggestions, 120));
+    mainTextarea.addEventListener('blur', () => { scheduleQuarterlyDraftSave('textarea-blur'); setTimeout(hideSuggestions, 120); });
   }
   if(descInput){
-    descInput.addEventListener('input', () => { rec[s.textKey] = descInput.value; });
+    descInput.addEventListener('input', () => { rec[s.textKey] = descInput.value; scheduleQuarterlyDraftSave('note'); });
   }
   const photoInput = document.getElementById('photoInput');
   if(photoInput){
@@ -4461,11 +4530,13 @@ function showStep(){
       if(!file) return;
       photoInput.dataset.processing = '1';
       photoInput.disabled = true;
+      saveQuarterlyDraft('before-photo');
       els.stepDesc.textContent = 'Zpracovávám fotku...';
       try{
         const out = await compressPhoto(file, MAX_PHOTO_BYTES);
         rec.photos = rec.photos || {};
         rec.photos[s.photoKey] = {dataUrl:out.dataUrl, bytes:out.bytes, label:PHOTO_LABELS[s.photoKey], width:out.width, height:out.height};
+        saveQuarterlyDraft('after-photo');
         e.target.value = '';
         if(stepIndex < activeSteps.length - 1){
           stepIndex++;
@@ -4489,6 +4560,7 @@ function showStep(){
       if(confirm('Smazat tuto fotku z rozpracovaného protokolu?')){
         rec.photos = rec.photos || {};
         delete rec.photos[s.photoKey];
+        saveQuarterlyDraft('delete-photo');
         showStep();
       }
     });
@@ -4507,12 +4579,14 @@ function showStep(){
       }
       issuePhotoInput.dataset.processing = '1';
       issuePhotoInput.disabled = true;
+      saveQuarterlyDraft('before-issue-photo');
       els.stepDesc.textContent = 'Zpracovávám fotku závady...';
       try{
         const out = await compressPhoto(file, MAX_PHOTO_BYTES);
         rec.issuePhotos = rec.issuePhotos || {};
         currentList.push({dataUrl:out.dataUrl, bytes:out.bytes, label:s.k, question:s.t, width:out.width, height:out.height});
         setIssuePhotoList(rec.issuePhotos, s.k, currentList);
+        saveQuarterlyDraft('after-issue-photo');
         e.target.value = '';
         showStep();
       }catch(err){
@@ -4533,6 +4607,7 @@ function showStep(){
         const currentList = getIssuePhotoList(rec.issuePhotos, s.k);
         currentList.splice(idx,1);
         setIssuePhotoList(rec.issuePhotos, s.k, currentList);
+        saveQuarterlyDraft('delete-issue-photo');
         showStep();
       }
     });
@@ -4545,6 +4620,7 @@ function showStep(){
       nextStep();
     } else {
       rec._chargerNoMode = true;
+      saveQuarterlyDraft('charger-mode');
       showStep();
     }
   }));
@@ -4743,6 +4819,7 @@ async function nextStep(){
     const pref = getModelPref(rec.typ);
     if(pref && ['ANO','BEZ','ZAVADA'].includes(pref.chargerPresent)) rec.chargerPresent = pref.chargerPresent;
   }
+  saveQuarterlyDraft('next-step');
   if(stepIndex < activeSteps.length-1){
     if(s.k === 'datum'){
       if(!rec.datum) rec.datum = todayLocal();
@@ -4758,7 +4835,7 @@ async function nextStep(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    if(!rec.appVersion) rec.appVersion = '1.6 / 5.246';
+    rec.appVersion = '1.6 / 5.248';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -4769,6 +4846,7 @@ async function nextStep(){
     logAuditAction(wasExistingProtocol ? 'update' : 'create','protocol',rec,rec.enteredBy || rec.technik, undefined, beforeProtocol)
       .catch(err => console.warn('Audit protokolu se nepodařilo zapsat na pozadí.', err));
     alertCloudResult(saveResult, 'Protokol');
+    clearQuarterlyDraft();
     closeWizard();
     render();
     if(saveResult?.cloud) alert('Protokol uložen a synchronizován.');
@@ -10227,9 +10305,11 @@ document.getElementById('saveRepairSignatureBtn')?.addEventListener('click', () 
     if(activeSignatureTarget === 'protocolTech'){
       rec.techSignature = dataUrl;
       updateProtocolSignaturePreview();
+      saveQuarterlyDraft('tech-signature');
     } else if(activeSignatureTarget === 'protocolCustomer'){
       rec.customerSignature = dataUrl;
       updateProtocolSignaturePreview();
+      saveQuarterlyDraft('customer-signature');
     } else if(activeSignatureTarget === 'repairTech'){
       currentRepairTechSignature = dataUrl;
       updateRepairSignaturePreview();
@@ -10964,7 +11044,7 @@ if ('serviceWorker' in navigator) {
   let appReloadingForUpdate = false;
   let appUpdateReloadTimer = null;
   const AUTO_APP_UPDATE = false;
-  const APP_UPDATE_ACK_KEY = 'liftcontrol_update_ack_5_247';
+  const APP_UPDATE_ACK_KEY = 'liftcontrol_update_ack_5_248';
   const appUpdateBanner = document.getElementById('appUpdateBanner');
   const appUpdateNowBtn = document.getElementById('appUpdateNowBtn');
   const appUpdateLaterBtn = document.getElementById('appUpdateLaterBtn');
