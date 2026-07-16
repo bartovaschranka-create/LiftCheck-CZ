@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftcontrol-cz-v1-6-5-256';
+const CACHE_NAME = 'liftcontrol-cz-v1-6-5-257';
 const APP_SHELL = [
   './',
   './index.html',
@@ -40,6 +40,11 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) {
     event.respondWith(fetch(request).catch(() => caches.match(request)));
+    return;
+  }
+
+  if (url.pathname.endsWith('/reset.html')) {
+    event.respondWith(fetch(request, { cache: 'no-store' }));
     return;
   }
 
