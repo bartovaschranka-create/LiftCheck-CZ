@@ -2063,6 +2063,41 @@ body{position:relative!important}
   .revize-wizard-modal .revize-mini-table tr{border:1px solid var(--line);border-radius:8px;margin:0 0 8px;padding:8px}
 }
 
+/* v1.6 / 5.251: iOS/iPad viewport recovery for normal app screens */
+html,body{
+  min-height:100%;
+  height:auto;
+  max-width:100%;
+  overflow-x:hidden;
+}
+body:not(.modal-printing){
+  overflow-y:auto;
+}
+.container{
+  width:100%;
+  min-height:calc(100svh - 90px);
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px);
+}
+@media (max-width:920px){
+  body:not(.side-open) .container{
+    margin-left:0!important;
+    max-width:100%!important;
+  }
+  body:not(.side-open) .side-overlay{
+    display:none!important;
+  }
+  .container{
+    min-height:calc(100svh - 82px);
+  }
+}
+@supports (-webkit-touch-callout:none){
+  html,body{
+    min-height:-webkit-fill-available;
+  }
+  .modal.show{
+    min-height:100svh;
+  }
+}
 </style>
 </head>
 <body>
@@ -2113,7 +2148,7 @@ body{position:relative!important}
     <button type="button" class="side-small" onclick="exportBackup()">Export zálohy</button>
     <button type="button" class="side-small" id="sideImportBtn">Import zálohy</button>
     <button type="button" class="side-small" id="sideAuditBtn">Historie změn</button>
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.250</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.251</div>
   </div>
 </aside>
 
@@ -3888,6 +3923,31 @@ async function refreshAllCloudDataFromServer(){
   renderRevize?.();
   renderAuditHistory?.();
   updateMainOverview?.();
+}
+function hasAnySyncedAppData(){
+  return !!((data && data.length) || (scheduleData && scheduleData.length) || (partsData && partsData.length) || (faultsData && faultsData.length) || (revizeData && revizeData.length) || (loadLocalRepairs && loadLocalRepairs().length));
+}
+async function ensureFirestoreOnline(){
+  if(!(firebaseAvailable && db && db.enableNetwork)) return;
+  try{ await withTimeout(db.enableNetwork(), 6000, 'Zapnutí Firebase synchronizace'); }
+  catch(err){ console.warn('Firebase enableNetwork failed:', err); }
+}
+function scheduleCloudRefreshRetries(reason='startup'){
+  if(!(firebaseAvailable && db)) return;
+  const delays = [800, 3500, 9000, 22000];
+  delays.forEach(delay => setTimeout(async () => {
+    try{
+      await ensureFirestoreOnline();
+      await refreshAllCloudDataFromServer();
+      retryPendingProtocolSync().catch(err => console.warn('Pending protocol sync retry failed:', err));
+      retryPendingPartSync().catch(err => console.warn('Pending part sync retry failed:', err));
+      retryPendingFaultSync().catch(err => console.warn('Pending fault sync retry failed:', err));
+      retryPendingRepairSync().catch(err => console.warn('Pending repair sync retry failed:', err));
+      if(hasAnySyncedAppData()) console.info('Cloud data refresh OK:', reason);
+    }catch(err){
+      console.warn('Cloud data refresh retry failed (' + reason + '):', err);
+    }
+  }, delay));
 }
 function upsertLocalRow(loadLocal, saveLocal, record){
   const rows=loadLocal();
@@ -9043,7 +9103,7 @@ function ensureRevizeMeterText(value){
 }
 function revizeDefaultMeter(){ try{ return ensureRevizeMeterText(localStorage.getItem('revize_last_meter') || ''); }catch(e){ return REVIZE_DEFAULT_METER; } }
 function revizeMeterInfo(text){ const s=String(text||''); const ev=[...s.matchAll(/v\.?\s*č\.?\s*[:.]?\s*([A-Za-z0-9/.-]+)/gi)].map(m=>m[1]); const kal=[...s.matchAll(/kal\.?\s*do\s*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{2,4})/gi)].map(m=>m[1]); return {ev:ev.join(', '), kalibrace:kal.join(', ')}; }
-function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),motohodiny:'',druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',naklon_x:'',naklon_y:'',stoupavost_stupne:'',stoupavost_procento:'',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.250'}; }
+function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),motohodiny:'',druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',naklon_x:'',naklon_y:'',stoupavost_stupne:'',stoupavost_procento:'',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.251'}; }
 function revizeAnswerValue(value){ return String(value||'').trim().toUpperCase()==='NE' ? 'NE' : 'ANO'; }
 function revizeResult(r){
   r = r || {};
@@ -9588,7 +9648,7 @@ async function syncQuarterlyAfterRevize(r){
   last.typ=last.typ||r.model||r.typ||'';
   last.rok=last.rok||r.rok_vyroby||'';
   last.umisteni=r.umisteni||last.umisteni||'';
-  last.appVersion='1.6 / 5.250';
+  last.appVersion='1.6 / 5.251';
   const replaceByIdOrSerial=(arr, updated)=>{
     const idx=(arr||[]).findIndex(x=>(updated.id && x.id===updated.id) || matchesSerial(x));
     if(idx>=0) arr[idx]={...arr[idx],...updated};
@@ -10197,7 +10257,7 @@ collectRevizeDraft = function(){
     if(opts.disabled) r.electro[k] = {value:'-', ok:'ANO', note:opts.note||''};
     else r.electro[k] = {value:revizeDefaultElectroValue(k, val?.value || r.electro[k]?.value || ''), ok:hidden?.value || r.electro[k]?.ok || 'ANO', note:note?.value || r.electro[k]?.note || ''};
   });
-  r.appVersion = '1.6 / 5.250';
+  r.appVersion = '1.6 / 5.251';
   window.currentRevizeDraft = r;
   return r;
 };
@@ -11037,11 +11097,19 @@ function installDoubleTapGuard(){
 }
 installDoubleTapGuard();
 window.addEventListener('online', () => {
+  ensureFirestoreOnline().catch(err => console.warn('Firebase network restore failed:', err));
   refreshAllCloudDataFromServer().catch(err => console.warn('Cloud data refresh failed:', err));
+  scheduleCloudRefreshRetries('online');
   retryPendingProtocolSync().catch(err => console.warn('Pending protocol sync retry failed:', err));
   retryPendingPartSync().catch(err => console.warn('Pending part sync retry failed:', err));
   retryPendingFaultSync().catch(err => console.warn('Pending fault sync retry failed:', err));
   retryPendingRepairSync().catch(err => console.warn('Pending repair sync retry failed:', err));
+});
+document.addEventListener('visibilitychange', () => {
+  if(document.hidden) return;
+  ensureFirestoreOnline().catch(err => console.warn('Firebase foreground restore failed:', err));
+  refreshAllCloudDataFromServer().catch(err => console.warn('Cloud data foreground refresh failed:', err));
+  scheduleCloudRefreshRetries('foreground');
 });
 
 restoreEmbeddedBackupIfEmpty();
@@ -11112,7 +11180,9 @@ if(firebaseAvailable && db){
   auditData = loadLocalAudit();
 }
 setTimeout(() => {
+  ensureFirestoreOnline().catch(err => console.warn('Firebase startup network check failed:', err));
   refreshAllCloudDataFromServer().catch(err => console.warn('Cloud data refresh failed:', err));
+  scheduleCloudRefreshRetries('startup');
   retryPendingProtocolSync().catch(err => console.warn('Pending protocol sync retry failed:', err));
   retryPendingPartSync().catch(err => console.warn('Pending part sync retry failed:', err));
   retryPendingFaultSync().catch(err => console.warn('Pending fault sync retry failed:', err));
@@ -11126,7 +11196,7 @@ if ('serviceWorker' in navigator) {
   let appReloadingForUpdate = false;
   let appUpdateReloadTimer = null;
   const AUTO_APP_UPDATE = false;
-  const APP_UPDATE_ACK_KEY = 'liftcontrol_update_ack_5_250';
+  const APP_UPDATE_ACK_KEY = 'liftcontrol_update_ack_5_251';
   const appUpdateBanner = document.getElementById('appUpdateBanner');
   const appUpdateNowBtn = document.getElementById('appUpdateNowBtn');
   const appUpdateLaterBtn = document.getElementById('appUpdateLaterBtn');

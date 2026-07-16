@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftcontrol-cz-v1-6-5-250';
+const CACHE_NAME = 'liftcontrol-cz-v1-6-5-251';
 const APP_SHELL = [
   './',
   './index.html',
@@ -30,14 +30,6 @@ self.addEventListener('activate', event => {
     caches.keys()
       .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
-      .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
-      .then(clients => Promise.all(clients.map(client => {
-        try {
-          const url = new URL(client.url);
-          if (url.origin === self.location.origin) return client.navigate(client.url);
-        } catch {}
-        return null;
-      })))
   );
 });
 
