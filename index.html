@@ -2069,7 +2069,7 @@ body{position:relative!important}
   .revize-wizard-modal .revize-mini-table tr{border:1px solid var(--line);border-radius:8px;margin:0 0 8px;padding:8px}
 }
 
-/* v1.6 / 5.269: quarterly serial prefills year and branch suggest is compact */
+/* v1.6 / 5.270: stronger quarterly branch aliases and location normalization */
 html,body{
   min-height:100%;
   height:auto;
@@ -2206,7 +2206,7 @@ body.lightbox-open{
     <button type="button" class="side-small" id="sideImportBtn">Import zálohy</button>
     <button type="button" class="side-small" id="sideAuditBtn">Historie změn</button>
     <button type="button" class="side-small" id="forceRefreshAppBtn">Obnovit aplikaci</button>
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.269</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.270</div>
   </div>
 </aside>
 
@@ -4087,14 +4087,14 @@ function scheduleEmptyAppRecovery(reason='startup'){
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.269');
+        url.searchParams.set('v','5.270');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
-      }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_269') !== '1'){
-        sessionStorage.setItem('liftcontrol_cache_recovery_5_269','1');
+      }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_270') !== '1'){
+        sessionStorage.setItem('liftcontrol_cache_recovery_5_270','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.269');
+        url.searchParams.set('v','5.270');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -4148,7 +4148,7 @@ function cloneQuarterlyDraftForStorage(record){
     const copy = JSON.parse(JSON.stringify(record || {}));
     copy._draftStepIndex = stepIndex || 0;
     copy._draftSavedAt = new Date().toISOString();
-    copy._draftAppVersion = '1.6 / 5.269';
+    copy._draftAppVersion = '1.6 / 5.270';
     return copy;
   }catch(e){
     return null;
@@ -4313,7 +4313,7 @@ function normalizeCanonicalBranch(value){
   if(compact.includes('zdebradska') || compact.includes('jazlovice') || compact.includes('ricanyuprahy')) return pick('zdebradska');
   if(compact.includes('kvodojemu') || compact.includes('chrastany') || compact.includes('rudnauprahy')) return pick('kvodojemu');
   if(compact.includes('bystra') || compact.includes('hornipocernice') || compact.includes('praha9')) return pick('bystra');
-  if(compact.includes('turanka') || compact.includes('brnoturany') || compact === 'brno') return pick('turanka');
+  if(compact.includes('turanka') || compact.includes('brnoturany') || compact.includes('brno') || compact === 'br') return pick('turanka');
   if(compact.includes('betonarska') || compact.includes('slezskaostrava') || compact === 'ostrava') return pick('betonarska');
   if(compact.includes('jatecni') || compact.includes('plzen')) return pick('jatecni');
   if(compact.includes('amperova') || compact.includes('mperova') || compact.includes('doubiliberec') || compact === 'liberec') return pick('amperova');
@@ -4354,6 +4354,31 @@ function displayPlaceName(value){
 function displayPlaceSearchText(value){
   return [value, displayPlaceName(value)].filter(Boolean).join(' ');
 }
+function branchAliasText(value){
+  const raw = String(value || '').trim();
+  if(!raw) return '';
+  const compact = normalizeSearchText(raw);
+  const short = normalizeSearchText(displayPlaceName(raw));
+  const aliases = [];
+  const add = (...items) => items.forEach(item => { if(item) aliases.push(item); });
+  if(compact.includes('zdebradska') || short.includes('jazlovice')) add('ja jazlovice ricany zdebradska');
+  if(compact.includes('kvodojemu') || short.includes('chrastany')) add('ch chrastany rudna k vodojemu');
+  if(compact.includes('bystra') || short.includes('hornipocernice')) add('po praha hornipocernice pocernice bystra');
+  if(compact.includes('brno') || compact.includes('tur') || short.includes('brno')) add('br brno brno turany turanka');
+  if(compact.includes('betonarska') || short.includes('ostrava')) add('os ostrava slezska ostrava betonarska');
+  if(compact.includes('jatecni') || short.includes('plzen')) add('pl plzen jatecni');
+  if(compact.includes('amperova') || short.includes('liberec')) add('li liberec doubi amperova');
+  if(compact.includes('tynecka') || short.includes('olomouc')) add('ol olomouc tynecka');
+  if(compact.includes('okruzni') || short.includes('budejovice')) add('cb budejovice ceske budejovice okruzni');
+  if(compact.includes('brnenska') || short.includes('hradeckralove')) add('hk hradec kralove brnenska');
+  if(compact.includes('cepirozska') || short.includes('most')) add('mo most cepirozska');
+  if(compact.includes('kvitkovicka') || short.includes('napajedla') || short.includes('zlin')) add('na napajedla zlin kvitkovicka');
+  if(short.includes('pardubice')) add('pa pardubice');
+  if(compact.includes('znojemska') || short.includes('jihlava')) add('ji jihlava znojemska');
+  if(compact.includes('druzstevni') || short.includes('znojmo')) add('zn znojmo druzstevni');
+  if(compact.includes('chebska') || short.includes('sokolov')) add('so sokolov chebska');
+  return aliases.join(' ');
+}
 function uniqueCanonicalBranches(values=[]){
   const out = [];
   const seen = new Set();
@@ -4380,7 +4405,7 @@ function filterSuggestions(items,q){
     const raw = String(item||'');
     const rawCompact = normalizeSearchText(raw);
     const displayCompact = normalizeSearchText(displayPlaceName(raw));
-    const searchCompact = normalizeSearchText(displayPlaceSearchText(raw));
+    const searchCompact = normalizeSearchText([displayPlaceSearchText(raw), branchAliasText(raw)].filter(Boolean).join(' '));
 
     if(!searchCompact.includes(queryCompact)) continue;
     if(seen.has(rawCompact)) continue;
@@ -4682,10 +4707,10 @@ function openWizard(editId=null, prefill={}){
       }
     }
   }
-  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.269'};
+  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.270'};
   rec = Object.assign({}, rec, prefill || {});
   if(!editId && !rec.cLogic) rec.cLogic = 'legacy';
-  if(!editId) rec.appVersion = '1.6 / 5.269';
+  if(!editId) rec.appVersion = '1.6 / 5.270';
 
   // Auto doplneni z historie podle vyrobniho cisla.
   if(rec.vc){
@@ -4725,6 +4750,11 @@ function closeWizard(){
 }
 function prevStep(){ if(stepIndex > 0){ stepIndex--; showStep(); } }
 
+function normalizeQuarterlyStepValue(key, value){
+  if(key === 'umisteni') return normalizeCanonicalBranch(value);
+  return value;
+}
+
 function syncQuarterlyCurrentStepInputs(){
   const activeSteps = getStepsForRecord(rec);
   const s = activeSteps[stepIndex];
@@ -4732,8 +4762,8 @@ function syncQuarterlyCurrentStepInputs(){
   const mainInput = document.getElementById('mainInput');
   const mainTextarea = document.getElementById('mainTextarea');
   const descInput = document.getElementById('descInput');
-  if(mainInput) rec[s.k] = mainInput.value;
-  if(mainTextarea) rec[s.k] = mainTextarea.value;
+  if(mainInput) rec[s.k] = normalizeQuarterlyStepValue(s.k, mainInput.value);
+  if(mainTextarea) rec[s.k] = normalizeQuarterlyStepValue(s.k, mainTextarea.value);
   if(descInput && s.textKey) rec[s.textKey] = descInput.value;
 }
 
@@ -4746,7 +4776,7 @@ async function saveQuarterlyEditedProtocolFromWizard(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    rec.appVersion = '1.6 / 5.269';
+    rec.appVersion = '1.6 / 5.270';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -4906,7 +4936,15 @@ function showStep(){
   if(mainInput){
     mainInput.addEventListener('input', () => { rec[s.k] = mainInput.value; refreshSuggestions(); scheduleQuarterlyDraftSave('input'); });
     mainInput.addEventListener('focus', refreshSuggestions);
-    mainInput.addEventListener('blur', () => { if(s.k === 'vc') applyProtocolDefaultsFromSerial(mainInput.value); scheduleQuarterlyDraftSave('blur'); setTimeout(hideSuggestions, 120); });
+    mainInput.addEventListener('blur', () => {
+      if(s.k === 'vc') applyProtocolDefaultsFromSerial(mainInput.value);
+      if(s.k === 'umisteni' && mainInput.value){
+        mainInput.value = normalizeQuarterlyStepValue(s.k, mainInput.value);
+        rec[s.k] = mainInput.value;
+      }
+      scheduleQuarterlyDraftSave('blur');
+      setTimeout(hideSuggestions, 120);
+    });
   }
   if(mainTextarea){
     mainTextarea.addEventListener('input', () => { rec[s.k] = mainTextarea.value; refreshSuggestions(); scheduleQuarterlyDraftSave('textarea'); });
@@ -5215,6 +5253,7 @@ async function nextStep(){
   if(protocolSaveInProgress) return;
   const activeSteps = getStepsForRecord(rec);
   const s = activeSteps[stepIndex];
+  syncQuarterlyCurrentStepInputs();
   if(s.type === 'yntext' || s.type === 'yntextphoto'){
     const needsNote = s.k === 'B1' ? rec[s.k] === 'NE' : (isGeneralCheckKey(s.k) ? isProblemAnswer(s.k, rec[s.k], rec) : rec[s.k] === 'NE');
     if(needsNote) rec[s.textKey] = document.getElementById('descInput')?.value || rec[s.textKey] || '';
@@ -5243,7 +5282,7 @@ async function nextStep(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    rec.appVersion = '1.6 / 5.269';
+    rec.appVersion = '1.6 / 5.270';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -9454,7 +9493,7 @@ function ensureRevizeMeterText(value){
 }
 function revizeDefaultMeter(){ try{ return ensureRevizeMeterText(localStorage.getItem('revize_last_meter') || ''); }catch(e){ return REVIZE_DEFAULT_METER; } }
 function revizeMeterInfo(text){ const s=String(text||''); const ev=[...s.matchAll(/v\.?\s*č\.?\s*[:.]?\s*([A-Za-z0-9/.-]+)/gi)].map(m=>m[1]); const kal=[...s.matchAll(/kal\.?\s*do\s*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{2,4})/gi)].map(m=>m[1]); return {ev:ev.join(', '), kalibrace:kal.join(', ')}; }
-function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),motohodiny:'',druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',naklon_x:'',naklon_y:'',stoupavost_stupne:'',stoupavost_procento:'',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.269'}; }
+function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),motohodiny:'',druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',naklon_x:'',naklon_y:'',stoupavost_stupne:'',stoupavost_procento:'',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.270'}; }
 function revizeAnswerValue(value){ return String(value||'').trim().toUpperCase()==='NE' ? 'NE' : 'ANO'; }
 function revizeResult(r){
   r = r || {};
@@ -9999,7 +10038,7 @@ async function syncQuarterlyAfterRevize(r){
   last.typ=last.typ||r.model||r.typ||'';
   last.rok=last.rok||r.rok_vyroby||'';
   last.umisteni=r.umisteni||last.umisteni||'';
-  last.appVersion='1.6 / 5.269';
+  last.appVersion='1.6 / 5.270';
   const replaceByIdOrSerial=(arr, updated)=>{
     const idx=(arr||[]).findIndex(x=>(updated.id && x.id===updated.id) || matchesSerial(x));
     if(idx>=0) arr[idx]={...arr[idx],...updated};
@@ -10304,7 +10343,7 @@ function renderRevizeForm(r){ const type = r.typ_zarizeni || 'scissor'; const de
 function revizeFieldLabel(k){ const unit=revizeNumericUnit(k); const label=({hmotnost:'Hmotnost',nosnost:'Nosnost',pracovni_vyska:'Pracovní výška',vyska_podlahy:'Výška podlahy',bocni_dosah:'Boční dosah',naklon:'Náklon podvozku',naklon_x:'Podélný náklon',naklon_y:'Boční náklon',stoupavost_stupne:'Stoupavost ve stupních',stoupavost_procento:'Stoupavost v procentech',staticka_zatez:'Statická zátěž 125 %',dynamicka_zatez:'Dynamická zátěž 110 %',pohon:'Pohon',napajeni:'Napájení',stabilizatory:'Stabilizátory',deck:'Výsuvný deck',nabijec:'Nabíječ',zasuvka_kos:'Zásuvka v koši',rcd:'RCD'})[k]||k; return unit ? `${label} (${unit})` : label; }
 function revizeCheckRows(items,r,prefix){ return items.map(([k,l])=>{ const v=(r.checks||{})[k]||'ANO'; const n=(r.notes||{})[k]||''; return `<div class="revize-check-row"><strong>${escapeHtml(l)}</strong><div class="yesno"><button type="button" class="yn-btn ${v==='ANO'?'yes active':'yes'}" data-rz-check="${k}" data-rz-val="ANO">ANO</button><button type="button" class="yn-btn ${v==='NE'?'no active':'no'}" data-rz-check="${k}" data-rz-val="NE">NE</button></div><input data-rz-note="${k}" value="${escapeHtml(n)}" placeholder="Poznámka / opatření"></div>`; }).join(''); }
 function revizeElectroTable(r){ return `<table class="revize-mini-table"><thead><tr><th>Měřená část</th><th>Hodnota</th><th>Vyhovuje</th><th>Poznámka</th></tr></thead><tbody>${REVIZE_ELECTRO.map(([k,l,u])=>{ const e=(r.electro||{})[k]||{}; return `<tr><td>${escapeHtml(l)}</td><td><input data-rz-electro-val="${k}" value="${escapeHtml(revizeNormalizeElectroValue(k,e.value||''))}" placeholder="Hodnota"></td><td><select data-rz-electro-ok="${k}"><option ${e.ok==='ANO'?'selected':''}>ANO</option><option ${e.ok==='NE'?'selected':''}>NE</option></select></td><td><input data-rz-electro-note="${k}" value="${escapeHtml(e.note||'')}"></td></tr>`; }).join('')}</tbody></table>`; }
-function collectRevizeDraft(){ syncRevizeMeterFields(); const r=window.currentRevizeDraft||revizeDefaultRecord(); ['protokol','datum_kontroly','platnost','druh_kontroly','motohodiny','provozovatel','umisteni','typ_zarizeni','vyrobce','model','vyrobni_cislo','evidencni_cislo','rok_vyroby','norma','normy_revize','skupina','hmotnost','nosnost','pracovni_vyska','vyska_podlahy','bocni_dosah','naklon','naklon_x','naklon_y','stoupavost_stupne','stoupavost_procento','pohon','napajeni','stabilizatory','deck','nabijec','zasuvka_kos','rcd','rt_jmeno','rt_zz_osvedceni','rt_zz_opravneni','rt_ez_osvedceni','pristroj','pristroj_ev','kalibrace','zavady','predal','prevzal'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el) r[k]=revizeInputValue(k,el.value); }); revizeNormalizeTiltAxes(r); if(!String(r.normy_revize||'').trim()) r.normy_revize=revizeDefaultNormy(r.norma); delete r.rozmer_plosiny; delete r.typ_kol; delete r.pothole; delete r.rt_ez; delete r.termin_odstraneni; const cfg=REVIZE_DEVICE_TYPES[r.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; r.typ=cfg.label; r.checks=r.checks||{}; r.notes=r.notes||{}; document.querySelectorAll('[data-rz-check].active').forEach(b=>r.checks[b.dataset.rzCheck]=b.dataset.rzVal); document.querySelectorAll('[data-rz-note]').forEach(i=>r.notes[i.dataset.rzNote]=i.value); r.electro=r.electro||{}; REVIZE_ELECTRO.forEach(([k])=>{ r.electro[k]={value:revizeNormalizeElectroValue(k, document.querySelector(`[data-rz-electro-val="${k}"]`)?.value||''),ok:document.querySelector(`[data-rz-electro-ok="${k}"]`)?.value||'ANO',note:document.querySelector(`[data-rz-electro-note="${k}"]`)?.value||''}; }); applyRevizeCalculatedLoads(r); syncRevizeLoadInputsFromCapacity(); r.vysledek=revizeResult(r); r.updatedAt=new Date().toISOString(); r.appVersion='1.6 / 5.269'; try{ if(r.pristroj) localStorage.setItem('revize_last_meter', r.pristroj); }catch(e){} window.currentRevizeDraft=r; return r; }
+function collectRevizeDraft(){ syncRevizeMeterFields(); const r=window.currentRevizeDraft||revizeDefaultRecord(); ['protokol','datum_kontroly','platnost','druh_kontroly','motohodiny','provozovatel','umisteni','typ_zarizeni','vyrobce','model','vyrobni_cislo','evidencni_cislo','rok_vyroby','norma','normy_revize','skupina','hmotnost','nosnost','pracovni_vyska','vyska_podlahy','bocni_dosah','naklon','naklon_x','naklon_y','stoupavost_stupne','stoupavost_procento','pohon','napajeni','stabilizatory','deck','nabijec','zasuvka_kos','rcd','rt_jmeno','rt_zz_osvedceni','rt_zz_opravneni','rt_ez_osvedceni','pristroj','pristroj_ev','kalibrace','zavady','predal','prevzal'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el) r[k]=revizeInputValue(k,el.value); }); revizeNormalizeTiltAxes(r); if(!String(r.normy_revize||'').trim()) r.normy_revize=revizeDefaultNormy(r.norma); delete r.rozmer_plosiny; delete r.typ_kol; delete r.pothole; delete r.rt_ez; delete r.termin_odstraneni; const cfg=REVIZE_DEVICE_TYPES[r.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; r.typ=cfg.label; r.checks=r.checks||{}; r.notes=r.notes||{}; document.querySelectorAll('[data-rz-check].active').forEach(b=>r.checks[b.dataset.rzCheck]=b.dataset.rzVal); document.querySelectorAll('[data-rz-note]').forEach(i=>r.notes[i.dataset.rzNote]=i.value); r.electro=r.electro||{}; REVIZE_ELECTRO.forEach(([k])=>{ r.electro[k]={value:revizeNormalizeElectroValue(k, document.querySelector(`[data-rz-electro-val="${k}"]`)?.value||''),ok:document.querySelector(`[data-rz-electro-ok="${k}"]`)?.value||'ANO',note:document.querySelector(`[data-rz-electro-note="${k}"]`)?.value||''}; }); applyRevizeCalculatedLoads(r); syncRevizeLoadInputsFromCapacity(); r.vysledek=revizeResult(r); r.updatedAt=new Date().toISOString(); r.appVersion='1.6 / 5.270'; try{ if(r.pristroj) localStorage.setItem('revize_last_meter', r.pristroj); }catch(e){} window.currentRevizeDraft=r; return r; }
 async function saveRevizeFromForm(){
   if(revizeSaveInProgress) return;
   const r=collectRevizeDraft();
@@ -10666,7 +10705,7 @@ collectRevizeDraft = function(){
     if(opts.disabled) r.electro[k] = {value:'-', ok:'NA', note:opts.note||''};
     else r.electro[k] = {value:revizeDefaultElectroValue(k, val?.value || r.electro[k]?.value || ''), ok:hidden?.value || r.electro[k]?.ok || 'ANO', note:note?.value || r.electro[k]?.note || ''};
   });
-  r.appVersion = '1.6 / 5.269';
+  r.appVersion = '1.6 / 5.270';
   window.currentRevizeDraft = r;
   return r;
 };
@@ -11111,7 +11150,7 @@ document.getElementById('forceRefreshAppBtn')?.addEventListener('click', async (
   closeSidePanel?.();
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.269');
+  url.searchParams.set('v','5.270');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 });
