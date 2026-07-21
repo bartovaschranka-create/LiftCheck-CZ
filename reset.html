@@ -20,7 +20,7 @@
   <h1>Obnova LiftControl CZ</h1>
   <p>Tato stránka vyčistí jen aplikační cache a starý service worker. Uložená data aplikace nemaže.</p>
   <div class="status" id="status">Spouštím obnovu...</div>
-  <a id="fallbackLink" href="./index.html?v=5.284&reset=manual" hidden>Pokračovat do aplikace</a>
+  <a id="fallbackLink" href="./index.html?v=5.285&reset=manual" hidden>Pokračovat do aplikace</a>
 </main>
 <script>
 (async function(){
@@ -28,7 +28,7 @@
   const fallback = document.getElementById('fallbackLink');
   const go = () => {
     const url = new URL('./index.html', location.href);
-    url.searchParams.set('v','5.284');
+    url.searchParams.set('v','5.285');
     url.searchParams.set('reset', String(Date.now()));
     location.replace(url.toString());
   };
@@ -43,7 +43,7 @@
       const regs = await navigator.serviceWorker.getRegistrations();
       await Promise.all(regs.map(reg => reg.unregister().catch(() => false)));
     }
-    status.textContent = 'Hotovo, načítám novou verzi 5.284...';
+    status.textContent = 'Hotovo, načítám novou verzi 5.285...';
     setTimeout(go, 600);
   }catch(err){
     status.textContent = 'Obnova se nepovedla automaticky. Klepni na Pokračovat do aplikace.';
