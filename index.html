@@ -2070,7 +2070,7 @@ body{position:relative!important}
   .revize-wizard-modal .revize-mini-table tr{border:1px solid var(--line);border-radius:8px;margin:0 0 8px;padding:8px}
 }
 
-/* v1.6 / 5.285: verified Firestore saves and pending sync for work plan. */
+/* v1.6 / 5.286: verified Firestore saves and pending sync for work plan. */
 html,body{
   min-height:100%;
   height:auto;
@@ -2207,7 +2207,7 @@ body.lightbox-open{
     <button type="button" class="side-small" id="sideImportBtn">Import zálohy</button>
     <button type="button" class="side-small" id="sideAuditBtn">Historie změn</button>
     <button type="button" class="side-small" id="forceRefreshAppBtn">Obnovit aplikaci</button>
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.285</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.286</div>
   </div>
 </aside>
 
@@ -3750,6 +3750,15 @@ async function retryPendingProtocolSync(){
   render();
   updateMainOverview?.();
 }
+function schedulePendingProtocolSync(reason='protocols-open', delay=300){
+  try{
+    if(!(firebaseAvailable && db)) return;
+    if(!loadLocalData().some(protocolSyncPending)) return;
+    setTimeout(() => runPendingSyncBatch(reason, true).catch(err => console.warn('Pending sync batch failed:', err)), delay);
+  }catch(err){
+    console.warn('Pending protocol sync scheduling failed', err);
+  }
+}
 async function deleteProtocol(id){
   markProtocolDeleted(id);
   data = (data || []).filter(x => String(x.id) !== String(id));
@@ -3883,7 +3892,7 @@ async function exportBackup(){
     }
     const payload = {
       app: 'LiftControl CZ',
-      appVersion: '1.6 / 5.285',
+      appVersion: '1.6 / 5.286',
       backupType: 'complete',
       schemaVersion: 2,
       exportedAt: new Date().toISOString(),
@@ -4232,19 +4241,19 @@ function scheduleEmptyAppRecovery(reason='startup'){
       await ensureFirestoreOnline();
       await refreshAllCloudDataFromServer('empty-recovery-' + reason, true);
       if(hasAnySyncedAppData()) return;
-      const key = 'liftcontrol_empty_recovery_5_285';
+      const key = 'liftcontrol_empty_recovery_5_286';
       const already = sessionStorage.getItem(key);
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.285');
+        url.searchParams.set('v','5.286');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
-      }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_285') !== '1'){
-        sessionStorage.setItem('liftcontrol_cache_recovery_5_285','1');
+      }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_286') !== '1'){
+        sessionStorage.setItem('liftcontrol_cache_recovery_5_286','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.285');
+        url.searchParams.set('v','5.286');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -4298,7 +4307,7 @@ function cloneQuarterlyDraftForStorage(record){
     const copy = JSON.parse(JSON.stringify(record || {}));
     copy._draftStepIndex = stepIndex || 0;
     copy._draftSavedAt = new Date().toISOString();
-    copy._draftAppVersion = '1.6 / 5.285';
+    copy._draftAppVersion = '1.6 / 5.286';
     return copy;
   }catch(e){
     return null;
@@ -4555,6 +4564,14 @@ function uniqueCanonicalBranches(values=[]){
 function branchOptionsHtml(values=BRANCHES){
   return uniqueCanonicalBranches(values).map(b => `<option value="${escapeHtml(b)}">${escapeHtml(branchShortName(b))}</option>`).join('');
 }
+function isKnownBranchValue(value){
+  const canonical = normalizeCanonicalBranch(value);
+  const key = normalizeSearchText(canonical || value);
+  return !!key && (BRANCHES || []).some(b => normalizeSearchText(b) === key);
+}
+function suggestionDisplayText(value){
+  return isKnownBranchValue(value) ? displayPlaceName(value) : String(value || '');
+}
 function filterSuggestions(items,q){
   q = String(q||'').trim();
   if(!q) return [];
@@ -4586,7 +4603,38 @@ function filterSuggestions(items,q){
     .slice(0,8)
     .map(x => x.item);
 }
-function renderSuggestBox(items,key,isTextarea=false){ if(!items.length) return ''; return `<div class="suggest-box">${items.map(v => `<div class="suggest-item" data-key="${key}" data-value="${escapeHtml(v)}" data-textarea="${isTextarea ? '1':'0'}">${escapeHtml(v)}</div>`).join('')}</div>`; }
+function renderSuggestBox(items,key,isTextarea=false){ if(!items.length) return ''; return `<div class="suggest-box">${items.map(v => `<div class="suggest-item" data-key="${key}" data-value="${escapeHtml(v)}" data-textarea="${isTextarea ? '1':'0'}">${escapeHtml(suggestionDisplayText(v))}</div>`).join('')}</div>`; }
+let suggestionGuardUntil = 0;
+let suggestionGuardTimer = null;
+function activateSuggestionSelectionGuard(ms=3000){
+  suggestionGuardUntil = Date.now() + ms;
+  document.body?.classList.add('suggestion-selection-guard');
+  clearTimeout(suggestionGuardTimer);
+  suggestionGuardTimer = setTimeout(() => {
+    if(Date.now() >= suggestionGuardUntil) document.body?.classList.remove('suggestion-selection-guard');
+  }, ms + 80);
+}
+function installSuggestionSelectionGuard(){
+  if(window.__liftSuggestionGuardInstalled) return;
+  window.__liftSuggestionGuardInstalled = true;
+  const suggestionSelector = '.suggest-item,.smart-suggest-item,.home-machine-suggest-item';
+  const allowedSelector = 'input,textarea,select,.suggest-box,.smart-suggest-box,.home-machine-suggest-box';
+  const handler = ev => {
+    if(ev.target.closest(suggestionSelector)){
+      setTimeout(() => activateSuggestionSelectionGuard(3000), 0);
+      return;
+    }
+    if(Date.now() <= suggestionGuardUntil && !ev.target.closest(allowedSelector)){
+      ev.preventDefault();
+      ev.stopPropagation();
+      ev.stopImmediatePropagation?.();
+    }
+  };
+  document.addEventListener('click', handler, true);
+  document.addEventListener('pointerup', handler, true);
+  document.addEventListener('touchend', handler, true);
+}
+installSuggestionSelectionGuard();
 function yearOptions(baseDate){ const y = Number(String(baseDate||todayLocal()).slice(0,4)) || new Date().getFullYear(); return Array.from({length:11}, (_,idx) => String(y-idx)); }
 function autoFillDefaults(){ if(!rec.datum) rec.datum = todayLocal(); if(!rec.dalsiKontrola) rec.dalsiKontrola = addMonthsToDate(rec.datum,3); }
 function isRevizeExpired(r){
@@ -4742,7 +4790,7 @@ function createProtocolFromFault(id){
 }
 
 function render(){
-  let rows = [...data];
+  let rows = mergeRowsById(data || [], loadLocalData());
   const query = els.searchInput.value.trim().toLowerCase();
   const filter = els.statusFilter.value;
   const techFilter = document.getElementById('protocolTechFilter')?.value || 'all';
@@ -4753,6 +4801,7 @@ function render(){
   if(customerFilter === 'internal') rows = rows.filter(r => !r.externalCustomer);
   if(filter === 'issues') rows = rows.filter(hasIssue);
   if(filter === 'ok') rows = rows.filter(r => !hasIssue(r));
+  if(filter === 'draft') rows = rows.filter(protocolSyncPending);
   rows.sort((a,b)=>String(b.datum||'').localeCompare(String(a.datum||'')));
   if(!rows.length){ els.list.innerHTML = '<div class="empty"><div>Zatím tu nic není.</div></div>'; updateStats([]); return; }
   els.list.innerHTML = rows.map(r => `
@@ -4829,15 +4878,11 @@ function prependQuarterlyDraftCard(){
 }
 const renderProtocolsBase = render;
 render = function(){
-  if((els.statusFilter?.value || 'all') === 'draft'){
-    if(els.list) els.list.innerHTML = '';
-    updateStats([]);
-    prependQuarterlyDraftCard();
-    if(els.list && !els.list.innerHTML.trim()) els.list.innerHTML = '<div class="empty"><div>Zadne rozpracovane kontroly.</div></div>';
-    return;
-  }
   renderProtocolsBase();
   prependQuarterlyDraftCard();
+  if((els.statusFilter?.value || 'all') === 'draft' && els.list && !els.list.querySelector('.card')){
+    els.list.innerHTML = '<div class="empty"><div>Zadne rozpracovane ani lokalne cekajici kontroly.</div></div>';
+  }
 };
 
 function openModal(el){
@@ -4920,10 +4965,10 @@ function openWizard(editId=null, prefill={}){
       }
     }
   }
-  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.285'};
+  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.286'};
   rec = Object.assign({}, rec, prefill || {});
   if(!editId && !rec.cLogic) rec.cLogic = 'legacy';
-  if(!editId) rec.appVersion = '1.6 / 5.285';
+  if(!editId) rec.appVersion = '1.6 / 5.286';
 
   // Auto doplneni z historie podle vyrobniho cisla.
   if(rec.vc){
@@ -4989,7 +5034,7 @@ async function saveQuarterlyEditedProtocolFromWizard(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    rec.appVersion = '1.6 / 5.285';
+    rec.appVersion = '1.6 / 5.286';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -5352,11 +5397,12 @@ function refreshSuggestions(){
       rec[key] = value;
       const mainInput = document.getElementById('mainInput');
       const mainTextarea = document.getElementById('mainTextarea');
-      if(mainInput) mainInput.value = value;
+      if(mainInput) mainInput.value = isKnownBranchValue(value) ? displayPlaceName(value) : value;
       if(mainTextarea) mainTextarea.value = value;
       if(key === 'vc') applyProtocolDefaultsFromSerial(value);
       saveQuarterlyDraft('suggest-pick');
       hideSuggestions();
+      activateSuggestionSelectionGuard(3000);
     }));
   }catch(err){
     console.warn('Quarterly suggestions failed', err);
@@ -5525,7 +5571,7 @@ async function nextStep(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    rec.appVersion = '1.6 / 5.285';
+    rec.appVersion = '1.6 / 5.286';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -5618,7 +5664,7 @@ async function logAuditAction(action, entity, record, by, detail, beforeRecord){
       serial: record?.vc || record?.serial || '',
       type: record?.typ || record?.type || '',
       createdAt: new Date().toISOString(),
-      appVersion: '1.6 / 5.285',
+      appVersion: '1.6 / 5.286',
       restoreVersion: 1,
       before: beforeSnapshot ? cloneForAuditSnapshot(beforeSnapshot) : null,
       after: afterSnapshot ? cloneForAuditSnapshot(afterSnapshot) : null
@@ -7502,7 +7548,7 @@ async function saveWorkPlanFromForm(){
       place,
       extraPlaces,
       note,
-      appVersion:'1.6 / 5.285'
+      appVersion:'1.6 / 5.286'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     const saveResult = await saveWorkPlan(record);
@@ -7884,16 +7930,18 @@ function attachSmartSuggest(input, getItems, onPick){
     const items = filterSuggestions(uniqueNonEmpty(getItems ? getItems() : []), q).slice(0,8);
     if(!items.length){ close(); return; }
 
-    box.innerHTML = items.map(v => `<div class="smart-suggest-item" data-value="${escapeHtml(v)}">${escapeHtml(v)}</div>`).join('');
+    box.innerHTML = items.map(v => `<div class="smart-suggest-item" data-value="${escapeHtml(v)}">${escapeHtml(suggestionDisplayText(v))}</div>`).join('');
     box.classList.add('show');
 
     box.querySelectorAll('.smart-suggest-item').forEach(item => item.addEventListener('pointerdown', ev => {
       ev.preventDefault();
       ev.stopPropagation();
-      input.value = item.dataset.value || '';
+      const pickedValue = item.dataset.value || '';
+      input.value = isKnownBranchValue(pickedValue) ? displayPlaceName(pickedValue) : pickedValue;
       input.dispatchEvent(new Event('input', {bubbles:true}));
       input.dispatchEvent(new Event('change', {bubbles:true}));
       close();
+      activateSuggestionSelectionGuard(3000);
       if(typeof onPick === 'function') onPick(input.value);
       try{ input.focus({preventScroll:true}); }catch(_e){ input.focus(); }
     }));
@@ -8044,6 +8092,7 @@ function attachHomeMachineSuggest(){
       input.dispatchEvent(new Event('input', {bubbles:true}));
       input.dispatchEvent(new Event('change', {bubbles:true}));
       close();
+      activateSuggestionSelectionGuard(3000);
     }));
   };
   input.addEventListener('input', open);
@@ -8215,7 +8264,7 @@ async function saveFaultFromForm(){
       inService: status === 'service' ? true : (existing ? !!existing.inService : false),
       waitingParts: status === 'waiting_parts' ? true : (existing ? !!existing.waitingParts : false),
       photos: currentFaultPhotos,
-      appVersion:'1.6 / 5.285'
+      appVersion:'1.6 / 5.286'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     setLastEnteredBy(record.enteredBy);
@@ -8780,7 +8829,7 @@ function mergeRepairCloudWithLocal(cloudRows=[], localRows=[]){
 }
 function upsertLocalRepairRow(record){
   const rows = loadLocalRepairs();
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.285'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.286'});
   const idx = rows.findIndex(x => String(x.id) === String(rec.id));
   if(idx >= 0) rows[idx] = rec; else rows.unshift(rec);
   const localResult = saveLocalRepairs(rows.slice(0,300));
@@ -8795,7 +8844,7 @@ async function saveRepairRecord(record){
   record.id = record.id || repairUid();
   record.savedAt = new Date().toISOString();
   record.updatedAt = record.savedAt;
-  record.appVersion = '1.6 / 5.285';
+  record.appVersion = '1.6 / 5.286';
   markRepairSyncState(record, false, null);
   const localSave = upsertLocalRepairRow(record);
   if(!localSave.localResult || !localSave.localResult.ok){
@@ -8847,7 +8896,7 @@ function startLocalRepairsMode(){
   schedulePendingRepairSync('repair-local-start', 600);
 }
 function saveRepairRecordLocal(record){
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.285'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.286'});
   markRepairSyncState(rec, false, new Error('Starsí lokální uložení čeká na synchronizaci.'));
   upsertLocalRepairRow(rec);
   return rec;
@@ -9232,6 +9281,7 @@ function updateMainOverview(){
 }
 function showProtocolsSection(){
   showSection('archive');
+  schedulePendingProtocolSync('protocols-open');
 }
 function partUid(){ return 'nd_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
 function loadLocalParts(){ try { return JSON.parse(localStorage.getItem('liftcheck_parts_local') || '[]'); } catch(e) { return []; } }
@@ -9635,7 +9685,7 @@ async function savePartFromForm(){
       orderedAt: (statusVal === 'ordered' || statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.orderedAt) || new Date().toISOString()) : '',
       sentAt: (statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.sentAt) || new Date().toISOString()) : '',
       resolvedAt: statusVal === 'resolved' ? ((existing && existing.resolvedAt) || new Date().toISOString()) : '',
-      appVersion:'1.6 / 5.285'
+      appVersion:'1.6 / 5.286'
     });
     record.photos = JSON.parse(JSON.stringify(currentPartPhotos || []));
     record.photo = record.photos[0] || null;
@@ -9843,7 +9893,7 @@ function ensureRevizeMeterText(value){
 }
 function revizeDefaultMeter(){ try{ return ensureRevizeMeterText(localStorage.getItem('revize_last_meter') || ''); }catch(e){ return REVIZE_DEFAULT_METER; } }
 function revizeMeterInfo(text){ const s=String(text||''); const ev=[...s.matchAll(/v\.?\s*č\.?\s*[:.]?\s*([A-Za-z0-9/.-]+)/gi)].map(m=>m[1]); const kal=[...s.matchAll(/kal\.?\s*do\s*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{2,4})/gi)].map(m=>m[1]); return {ev:ev.join(', '), kalibrace:kal.join(', ')}; }
-function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),motohodiny:'',druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',naklon_x:'',naklon_y:'',stoupavost_stupne:'',stoupavost_procento:'',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.285'}; }
+function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),motohodiny:'',druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',naklon_x:'',naklon_y:'',stoupavost_stupne:'',stoupavost_procento:'',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.286'}; }
 function revizeAnswerValue(value){ return String(value||'').trim().toUpperCase()==='NE' ? 'NE' : 'ANO'; }
 function revizeResult(r){
   r = r || {};
@@ -10310,7 +10360,7 @@ function attachRevizeSuggestInput(input, getItems, onPick){
     const all=uniqueNonEmpty(getItems ? getItems() : []);
     const items=(q ? filterSuggestions(all,q) : all).slice(0,8);
     if(!items.length){ close(); return; }
-    box.innerHTML=items.map(v=>`<div class="smart-suggest-item" role="option" tabindex="-1" data-value="${escapeHtml(v)}">${escapeHtml(v)}</div>`).join('');
+    box.innerHTML=items.map(v=>`<div class="smart-suggest-item" role="option" tabindex="-1" data-value="${escapeHtml(v)}">${escapeHtml(suggestionDisplayText(v))}</div>`).join('');
     box.classList.add('show');
     let pickedAt = 0;
     const pick=(item, ev)=>{
@@ -10323,6 +10373,7 @@ function attachRevizeSuggestInput(input, getItems, onPick){
       input.dispatchEvent(new Event('input',{bubbles:true}));
       input.dispatchEvent(new Event('change',{bubbles:true}));
       close();
+      activateSuggestionSelectionGuard(3000);
       if(typeof onPick==='function') onPick(input.value);
       safeCollectRevizeDraft('revize suggest pick');
       try{ input.focus({preventScroll:true}); }catch(_e){ input.focus(); }
@@ -10388,7 +10439,7 @@ async function syncQuarterlyAfterRevize(r){
   last.typ=last.typ||r.model||r.typ||'';
   last.rok=last.rok||r.rok_vyroby||'';
   last.umisteni=r.umisteni||last.umisteni||'';
-  last.appVersion='1.6 / 5.285';
+  last.appVersion='1.6 / 5.286';
   const replaceByIdOrSerial=(arr, updated)=>{
     const idx=(arr||[]).findIndex(x=>(updated.id && x.id===updated.id) || matchesSerial(x));
     if(idx>=0) arr[idx]={...arr[idx],...updated};
@@ -10693,7 +10744,7 @@ function renderRevizeForm(r){ const type = r.typ_zarizeni || 'scissor'; const de
 function revizeFieldLabel(k){ const unit=revizeNumericUnit(k); const label=({hmotnost:'Hmotnost',nosnost:'Nosnost',pracovni_vyska:'Pracovní výška',vyska_podlahy:'Výška podlahy',bocni_dosah:'Boční dosah',naklon:'Náklon podvozku',naklon_x:'Podélný náklon',naklon_y:'Boční náklon',stoupavost_stupne:'Stoupavost ve stupních',stoupavost_procento:'Stoupavost v procentech',staticka_zatez:'Statická zátěž 125 %',dynamicka_zatez:'Dynamická zátěž 110 %',pohon:'Pohon',napajeni:'Napájení',stabilizatory:'Stabilizátory',deck:'Výsuvný deck',nabijec:'Nabíječ',zasuvka_kos:'Zásuvka v koši',rcd:'RCD'})[k]||k; return unit ? `${label} (${unit})` : label; }
 function revizeCheckRows(items,r,prefix){ return items.map(([k,l])=>{ const v=(r.checks||{})[k]||'ANO'; const n=(r.notes||{})[k]||''; return `<div class="revize-check-row"><strong>${escapeHtml(l)}</strong><div class="yesno"><button type="button" class="yn-btn ${v==='ANO'?'yes active':'yes'}" data-rz-check="${k}" data-rz-val="ANO">ANO</button><button type="button" class="yn-btn ${v==='NE'?'no active':'no'}" data-rz-check="${k}" data-rz-val="NE">NE</button></div><input data-rz-note="${k}" value="${escapeHtml(n)}" placeholder="Poznámka / opatření"></div>`; }).join(''); }
 function revizeElectroTable(r){ return `<table class="revize-mini-table"><thead><tr><th>Měřená část</th><th>Hodnota</th><th>Vyhovuje</th><th>Poznámka</th></tr></thead><tbody>${REVIZE_ELECTRO.map(([k,l,u])=>{ const e=(r.electro||{})[k]||{}; return `<tr><td>${escapeHtml(l)}</td><td><input data-rz-electro-val="${k}" value="${escapeHtml(revizeNormalizeElectroValue(k,e.value||''))}" placeholder="Hodnota"></td><td><select data-rz-electro-ok="${k}"><option ${e.ok==='ANO'?'selected':''}>ANO</option><option ${e.ok==='NE'?'selected':''}>NE</option></select></td><td><input data-rz-electro-note="${k}" value="${escapeHtml(e.note||'')}"></td></tr>`; }).join('')}</tbody></table>`; }
-function collectRevizeDraft(){ syncRevizeMeterFields(); const r=window.currentRevizeDraft||revizeDefaultRecord(); ['protokol','datum_kontroly','platnost','druh_kontroly','motohodiny','provozovatel','umisteni','typ_zarizeni','vyrobce','model','vyrobni_cislo','evidencni_cislo','rok_vyroby','norma','normy_revize','skupina','hmotnost','nosnost','pracovni_vyska','vyska_podlahy','bocni_dosah','naklon','naklon_x','naklon_y','stoupavost_stupne','stoupavost_procento','pohon','napajeni','stabilizatory','deck','nabijec','zasuvka_kos','rcd','rt_jmeno','rt_zz_osvedceni','rt_zz_opravneni','rt_ez_osvedceni','pristroj','pristroj_ev','kalibrace','zavady','predal','prevzal'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el) r[k]=revizeInputValue(k,el.value); }); revizeNormalizeTiltAxes(r); if(!String(r.normy_revize||'').trim()) r.normy_revize=revizeDefaultNormy(r.norma); delete r.rozmer_plosiny; delete r.typ_kol; delete r.pothole; delete r.rt_ez; delete r.termin_odstraneni; const cfg=REVIZE_DEVICE_TYPES[r.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; r.typ=cfg.label; if(shouldAutoReplaceRevizeGroup(r.skupina)) r.skupina=cfg.skupina; r.checks=r.checks||{}; r.notes=r.notes||{}; document.querySelectorAll('[data-rz-check].active').forEach(b=>r.checks[b.dataset.rzCheck]=b.dataset.rzVal); document.querySelectorAll('[data-rz-note]').forEach(i=>r.notes[i.dataset.rzNote]=i.value); r.electro=r.electro||{}; REVIZE_ELECTRO.forEach(([k])=>{ r.electro[k]={value:revizeNormalizeElectroValue(k, document.querySelector(`[data-rz-electro-val="${k}"]`)?.value||''),ok:document.querySelector(`[data-rz-electro-ok="${k}"]`)?.value||'ANO',note:document.querySelector(`[data-rz-electro-note="${k}"]`)?.value||''}; }); applyRevizeCalculatedLoads(r); syncRevizeLoadInputsFromCapacity(); r.vysledek=revizeResult(r); r.updatedAt=new Date().toISOString(); r.appVersion='1.6 / 5.285'; try{ if(r.pristroj) localStorage.setItem('revize_last_meter', r.pristroj); }catch(e){} window.currentRevizeDraft=r; return r; }
+function collectRevizeDraft(){ syncRevizeMeterFields(); const r=window.currentRevizeDraft||revizeDefaultRecord(); ['protokol','datum_kontroly','platnost','druh_kontroly','motohodiny','provozovatel','umisteni','typ_zarizeni','vyrobce','model','vyrobni_cislo','evidencni_cislo','rok_vyroby','norma','normy_revize','skupina','hmotnost','nosnost','pracovni_vyska','vyska_podlahy','bocni_dosah','naklon','naklon_x','naklon_y','stoupavost_stupne','stoupavost_procento','pohon','napajeni','stabilizatory','deck','nabijec','zasuvka_kos','rcd','rt_jmeno','rt_zz_osvedceni','rt_zz_opravneni','rt_ez_osvedceni','pristroj','pristroj_ev','kalibrace','zavady','predal','prevzal'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el) r[k]=revizeInputValue(k,el.value); }); revizeNormalizeTiltAxes(r); if(!String(r.normy_revize||'').trim()) r.normy_revize=revizeDefaultNormy(r.norma); delete r.rozmer_plosiny; delete r.typ_kol; delete r.pothole; delete r.rt_ez; delete r.termin_odstraneni; const cfg=REVIZE_DEVICE_TYPES[r.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; r.typ=cfg.label; if(shouldAutoReplaceRevizeGroup(r.skupina)) r.skupina=cfg.skupina; r.checks=r.checks||{}; r.notes=r.notes||{}; document.querySelectorAll('[data-rz-check].active').forEach(b=>r.checks[b.dataset.rzCheck]=b.dataset.rzVal); document.querySelectorAll('[data-rz-note]').forEach(i=>r.notes[i.dataset.rzNote]=i.value); r.electro=r.electro||{}; REVIZE_ELECTRO.forEach(([k])=>{ r.electro[k]={value:revizeNormalizeElectroValue(k, document.querySelector(`[data-rz-electro-val="${k}"]`)?.value||''),ok:document.querySelector(`[data-rz-electro-ok="${k}"]`)?.value||'ANO',note:document.querySelector(`[data-rz-electro-note="${k}"]`)?.value||''}; }); applyRevizeCalculatedLoads(r); syncRevizeLoadInputsFromCapacity(); r.vysledek=revizeResult(r); r.updatedAt=new Date().toISOString(); r.appVersion='1.6 / 5.286'; try{ if(r.pristroj) localStorage.setItem('revize_last_meter', r.pristroj); }catch(e){} window.currentRevizeDraft=r; return r; }
 async function saveRevizeFromForm(){
   if(revizeSaveInProgress) return;
   const r=collectRevizeDraft();
@@ -11070,7 +11121,7 @@ collectRevizeDraft = function(){
   });
   revizeSyncElectricalDependencies(r);
   r.normy_revize = revizeNormyForRecord(r);
-  r.appVersion = '1.6 / 5.285';
+  r.appVersion = '1.6 / 5.286';
   window.currentRevizeDraft = r;
   return r;
 };
@@ -11520,7 +11571,7 @@ document.getElementById('forceRefreshAppBtn')?.addEventListener('click', async (
   closeSidePanel?.();
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.285');
+  url.searchParams.set('v','5.286');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 });
@@ -12035,8 +12086,8 @@ if ('serviceWorker' in navigator) {
   let appReloadingForUpdate = false;
   let appUpdateReloadTimer = null;
   const AUTO_APP_UPDATE = false;
-  const APP_UPDATE_ACK_KEY = 'liftcontrol_update_ack_5_285';
-  const APP_UPDATE_RELOAD_KEY = 'liftcontrol_update_reload_5_285';
+  const APP_UPDATE_ACK_KEY = 'liftcontrol_update_ack_5_286';
+  const APP_UPDATE_RELOAD_KEY = 'liftcontrol_update_reload_5_286';
   const APP_UPDATE_ACK_TTL = 24 * 60 * 60 * 1000;
   const appUpdateBanner = document.getElementById('appUpdateBanner');
   const appUpdateNowBtn = document.getElementById('appUpdateNowBtn');
