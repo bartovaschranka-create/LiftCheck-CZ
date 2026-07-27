@@ -3425,6 +3425,16 @@ function stripRecordPhotoDataForLocal(record){
   return stripPhotoDataForLocal(copy);
 }
 function loadImageFromFile(file){
+  if(window.createImageBitmap){
+    return createImageBitmap(file, {imageOrientation:'from-image'}).catch(() => new Promise((resolve,reject)=>{
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      const cleanup = () => URL.revokeObjectURL(url);
+      img.onload = () => { cleanup(); resolve(img); };
+      img.onerror = err => { cleanup(); reject(err); };
+      img.src = url;
+    }));
+  }
   return new Promise((resolve,reject)=>{
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -3433,6 +3443,10 @@ function loadImageFromFile(file){
     img.onerror = err => { cleanup(); reject(err); };
     img.src = url;
   });
+}
+function releaseLoadedImage(img){
+  try{ if(img && typeof img.close === 'function') img.close(); }catch(_e){}
+  try{ if(img && 'src' in img) img.src = ''; }catch(_e){}
 }
 async function compressPhoto(file, maxBytes=MAX_PHOTO_BYTES){
   const img = await loadImageFromFile(file);
@@ -3445,10 +3459,12 @@ async function compressPhoto(file, maxBytes=MAX_PHOTO_BYTES){
   const targetBytes = android ? Math.min(maxBytes, 180 * 1024) : (mobile ? Math.min(maxBytes, 240 * 1024) : maxBytes);
   let out = '';
   try{
+    const sourceWidth = img.naturalWidth || img.width || 1;
+    const sourceHeight = img.naturalHeight || img.height || 1;
     for(let attempt=0; attempt<14; attempt++){
-      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-      canvas.width = Math.max(1, Math.round(img.width * scale));
-      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const scale = Math.min(1, maxSide / Math.max(sourceWidth, sourceHeight));
+      canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+      canvas.height = Math.max(1, Math.round(sourceHeight * scale));
       ctx.clearRect(0,0,canvas.width,canvas.height);
       ctx.drawImage(img,0,0,canvas.width,canvas.height);
       out = canvas.toDataURL('image/jpeg', quality);
@@ -3459,7 +3475,7 @@ async function compressPhoto(file, maxBytes=MAX_PHOTO_BYTES){
   }finally{
     canvas.width = 1;
     canvas.height = 1;
-    try{ img.src = ''; }catch(_e){}
+    releaseLoadedImage(img);
   }
 }
 
@@ -7909,7 +7925,8 @@ async function saveWorkPlanFromForm(){
       .catch(err => console.warn('Audit planu prace se nepodarilo zapsat na pozadi.', err));
     closeWorkPlanForm();
     currentWorkWeekStart = startOfWeek(new Date(date + 'T00:00:00'));
-    renderWorkPlan();
+    scheduleWorkPlanRender('plan-form-saved');
+    scheduleOverviewUpdate('plan-form-saved');
     if(saveResult && !saveResult.cloud) alertCloudResult(saveResult, 'Plan prace');
   }catch(err){
     console.error(err);
@@ -11771,12 +11788,22 @@ document.getElementById('repairSignatureCanvas')?.addEventListener('pointermove'
   });
 });
 document.getElementById('repairPhotoInput')?.addEventListener('change', async (e) => {
+  if(e.currentTarget.dataset.processing === '1') return;
   const files = Array.from(e.target.files || []);
-  for(const file of files){
-    try{ const out = await compressPhoto(file, MAX_PHOTO_BYTES); currentRepairPhotos.push({dataUrl:out.dataUrl, bytes:out.bytes, width:out.width, height:out.height}); }
-    catch(err){ console.error(err); alert('Nekterou fotku se nepodarilo zpracovat.'); }
+  if(!files.length) return;
+  e.currentTarget.dataset.processing = '1';
+  e.currentTarget.disabled = true;
+  try{
+    for(const file of files){
+      try{ const out = await compressPhoto(file, MAX_PHOTO_BYTES); currentRepairPhotos.push({dataUrl:out.dataUrl, bytes:out.bytes, width:out.width, height:out.height}); }
+      catch(err){ console.error(err); alert('Nekterou fotku se nepodarilo zpracovat.'); }
+    }
+    renderRepairPhotoPreview();
+  }finally{
+    e.target.value = '';
+    e.currentTarget.dataset.processing = '';
+    e.currentTarget.disabled = false;
   }
-  renderRepairPhotoPreview(); e.target.value = '';
 });
 document.getElementById('homeMachineCardBtn')?.addEventListener('click', () => {
   updateHomeMachineDatalist();
@@ -11920,6 +11947,7 @@ document.getElementById('faultPlace')?.addEventListener('change', (e) => {
   document.getElementById('faultCustomPlaceWrap')?.classList.toggle('hidden', e.target.value !== '__custom__');
 });
 document.getElementById('faultPhotoInput')?.addEventListener('change', async (e) => {
+  if(e.currentTarget.dataset.processing === '1') return;
   const file = e.target.files && e.target.files[0];
   if(!file) return;
   if(currentFaultPhotos.length >= 4){
@@ -11927,6 +11955,8 @@ document.getElementById('faultPhotoInput')?.addEventListener('change', async (e)
     e.target.value = '';
     return;
   }
+  e.currentTarget.dataset.processing = '1';
+  e.currentTarget.disabled = true;
   try{
     const out = await compressPhoto(file, MAX_PHOTO_BYTES);
     currentFaultPhotos.push({dataUrl:out.dataUrl, bytes:out.bytes, width:out.width, height:out.height});
@@ -11935,6 +11965,10 @@ document.getElementById('faultPhotoInput')?.addEventListener('change', async (e)
   }catch(err){
     console.error(err);
     alert('Fotku se nepodařilo zpracovat.');
+  }finally{
+    e.currentTarget.dataset.processing = '';
+    e.currentTarget.disabled = false;
+    e.target.value = '';
   }
 });
 
@@ -11945,8 +11979,11 @@ showSection('home');
 
 document.getElementById('addPartPhotoBtn')?.addEventListener('click', () => document.getElementById('partPhotoInput')?.click());
 document.getElementById('partPhotoInput')?.addEventListener('change', async (e) => {
+  if(e.currentTarget.dataset.processing === '1') return;
   const file = e.target.files && e.target.files[0];
   if(!file) return;
+  e.currentTarget.dataset.processing = '1';
+  e.currentTarget.disabled = true;
   try{
     const out = await compressPhoto(file, MAX_PHOTO_BYTES);
     currentPartPhotos = Array.isArray(currentPartPhotos) ? currentPartPhotos : [];
@@ -11956,6 +11993,10 @@ document.getElementById('partPhotoInput')?.addEventListener('change', async (e) 
   }catch(err){
     console.error(err);
     alert('Fotku se nepodařilo zpracovat.');
+  }finally{
+    e.currentTarget.dataset.processing = '';
+    e.currentTarget.disabled = false;
+    e.target.value = '';
   }
 });
 
