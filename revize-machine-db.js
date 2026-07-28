@@ -20,14 +20,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2130 kg",
     "reach": "8,5 m",
     "capacity": "12,5 m/s 230 kg(2 os. + 70 kg) 400N",
-    "staticLoad": "345 kg ANO",
+    "staticLoad": "345 kg",
     "drive": "Diesel/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
     "norma": "ČSN EN 280+A1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -751,14 +752,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2130 kg",
     "reach": "8,5 m",
     "capacity": "12,5 m/s 230 kg(2 os. + 70 kg) 400N",
-    "staticLoad": "345 kg ANO",
+    "staticLoad": "345 kg",
     "drive": "Diesel/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
     "norma": "ČSN EN 280-1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -2113,14 +2115,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2130 kg",
     "reach": "8,5 m",
     "capacity": "12,5 m/s 230 kg(2 os. + 70 kg) 400N",
-    "staticLoad": "345 kg ANO",
+    "staticLoad": "345 kg",
     "drive": "Diesel/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "NE",
     "norma": "ČSN EN 280-1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -2482,14 +2485,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2300 kg",
     "reach": "9,1 m",
     "capacity": "12,5 m/s 200 kg(2 os. + 40 kg) 400N",
-    "staticLoad": "300 kg ANO",
+    "staticLoad": "300 kg",
     "drive": "Benzin/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
     "norma": "ČSN EN 280+A1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -2883,14 +2887,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2130 kg",
     "reach": "8,5 m",
     "capacity": "12,5 m/s 230 kg(2 os. + 70 kg) 400N",
-    "staticLoad": "345 kg ANO",
+    "staticLoad": "345 kg",
     "drive": "Diesel/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
     "norma": "ČSN EN 280+A1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -2943,8 +2948,8 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2130 kg",
     "reach": "8,5 m",
     "capacity": "12,5 m/s 230 kg(2 os. + 70 kg) 400N",
-    "staticLoad": "300 kg ANO",
-    "dynamicLoad": "220 kg -",
+    "staticLoad": "345 kg",
+    "dynamicLoad": "",
     "drive": "Diesel/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
@@ -3521,14 +3526,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "1850 kg",
     "reach": "9 m",
     "capacity": "12,5 m/s 200 kg(2 os. + 40 kg) 400N",
-    "staticLoad": "300 kg ANO",
+    "staticLoad": "300 kg",
     "drive": "Diesel/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
     "norma": "ČSN EN 280-1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -3829,14 +3835,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "1850 kg",
     "reach": "9 m",
     "capacity": "12,5 m/s 200 kg(2 os. + 40 kg) 400N",
-    "staticLoad": "300 kg ANO",
+    "staticLoad": "300 kg",
     "drive": "Diesel/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
     "norma": "ČSN EN 280-1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -4291,14 +4298,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2130 kg",
     "reach": "8,5 m",
     "capacity": "12,5 m/s 230 kg(2 os. + 70 kg) 400N",
-    "staticLoad": "345 kg ANO",
+    "staticLoad": "345 kg",
     "drive": "Diesel/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
     "norma": "ČSN EN 280+A1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -4960,14 +4968,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2130 kg",
     "reach": "8,5 m",
     "capacity": "12,5 m/s 230 kg(2 os. + 70 kg) 400N",
-    "staticLoad": "345 kg ANO",
+    "staticLoad": "345 kg",
     "drive": "Diesel/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
     "norma": "ČSN EN 280-1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -5112,14 +5121,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2130 kg",
     "reach": "8,5 m",
     "capacity": "12,5 m/s 230 kg(2 os. + 70 kg) 400N",
-    "staticLoad": "345 kg ANO",
+    "staticLoad": "345 kg",
     "drive": "Diesel/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "NE",
     "norma": "ČSN EN 280+A1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -5358,14 +5368,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2300 kg",
     "reach": "9,1 m",
     "capacity": "12,5 m/s 200 kg(2 os. + 40 kg) 400N",
-    "staticLoad": "345 kg ANO",
+    "staticLoad": "300 kg",
     "drive": "Benzin/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
     "norma": "ČSN EN 280-1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -5387,14 +5398,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2300 kg",
     "reach": "9,1 m",
     "capacity": "12,5 m/s 200 kg(2 os. + 40 kg) 400N",
-    "staticLoad": "300 kg ANO",
+    "staticLoad": "300 kg",
     "drive": "Benzin/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
     "norma": "ČSN EN 280+A1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -5447,14 +5459,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2300 kg",
     "reach": "9,1 m",
     "capacity": "12,5 m/s 200 kg(2 os. + 40 kg) 400N",
-    "staticLoad": "300 kg ANO",
+    "staticLoad": "300 kg",
     "drive": "Benzin/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
     "norma": "ČSN EN 280-1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -5754,14 +5767,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2300 kg",
     "reach": "9,1 m",
     "capacity": "12,5 m/s 200 kg(2 os. + 40 kg) 400N",
-    "staticLoad": "300 kg ANO",
+    "staticLoad": "300 kg",
     "drive": "Benzin/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
     "norma": "ČSN EN 280+A1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -6309,14 +6323,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2130 kg",
     "reach": "8,5 m",
     "capacity": "12,5 m/s 230 kg(2 os. + 70 kg) 400N",
-    "staticLoad": "345 kg ANO",
+    "staticLoad": "345 kg",
     "drive": "Diesel/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
     "norma": "ČSN EN 280+A1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -6647,14 +6662,15 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2130 kg",
     "reach": "8,5 m",
     "capacity": "12,5 m/s 230 kg(2 os. + 70 kg) 400N",
-    "staticLoad": "345 kg ANO",
+    "staticLoad": "345 kg",
     "drive": "Diesel/ Bateriový",
     "power": "ovladací obvody 24V DC",
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
     "norma": "ČSN EN 280-1",
-    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280-1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
+    "dynamicLoad": ""
   },
   {
     "source": "excel-2025-corrected-v2",
@@ -9060,8 +9076,8 @@ window.REVIZE_MACHINE_DB = [
     "weight": "2300 kg",
     "reach": "9,1 m",
     "capacity": "200 kg (2 os. + 40 kg)",
-    "staticLoad": "250 kg",
-    "dynamicLoad": "220 kg",
+    "staticLoad": "300 kg",
+    "dynamicLoad": "",
     "drive": "Diesel / Bateriový",
     "power": "ovládací obvody 24V DC",
     "charger": "ANO",
