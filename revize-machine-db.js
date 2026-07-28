@@ -1,4 +1,4 @@
-// Generated from corrected Revize 2025 Excel protocols plus checked missing Revize 2024 records.
+// Generated from corrected Revize 2025 Excel protocols plus checked missing Revize 2024 records and selected older fallback records.
 window.REVIZE_MACHINE_DB = [
   {
     "source": "excel-2025-corrected-v2",
@@ -9038,5 +9038,36 @@ window.REVIZE_MACHINE_DB = [
     "norma": "ČSN EN 280+A1",
     "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
     "deviceType": "telescopic"
+  },
+  {
+    "source": "excel-2022-revize-import",
+    "file": "č.74 OMME 1700EXB 10373KM.xlsx",
+    "created": "2022-06-21",
+    "validTo": "2023-06-21",
+    "protocol": "74KZ/22",
+    "owner": "Zeppelin CZ s.r.o - Lipová 72, 251 70 Modletice",
+    "place": "Zeppelin CZ s.r.o - Betonářská 880/16, 712 00 Slezská Ostrava-Muglinov",
+    "model": "1700 EXBP",
+    "serial": "10373KM",
+    "year": "2021",
+    "maker": "OMMELIFT A/S",
+    "group": "1",
+    "typeGroup": "B",
+    "deviceType": "trailer",
+    "floorHeight": "14,75 m",
+    "tilt": "---",
+    "workHeight": "16,75 m",
+    "weight": "2300 kg",
+    "reach": "9,1 m",
+    "capacity": "200 kg (2 os. + 40 kg)",
+    "staticLoad": "250 kg",
+    "dynamicLoad": "220 kg",
+    "drive": "Diesel / Bateriový",
+    "power": "ovládací obvody 24V DC",
+    "charger": "ANO",
+    "socket": "ANO",
+    "rcd": "ANO",
+    "norma": "ČSN EN 280+A1",
+    "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce."
   }
 ];
