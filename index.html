@@ -2067,7 +2067,7 @@ body{position:relative!important}
 .revize-wizard-modal .revize-form{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important}
 .revize-wizard-modal .preview-actions{flex:0 0 auto!important}
 @media(max-width:640px){.revize-wizard-modal.show{align-items:flex-start!important;overflow:hidden!important}.revize-wizard-modal .modal-content{max-height:calc(100dvh - 16px)!important}.revize-wizard-modal .revize-form{max-height:calc(100dvh - 16px)!important}}
-/* v1.6 / 5.315: dlouhe zapisy o oprave maji vlastni scroll, aby se na mobilu neposouvala stranka pod modalem. */
+/* v1.6 / 5.316: dlouhe zapisy o oprave maji vlastni scroll, aby se na mobilu neposouvala stranka pod modalem. */
 #repairModal.modal.show{align-items:center!important;justify-content:center!important;overflow:hidden!important;touch-action:none!important;overscroll-behavior:contain!important}
 #repairModal .modal-content{width:min(96vw,920px)!important;max-height:calc(100dvh - 32px)!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
 #repairModal .wizard-shell{flex:1 1 auto!important;min-height:0!important;max-height:calc(100dvh - 32px)!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;touch-action:pan-y!important}
@@ -2110,7 +2110,7 @@ body{position:relative!important}
   .revize-wizard-modal .revize-mini-table tr{border:1px solid var(--line);border-radius:8px;margin:0 0 8px;padding:8px}
 }
 
-/* v1.6 / 5.315: smoother mobile rendering for work plan and snapshots. */
+/* v1.6 / 5.316: smoother mobile rendering for work plan and snapshots. */
 html,body{
   min-height:100%;
   height:auto;
@@ -2264,7 +2264,7 @@ body.mobile-safe-mode .attention-count:hover{
     <button type="button" class="side-link" id="sideSettingsBtn">Nastavení</button>
   </nav>
   <div class="side-bottom">
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.315</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.316</div>
   </div>
 </aside>
 
@@ -4089,7 +4089,7 @@ async function exportBackup(){
     }
     const payload = {
       app: 'LiftControl CZ',
-      appVersion: '1.6 / 5.315',
+      appVersion: '1.6 / 5.316',
       backupType: 'complete',
       schemaVersion: 2,
       exportedAt: new Date().toISOString(),
@@ -4495,7 +4495,7 @@ function renderAppCheckResults(results, running=false){
 }
 async function testAppCheckFirestore(){
   const id = 'APP_CHECK_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-  const record = {id, appCheck:true, date:todayLocal(), note:'docasny diagnosticky zaznam', createdAt:new Date().toISOString(), appVersion:'1.6 / 5.315'};
+  const record = {id, appCheck:true, date:todayLocal(), note:'docasny diagnosticky zaznam', createdAt:new Date().toISOString(), appVersion:'1.6 / 5.316'};
   try{
     await setAndVerifyFirestoreRest(SCHEDULE_COLLECTION_NAME, id, record, 'Kontrola Firestore', 15000, 10000);
     return {ok:true, id};
@@ -4520,13 +4520,13 @@ async function runAppCheck(){
   renderAppCheckResults(results, true);
   appCheckAddResult(results, navigator.onLine ? 'ok' : 'error', 'Internet', navigator.onLine ? 'Zarizeni hlasi online rezim.' : 'Prohlizec hlasi offline rezim.');
   const versionText = document.querySelector('.side-version')?.textContent || '';
-  appCheckAddResult(results, versionText.includes('5.315') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
+  appCheckAddResult(results, versionText.includes('5.316') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
   appCheckAddResult(results, profile.safeMode ? 'ok' : 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, Samsung: ${profile.samsung ? 'ano' : 'ne'}, S20 FE: ${profile.s20fe ? 'ano' : 'ne'}, safe mode: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
     const cacheKeys = window.caches ? await caches.keys() : [];
-    const currentCache = cacheKeys.includes('liftcontrol-cz-v1-6-5-315');
-    const oldCaches = cacheKeys.filter(k => /^liftcontrol-cz-/i.test(k) && k !== 'liftcontrol-cz-v1-6-5-315');
+    const currentCache = cacheKeys.includes('liftcontrol-cz-v1-6-5-316');
+    const oldCaches = cacheKeys.filter(k => /^liftcontrol-cz-/i.test(k) && k !== 'liftcontrol-cz-v1-6-5-316');
     appCheckAddResult(results, currentCache && !oldCaches.length ? 'ok' : 'warn', 'Cache aplikace', `Aktualni: ${currentCache ? 'ano' : 'ne'}, stare baliky: ${oldCaches.length}.`);
   }catch(err){ appCheckAddResult(results, 'warn', 'Cache aplikace', errorText(err)); }
   try{
@@ -4586,19 +4586,19 @@ function scheduleEmptyAppRecovery(reason='startup'){
       await ensureFirestoreOnline();
       await refreshAllCloudDataFromServer('empty-recovery-' + reason, true);
       if(hasAnySyncedAppData()) return;
-      const key = 'liftcontrol_empty_recovery_5_315';
+      const key = 'liftcontrol_empty_recovery_5_316';
       const already = sessionStorage.getItem(key);
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.315');
+        url.searchParams.set('v','5.316');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
-      }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_315') !== '1'){
-        sessionStorage.setItem('liftcontrol_cache_recovery_5_315','1');
+      }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_316') !== '1'){
+        sessionStorage.setItem('liftcontrol_cache_recovery_5_316','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.315');
+        url.searchParams.set('v','5.316');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -4654,7 +4654,7 @@ function cloneQuarterlyDraftForStorage(record){
     const copy = JSON.parse(JSON.stringify(record || {}));
     copy._draftStepIndex = stepIndex || 0;
     copy._draftSavedAt = new Date().toISOString();
-    copy._draftAppVersion = '1.6 / 5.315';
+    copy._draftAppVersion = '1.6 / 5.316';
     return copy;
   }catch(e){
     return null;
@@ -5419,10 +5419,10 @@ function openWizard(editId=null, prefill={}){
       }
     }
   }
-  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.315'};
+  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.316'};
   rec = Object.assign({}, rec, prefill || {});
   if(!editId && !rec.cLogic) rec.cLogic = 'legacy';
-  if(!editId) rec.appVersion = '1.6 / 5.315';
+  if(!editId) rec.appVersion = '1.6 / 5.316';
 
   // Auto doplneni z historie podle vyrobniho cisla.
   if(rec.vc){
@@ -5488,7 +5488,7 @@ async function saveQuarterlyEditedProtocolFromWizard(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    rec.appVersion = '1.6 / 5.315';
+    rec.appVersion = '1.6 / 5.316';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -6025,7 +6025,7 @@ async function nextStep(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    rec.appVersion = '1.6 / 5.315';
+    rec.appVersion = '1.6 / 5.316';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -6118,7 +6118,7 @@ async function logAuditAction(action, entity, record, by, detail, beforeRecord){
       serial: record?.vc || record?.serial || '',
       type: record?.typ || record?.type || '',
       createdAt: new Date().toISOString(),
-      appVersion: '1.6 / 5.315',
+      appVersion: '1.6 / 5.316',
       restoreVersion: 1,
       before: beforeSnapshot ? cloneForAuditSnapshot(beforeSnapshot) : null,
       after: afterSnapshot ? cloneForAuditSnapshot(afterSnapshot) : null
@@ -8106,7 +8106,7 @@ async function saveWorkPlanFromForm(){
       place,
       extraPlaces,
       note,
-      appVersion:'1.6 / 5.315'
+      appVersion:'1.6 / 5.316'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     const saveResult = await saveWorkPlan(record);
@@ -8505,7 +8505,8 @@ function attachSmartSuggest(input, getItems, onPick){
 
   const open = () => {
     const q = String(input.value || '').trim();
-    if(q.length < 1){ close(); return; }
+    const minChars = Math.max(1, Number(input.dataset.smartSuggestMinChars || 1) || 1);
+    if(q.length < minChars){ close(); return; }
     const items = filterSuggestions(uniqueNonEmpty(getItems ? getItems() : []), q).slice(0,8);
     if(!items.length){ close(); return; }
 
@@ -8848,7 +8849,7 @@ async function saveFaultFromForm(){
       inService: status === 'service' ? true : (existing ? !!existing.inService : false),
       waitingParts: status === 'waiting_parts' ? true : (existing ? !!existing.waitingParts : false),
       photos: currentFaultPhotos,
-      appVersion:'1.6 / 5.315'
+      appVersion:'1.6 / 5.316'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     setLastEnteredBy(record.enteredBy);
@@ -8989,6 +8990,44 @@ function repairPartsRows(parts){
 function repairPartsToText(parts){
   return normalizeRepairParts(parts).map(p => [p.name, p.number, p.qty ? (p.qty + ' ks') : ''].filter(Boolean).join(' | ')).join('\n');
 }
+function repairFirstValue(record, keys){
+  for(const key of keys){
+    const value = record && record[key];
+    if(value !== undefined && value !== null && String(value).trim()) return String(value).trim();
+  }
+  return '';
+}
+function normalizeRepairRecordForProtocol(record){
+  const r = Object.assign({}, record || {});
+  const normalized = Object.assign({}, r, {
+    id:r.id || currentRepairId || repairUid(),
+    type:repairFirstValue(r, ['type','model','typ','machineType','stroj','typ_zarizeni']),
+    model:repairFirstValue(r, ['model','type','typ','machineType','stroj','typ_zarizeni']),
+    maker:repairFirstValue(r, ['maker','vyrobce','manufacturer']),
+    serial:repairFirstValue(r, ['serial','vc','vyrobni_cislo','vyrobniCislo','sn']),
+    evidence:repairFirstValue(r, ['evidence','evidencni','evidencni_cislo','evCislo','ec']),
+    mh:repairFirstValue(r, ['mh','motohodiny','mth','engineHours']),
+    place:repairFirstValue(r, ['place','umisteni','misto','branch','workPlace']),
+    customer:repairFirstValue(r, ['customer','provozovatel','objednatel','companyName','customerName']),
+    customerName:repairFirstValue(r, ['customerName','customer','objednatel']),
+    customerAddress:repairFirstValue(r, ['customerAddress','address','adresa']),
+    startedAt:repairFirstValue(r, ['startedAt','zahajeni','start','date','createdAt']),
+    finishedAt:repairFirstValue(r, ['finishedAt','ukonceni','finish','savedAt','date']),
+    tech:repairFirstValue(r, ['tech','technician','technik','provedl']),
+    safe:repairFirstValue(r, ['safe','safeAfterRepair','provozuSchopne']) || 'ANO',
+    sourceFaultText:repairFirstValue(r, ['sourceFaultText','fault','faultText','description','zavada','popis_zavady']),
+    cause:repairFirstValue(r, ['cause','reason','pricina','zjistena_pricina']),
+    work:repairFirstValue(r, ['work','repair','oprava','provedena_oprava','note','notes']),
+    result:repairFirstValue(r, ['result','vysledek']) || 'fixed',
+    receiver:repairFirstValue(r, ['receiver','prevzal','customerReceiver']),
+    techSignature:r.techSignature || r.technicianSignature || '',
+    receiverSignature:r.receiverSignature || r.customerSignature || '',
+    photos:Array.isArray(r.photos) ? r.photos : []
+  });
+  normalized.parts = normalizeRepairParts(r.parts || r.partsRows || r.nahradniDily || r.spareParts || r.nd || '');
+  if(!normalized.externalCustomer && normalized.place) normalized.place = repairPlaceInputValue(normalized.place, false);
+  return normalized;
+}
 function collectRepairPartsRows(){
   return Array.from(document.querySelectorAll('[data-repair-part-row]')).map(row => ({
     name:row.querySelector('[data-repair-part-name]')?.value.trim() || '',
@@ -9075,6 +9114,7 @@ function keepRepairPlaceFieldVisible(){
   const placeEl = document.getElementById('repairPlace');
   const scroller = document.querySelector('#repairModal .wizard-shell') || document.querySelector('#repairModal .modal-content');
   if(!placeEl || !scroller) return;
+  if(keepRepairPlaceFieldVisible._timer) clearTimeout(keepRepairPlaceFieldVisible._timer);
   const adjust = () => {
     if(!document.getElementById('repairModal')?.classList.contains('show')) return;
     const sRect = scroller.getBoundingClientRect();
@@ -9082,8 +9122,7 @@ function keepRepairPlaceFieldVisible(){
     const target = scroller.scrollTop + (pRect.top - sRect.top) - 80;
     scroller.scrollTop = Math.max(0, target);
   };
-  setTimeout(adjust, 80);
-  setTimeout(adjust, 320);
+  keepRepairPlaceFieldVisible._timer = setTimeout(adjust, 120);
 }
 function wireRepairExternalDetails(){
   const chk = document.getElementById('repairExternalCustomer');
@@ -9095,6 +9134,7 @@ function wireRepairExternalDetails(){
   if(!external) repairSyncPlaceCustomer();
 }
 function repairProtocolHtml(r){
+  r = normalizeRepairRecordForProtocol(r);
   const safe = String(r.safe || '').toUpperCase() === 'NE' ? 'NE' : 'ANO';
   const result = r.result || 'fixed';
   const protocolPlace = repairProtocolPlace(r);
@@ -9163,7 +9203,7 @@ body.repair-protocol-window{height:auto!important;min-height:100%!important;over
 `;
 }
 function printRepairRecord(record){
-  const html = repairProtocolHtml(record);
+  const html = repairProtocolHtml(normalizeRepairRecordForProtocol(record));
   const w = window.open('', '_blank');
   if(!w){ alert('Prohlizec zablokoval otevreni protokolu.'); return; }
   w.document.open();
@@ -9420,7 +9460,8 @@ function mergeRepairCloudWithLocal(cloudRows=[], localRows=[]){
 }
 function upsertLocalRepairRow(record){
   const rows = loadLocalRepairs();
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.315'});
+  record = normalizeRepairRecordForProtocol(record);
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.316'});
   const idx = rows.findIndex(x => String(x.id) === String(rec.id));
   if(idx >= 0) rows[idx] = rec; else rows.unshift(rec);
   const localResult = saveLocalRepairs(rows.slice(0,300));
@@ -9432,10 +9473,11 @@ function upsertLocalRepairRow(record){
   return {localResult, record:rec};
 }
 async function saveRepairRecord(record){
+  record = normalizeRepairRecordForProtocol(record);
   record.id = record.id || repairUid();
   record.savedAt = new Date().toISOString();
   record.updatedAt = record.savedAt;
-  record.appVersion = '1.6 / 5.315';
+  record.appVersion = '1.6 / 5.316';
   markRepairSyncState(record, false, null);
   const localSave = upsertLocalRepairRow(record);
   if(!localSave.localResult || !localSave.localResult.ok){
@@ -9487,7 +9529,8 @@ function startLocalRepairsMode(){
   schedulePendingRepairSync('repair-local-start', 600);
 }
 function saveRepairRecordLocal(record){
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.315'});
+  record = normalizeRepairRecordForProtocol(record);
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.316'});
   markRepairSyncState(rec, false, new Error('Starsí lokální uložení čeká na synchronizaci.'));
   upsertLocalRepairRow(rec);
   return rec;
@@ -9612,14 +9655,19 @@ function getRepairEvidenceSuggestionsAll(){
   return uniqueNonEmpty([...revizeMachineRows().map(r => r.evidencni), ...(loadLocalRepairs() || []).map(r => r.evidence)]).sort((a,b)=>String(a).localeCompare(String(b),'cs'));
 }
 function getRepairPlaceSuggestionsAll(){
-  return uniqueNonEmpty([
+  const now = Date.now();
+  if(getRepairPlaceSuggestionsAll._cache && now - getRepairPlaceSuggestionsAll._cacheAt < 15000) return getRepairPlaceSuggestionsAll._cache;
+  const suggestions = uniqueNonEmpty([
     ...(BRANCHES || []).map(branchShortName),
-    ...(faultsData || []).map(r => displayPlaceName(r.place)),
-    ...(partsData || []).map(r => displayPlaceName(r.place)),
-    ...(scheduleData || []).map(r => displayPlaceName(r.place)),
-    ...(loadLocalRepairs() || []).map(r => repairPlaceInputValue(r.place, !!r.externalCustomer)),
+    ...(faultsData || []).slice(-80).map(r => displayPlaceName(r.place)),
+    ...(partsData || []).slice(-80).map(r => displayPlaceName(r.place)),
+    ...(scheduleData || []).slice(-120).map(r => displayPlaceName(r.place)),
+    ...(loadLocalRepairs() || []).slice(0,80).map(r => repairPlaceInputValue(r.place, !!r.externalCustomer)),
     'Jiné místo'
-  ]).sort((a,b)=>String(a).localeCompare(String(b),'cs'));
+  ]).sort((a,b)=>String(a).localeCompare(String(b),'cs')).slice(0,160);
+  getRepairPlaceSuggestionsAll._cache = suggestions;
+  getRepairPlaceSuggestionsAll._cacheAt = now;
+  return suggestions;
 }
 function repairEvidenceForSerial(serial, info){
   if(info?.evidencni) return info.evidencni;
@@ -9661,7 +9709,10 @@ function attachRepairSmartSuggests(){
   attachSmartSuggest(document.getElementById('repairSerial'), getRepairSerialSuggestionsAll, applyMachineInfoToRepair);
   attachSmartSuggest(document.getElementById('repairEvidence'), getRepairEvidenceSuggestionsAll);
   const repairPlaceInput = document.getElementById('repairPlace');
-  if(repairPlaceInput) repairPlaceInput.dataset.smartSuggestNoAutoScroll = '1';
+  if(repairPlaceInput){
+    repairPlaceInput.dataset.smartSuggestNoAutoScroll = '1';
+    repairPlaceInput.dataset.smartSuggestMinChars = '2';
+  }
   attachSmartSuggest(repairPlaceInput, getRepairPlaceSuggestionsAll);
   attachSmartSuggest(document.getElementById('repairCustomer'), getCompanyNameSuggestionsAll);
 }
@@ -9744,7 +9795,7 @@ function collectRepairRecordFromForm(){
   const external = repairIsExternalCustomer();
   const place = repairPlaceInputValue(val('repairPlace'), external);
   const customer = external ? val('repairCustomer') : (val('repairCustomer') || (repairBranchCandidate(place) ? 'Zeppelin CZ s.r.o.' : ''));
-  return {
+  return normalizeRepairRecordForProtocol({
     id:currentRepairId,
     type:val('repairType'),
     maker:val('repairMaker'),
@@ -9770,7 +9821,7 @@ function collectRepairRecordFromForm(){
     techSignature:currentRepairTechSignature,
     receiverSignature:currentRepairSignature,
     photos:currentRepairPhotos
-  };
+  });
 }
 async function markFaultWaitingParts(id){
   const f = (faultsData || []).find(x => x.id === id);
@@ -10334,7 +10385,7 @@ async function savePartFromForm(){
       orderedAt: (statusVal === 'ordered' || statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.orderedAt) || new Date().toISOString()) : '',
       sentAt: (statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.sentAt) || new Date().toISOString()) : '',
       resolvedAt: statusVal === 'resolved' ? ((existing && existing.resolvedAt) || new Date().toISOString()) : '',
-      appVersion:'1.6 / 5.315'
+      appVersion:'1.6 / 5.316'
     });
     record.photos = JSON.parse(JSON.stringify(currentPartPhotos || []));
     record.photo = record.photos[0] || null;
@@ -10612,7 +10663,7 @@ function ensureRevizeMeterText(value){
 }
 function revizeDefaultMeter(){ try{ return ensureRevizeMeterText(localStorage.getItem('revize_last_meter') || ''); }catch(e){ return REVIZE_DEFAULT_METER; } }
 function revizeMeterInfo(text){ const s=String(text||''); const ev=[...s.matchAll(/v\.?\s*č\.?\s*[:.]?\s*([A-Za-z0-9/.-]+)/gi)].map(m=>m[1]); const kal=[...s.matchAll(/kal\.?\s*do\s*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{2,4})/gi)].map(m=>m[1]); return {ev:ev.join(', '), kalibrace:kal.join(', ')}; }
-function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),motohodiny:'',druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',naklon_x:'',naklon_y:'',stoupavost_stupne:'',stoupavost_procento:'',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.315'}; }
+function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,platnost:addMonthsToDate(d,12),motohodiny:'',druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o.',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',naklon_x:'',naklon_y:'',stoupavost_stupne:'',stoupavost_procento:'',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.316'}; }
 function revizeAnswerValue(value){ return String(value||'').trim().toUpperCase()==='NE' ? 'NE' : 'ANO'; }
 function revizeResult(r){
   r = r || {};
@@ -11205,7 +11256,7 @@ async function syncQuarterlyAfterRevize(r){
   last.typ=last.typ||r.model||r.typ||'';
   last.rok=last.rok||r.rok_vyroby||'';
   last.umisteni=r.umisteni||last.umisteni||'';
-  last.appVersion='1.6 / 5.315';
+  last.appVersion='1.6 / 5.316';
   const replaceByIdOrSerial=(arr, updated)=>{
     const idx=(arr||[]).findIndex(x=>(updated.id && x.id===updated.id) || matchesSerial(x));
     if(idx>=0) arr[idx]={...arr[idx],...updated};
@@ -11513,7 +11564,7 @@ function renderRevizeForm(r){ const type = r.typ_zarizeni || 'scissor'; const de
 function revizeFieldLabel(k){ const unit=revizeNumericUnit(k); const label=({hmotnost:'Hmotnost',nosnost:'Nosnost',pracovni_vyska:'Pracovní výška',vyska_podlahy:'Výška podlahy',bocni_dosah:'Boční dosah',naklon:'Náklon podvozku',naklon_x:'Podélný náklon',naklon_y:'Boční náklon',stoupavost_stupne:'Stoupavost ve stupních',stoupavost_procento:'Stoupavost v procentech',staticka_zatez:'Statická zátěž 125 %',dynamicka_zatez:'Dynamická zátěž 110 %',pohon:'Pohon',napajeni:'Napájení',stabilizatory:'Stabilizátory',deck:'Výsuvný deck',nabijec:'Nabíječ',zasuvka_kos:'Zásuvka v koši',rcd:'RCD'})[k]||k; return unit ? `${label} (${unit})` : label; }
 function revizeCheckRows(items,r,prefix){ return items.map(([k,l])=>{ const v=(r.checks||{})[k]||'ANO'; const n=(r.notes||{})[k]||''; return `<div class="revize-check-row"><strong>${escapeHtml(l)}</strong><div class="yesno"><button type="button" class="yn-btn ${v==='ANO'?'yes active':'yes'}" data-rz-check="${k}" data-rz-val="ANO">ANO</button><button type="button" class="yn-btn ${v==='NE'?'no active':'no'}" data-rz-check="${k}" data-rz-val="NE">NE</button></div><input data-rz-note="${k}" value="${escapeHtml(n)}" placeholder="Poznámka / opatření"></div>`; }).join(''); }
 function revizeElectroTable(r){ return `<table class="revize-mini-table"><thead><tr><th>Měřená část</th><th>Hodnota</th><th>Vyhovuje</th><th>Poznámka</th></tr></thead><tbody>${REVIZE_ELECTRO.map(([k,l,u])=>{ const e=(r.electro||{})[k]||{}; return `<tr><td>${escapeHtml(l)}</td><td><input data-rz-electro-val="${k}" value="${escapeHtml(revizeNormalizeElectroValue(k,e.value||''))}" placeholder="Hodnota"></td><td><select data-rz-electro-ok="${k}"><option ${e.ok==='ANO'?'selected':''}>ANO</option><option ${e.ok==='NE'?'selected':''}>NE</option></select></td><td><input data-rz-electro-note="${k}" value="${escapeHtml(e.note||'')}"></td></tr>`; }).join('')}</tbody></table>`; }
-function collectRevizeDraft(){ syncRevizeMeterFields(); const r=window.currentRevizeDraft||revizeDefaultRecord(); ['protokol','datum_kontroly','platnost','druh_kontroly','motohodiny','provozovatel','umisteni','typ_zarizeni','vyrobce','model','vyrobni_cislo','evidencni_cislo','rok_vyroby','norma','normy_revize','skupina','hmotnost','nosnost','pracovni_vyska','vyska_podlahy','bocni_dosah','naklon','naklon_x','naklon_y','stoupavost_stupne','stoupavost_procento','pohon','napajeni','stabilizatory','deck','nabijec','zasuvka_kos','rcd','rt_jmeno','rt_zz_osvedceni','rt_zz_opravneni','rt_ez_osvedceni','pristroj','pristroj_ev','kalibrace','zavady','predal','prevzal'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el) r[k]=revizeInputValue(k,el.value); }); revizeNormalizeTiltAxes(r); if(!String(r.normy_revize||'').trim()) r.normy_revize=revizeDefaultNormy(r.norma); delete r.rozmer_plosiny; delete r.typ_kol; delete r.pothole; delete r.rt_ez; delete r.termin_odstraneni; const cfg=REVIZE_DEVICE_TYPES[r.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; r.typ=cfg.label; if(shouldAutoReplaceRevizeGroup(r.skupina) || (r.typ_zarizeni === 'trailer' && ['B/2','1',''].includes(String(r.skupina||'').trim()))) r.skupina=normalizeRevizeGroupForDevice(r.typ_zarizeni, cfg.skupina); else r.skupina=normalizeRevizeGroupForDevice(r.typ_zarizeni, r.skupina); r.checks=r.checks||{}; r.notes=r.notes||{}; document.querySelectorAll('[data-rz-check].active').forEach(b=>r.checks[b.dataset.rzCheck]=b.dataset.rzVal); document.querySelectorAll('[data-rz-note]').forEach(i=>r.notes[i.dataset.rzNote]=i.value); r.electro=r.electro||{}; REVIZE_ELECTRO.forEach(([k])=>{ r.electro[k]={value:revizeNormalizeElectroValue(k, document.querySelector(`[data-rz-electro-val="${k}"]`)?.value||''),ok:document.querySelector(`[data-rz-electro-ok="${k}"]`)?.value||'ANO',note:document.querySelector(`[data-rz-electro-note="${k}"]`)?.value||''}; }); applyRevizeCalculatedLoads(r); syncRevizeLoadInputsFromCapacity(); r.vysledek=revizeResult(r); r.updatedAt=new Date().toISOString(); r.appVersion='1.6 / 5.315'; try{ if(r.pristroj) localStorage.setItem('revize_last_meter', r.pristroj); }catch(e){} window.currentRevizeDraft=r; return r; }
+function collectRevizeDraft(){ syncRevizeMeterFields(); const r=window.currentRevizeDraft||revizeDefaultRecord(); ['protokol','datum_kontroly','platnost','druh_kontroly','motohodiny','provozovatel','umisteni','typ_zarizeni','vyrobce','model','vyrobni_cislo','evidencni_cislo','rok_vyroby','norma','normy_revize','skupina','hmotnost','nosnost','pracovni_vyska','vyska_podlahy','bocni_dosah','naklon','naklon_x','naklon_y','stoupavost_stupne','stoupavost_procento','pohon','napajeni','stabilizatory','deck','nabijec','zasuvka_kos','rcd','rt_jmeno','rt_zz_osvedceni','rt_zz_opravneni','rt_ez_osvedceni','pristroj','pristroj_ev','kalibrace','zavady','predal','prevzal'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el) r[k]=revizeInputValue(k,el.value); }); revizeNormalizeTiltAxes(r); if(!String(r.normy_revize||'').trim()) r.normy_revize=revizeDefaultNormy(r.norma); delete r.rozmer_plosiny; delete r.typ_kol; delete r.pothole; delete r.rt_ez; delete r.termin_odstraneni; const cfg=REVIZE_DEVICE_TYPES[r.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; r.typ=cfg.label; if(shouldAutoReplaceRevizeGroup(r.skupina) || (r.typ_zarizeni === 'trailer' && ['B/2','1',''].includes(String(r.skupina||'').trim()))) r.skupina=normalizeRevizeGroupForDevice(r.typ_zarizeni, cfg.skupina); else r.skupina=normalizeRevizeGroupForDevice(r.typ_zarizeni, r.skupina); r.checks=r.checks||{}; r.notes=r.notes||{}; document.querySelectorAll('[data-rz-check].active').forEach(b=>r.checks[b.dataset.rzCheck]=b.dataset.rzVal); document.querySelectorAll('[data-rz-note]').forEach(i=>r.notes[i.dataset.rzNote]=i.value); r.electro=r.electro||{}; REVIZE_ELECTRO.forEach(([k])=>{ r.electro[k]={value:revizeNormalizeElectroValue(k, document.querySelector(`[data-rz-electro-val="${k}"]`)?.value||''),ok:document.querySelector(`[data-rz-electro-ok="${k}"]`)?.value||'ANO',note:document.querySelector(`[data-rz-electro-note="${k}"]`)?.value||''}; }); applyRevizeCalculatedLoads(r); syncRevizeLoadInputsFromCapacity(); r.vysledek=revizeResult(r); r.updatedAt=new Date().toISOString(); r.appVersion='1.6 / 5.316'; try{ if(r.pristroj) localStorage.setItem('revize_last_meter', r.pristroj); }catch(e){} window.currentRevizeDraft=r; return r; }
 async function saveRevizeFromForm(){
   if(revizeSaveInProgress) return;
   const r=collectRevizeDraft();
@@ -11963,7 +12014,7 @@ collectRevizeDraft = function(){
   });
   revizeSyncElectricalDependencies(r);
   r.normy_revize = revizeNormyForRecord(r);
-  r.appVersion = '1.6 / 5.315';
+  r.appVersion = '1.6 / 5.316';
   window.currentRevizeDraft = r;
   return r;
 };
@@ -12136,7 +12187,11 @@ document.getElementById('closeRepairArchiveTopBtn')?.addEventListener('click', (
 document.getElementById('newRepairFromArchiveBtn')?.addEventListener('click', () => { closeModal(document.getElementById('repairArchiveModal')); openRepairModal(); });
 document.getElementById('repairArchiveSearch')?.addEventListener('input', renderRepairArchiveList);
 document.getElementById('repairArchiveSort')?.addEventListener('change', renderRepairArchiveList);
-document.getElementById('printRepairBtn')?.addEventListener('click', () => printRepairRecord(collectRepairRecordFromForm()));
+document.getElementById('printRepairBtn')?.addEventListener('click', ev => {
+  ev.preventDefault();
+  try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(_e){}
+  printRepairRecord(collectRepairRecordFromForm());
+});
 document.getElementById('saveRepairBtn')?.addEventListener('click', async ev => {
   const btn = ev.currentTarget;
   if(btn && btn.disabled) return;
@@ -12160,7 +12215,6 @@ document.getElementById('repairSerial')?.addEventListener('blur', () => applyMac
 document.getElementById('repairPlace')?.addEventListener('change', repairSyncPlaceCustomer);
 document.getElementById('repairPlace')?.addEventListener('blur', repairSyncPlaceCustomer);
 document.getElementById('repairPlace')?.addEventListener('focus', keepRepairPlaceFieldVisible);
-document.getElementById('repairPlace')?.addEventListener('click', keepRepairPlaceFieldVisible);
 document.getElementById('repairExternalCustomer')?.addEventListener('change', wireRepairExternalDetails);
 document.getElementById('openRepairTechSignatureBtn')?.addEventListener('click', openRepairTechSignaturePad);
 document.getElementById('clearRepairTechSignatureBtn')?.addEventListener('click', () => { currentRepairTechSignature = ''; updateRepairSignaturePreview(); });
@@ -12473,7 +12527,7 @@ document.getElementById('appCheckCacheBtn')?.addEventListener('click', async () 
   if(!confirm('Vyčistit pouze cache aplikace? Uložená data ve Firebase ani lokální záznamy se nemažou.')) return;
   await resetAppShellCacheOnly('app-check-cache');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.315');
+  url.searchParams.set('v','5.316');
   url.searchParams.set('appCheckCache', String(Date.now()));
   location.replace(url.toString());
 });
@@ -12482,7 +12536,7 @@ document.getElementById('closeAppCheckTopBtn')?.addEventListener('click', () => 
 async function forceRefreshApplication(){
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.315');
+  url.searchParams.set('v','5.316');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 }
@@ -13000,8 +13054,8 @@ if ('serviceWorker' in navigator) {
   let appReloadingForUpdate = false;
   let appUpdateReloadTimer = null;
   const AUTO_APP_UPDATE = false;
-  const APP_UPDATE_ACK_KEY = 'liftcontrol_update_ack_5_315';
-  const APP_UPDATE_RELOAD_KEY = 'liftcontrol_update_reload_5_315';
+  const APP_UPDATE_ACK_KEY = 'liftcontrol_update_ack_5_316';
+  const APP_UPDATE_RELOAD_KEY = 'liftcontrol_update_reload_5_316';
   const APP_UPDATE_ACK_TTL = 24 * 60 * 60 * 1000;
   const appUpdateBanner = document.getElementById('appUpdateBanner');
   const appUpdateNowBtn = document.getElementById('appUpdateNowBtn');
