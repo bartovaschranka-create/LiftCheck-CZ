@@ -1,8 +1,8 @@
 {
-  "version": "5.328",
-  "appVersion": "1.6 / 5.328",
-  "cacheName": "liftcontrol-cz-v1-6-5-328",
-  "url": "./index.html?v=5.328",
+  "version": "5.329",
+  "appVersion": "1.6 / 5.329",
+  "cacheName": "liftcontrol-cz-v1-6-5-329",
+  "url": "./index.html?v=5.329",
   "releasedAt": "2026-08-03",
-  "message": "Zapis o oprave: tisk ceka na vykresleni a neodesle prazdnou stranku."
+  "message": "Revize ZZ: tisk a ulozeni PDF pouziva overeny render bez prazdnych stranek."
 }
