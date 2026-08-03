@@ -1,8 +1,8 @@
 {
-  "version": "5.320",
-  "appVersion": "1.6 / 5.320",
-  "cacheName": "liftcontrol-cz-v1-6-5-320",
-  "url": "./index.html?v=5.320",
+  "version": "5.321",
+  "appVersion": "1.6 / 5.321",
+  "cacheName": "liftcontrol-cz-v1-6-5-321",
+  "url": "./index.html?v=5.321",
   "releasedAt": "2026-08-03",
-  "message": "Stabilizace mobilu a automaticka kontrola aktualizace."
+  "message": "Doplneni zapisu o oprave: doprava k zakaznikovi a cas prace."
 }
