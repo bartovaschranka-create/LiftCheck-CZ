@@ -1,8 +1,8 @@
 {
-  "version": "5.324",
-  "appVersion": "1.6 / 5.324",
-  "cacheName": "liftcontrol-cz-v1-6-5-324",
-  "url": "./index.html?v=5.324",
+  "version": "5.325",
+  "appVersion": "1.6 / 5.325",
+  "cacheName": "liftcontrol-cz-v1-6-5-325",
+  "url": "./index.html?v=5.325",
   "releasedAt": "2026-08-03",
-  "message": "Revize ZZ: Z-62 744 nacita kompletnejsi podklady z importovaneho protokolu."
+  "message": "Zapisy o oprave: cas prace a doprava se v protokolu formatuji s jednotkami."
 }
