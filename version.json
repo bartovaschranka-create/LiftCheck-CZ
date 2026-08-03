@@ -1,8 +1,8 @@
 {
-  "version": "5.325",
-  "appVersion": "1.6 / 5.325",
-  "cacheName": "liftcontrol-cz-v1-6-5-325",
-  "url": "./index.html?v=5.325",
+  "version": "5.326",
+  "appVersion": "1.6 / 5.326",
+  "cacheName": "liftcontrol-cz-v1-6-5-326",
+  "url": "./index.html?v=5.326",
   "releasedAt": "2026-08-03",
-  "message": "Zapisy o oprave: cas prace a doprava se v protokolu formatuji s jednotkami."
+  "message": "Opraven tisk a ulozeni PDF hotovych revizi ZZ bez prazdne stranky."
 }
