@@ -1,7 +1,8 @@
-const CACHE_NAME = 'liftcontrol-cz-v1-6-5-319';
+const CACHE_NAME = 'liftcontrol-cz-v1-6-5-320';
 const APP_SHELL = [
   './',
   './index.html',
+  './version.json',
   './revize-machine-db.js',
   './liftcontrol-backup-data.js',
   './manifest.json',
@@ -44,6 +45,19 @@ self.addEventListener('fetch', event => {
 
   if (url.pathname.endsWith('/reset.html')) {
     event.respondWith(fetch(request, { cache: 'no-store' }));
+    return;
+  }
+
+  if (url.pathname.endsWith('/version.json')) {
+    event.respondWith(
+      fetch(request, { cache: 'no-store' })
+        .then(response => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
     return;
   }
 
