@@ -1,8 +1,8 @@
 {
-  "version": "5.323",
-  "appVersion": "1.6 / 5.323",
-  "cacheName": "liftcontrol-cz-v1-6-5-323",
-  "url": "./index.html?v=5.323",
+  "version": "5.324",
+  "appVersion": "1.6 / 5.324",
+  "cacheName": "liftcontrol-cz-v1-6-5-324",
+  "url": "./index.html?v=5.324",
   "releasedAt": "2026-08-03",
-  "message": "Doplnena plosina Z-62/40 RT 744 do naseptavace revizi."
+  "message": "Revize ZZ: Z-62 744 nacita kompletnejsi podklady z importovaneho protokolu."
 }
