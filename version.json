@@ -1,8 +1,8 @@
 {
-  "version": "5.326",
-  "appVersion": "1.6 / 5.326",
-  "cacheName": "liftcontrol-cz-v1-6-5-326",
-  "url": "./index.html?v=5.326",
+  "version": "5.327",
+  "appVersion": "1.6 / 5.327",
+  "cacheName": "liftcontrol-cz-v1-6-5-327",
+  "url": "./index.html?v=5.327",
   "releasedAt": "2026-08-03",
-  "message": "Opraven tisk a ulozeni PDF hotovych revizi ZZ bez prazdne stranky."
+  "message": "Zapis o oprave: ND tabulka se tiskne jen pri vyplnenych dilech a podpisy se nedeli pres stranky."
 }
