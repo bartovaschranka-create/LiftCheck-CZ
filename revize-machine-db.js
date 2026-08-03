@@ -6,6 +6,7 @@ window.REVIZE_MACHINE_DB = [
     "created": "2026-01-09",
     "validTo": "2027-01-09",
     "protocol": "4RZ/26",
+    "motohodiny": "1507",
     "owner": "Zeppelin CZ s.r.o - Lipová 72, 251 70 Modletice",
     "place": "Zeppelin CZ s.r.o - Kvítkovická 1623, 763 61 Napajedla",
     "model": "Z-62/40 RT",
@@ -27,6 +28,14 @@ window.REVIZE_MACHINE_DB = [
     "charger": "ANO",
     "socket": "ANO",
     "rcd": "ANO",
+    "electro": {
+      "rpe": {"value": "0,061", "ok": "ANO", "note": ""},
+      "riso_zasuvka": {"value": "min. 99", "ok": "ANO", "note": "měřeno napětím 1000 V DC"},
+      "rcd_hodnota": {"value": "24,3 ms / 22,2 mA", "ok": "ANO", "note": "EATON PFL7-16/1N/C003"},
+      "rcd_cas": {"value": "24,3", "ok": "ANO", "note": ""},
+      "rcd_proud": {"value": "22,2", "ok": "ANO", "note": ""},
+      "zasuvka_zs": {"value": "0,94", "ok": "ANO", "note": "U0 = 0,1 V"}
+    },
     "norma": "ČSN EN 280+A1",
     "normyRevize": "revize ZZ dle požadavků NV č.193/2022 v součinnosti ČSN EN 280+A1; Kontrola elektrické výbavy zařízení dle ČSN EN 50699, ČSN 33 1600 ed. 2/Z2 a dokumentace výrobce.",
     "deviceType": "articulated"
