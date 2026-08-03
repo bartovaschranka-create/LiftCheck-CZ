@@ -1,8 +1,8 @@
 {
-  "version": "5.321",
-  "appVersion": "1.6 / 5.321",
-  "cacheName": "liftcontrol-cz-v1-6-5-321",
-  "url": "./index.html?v=5.321",
+  "version": "5.322",
+  "appVersion": "1.6 / 5.322",
+  "cacheName": "liftcontrol-cz-v1-6-5-322",
+  "url": "./index.html?v=5.322",
   "releasedAt": "2026-08-03",
-  "message": "Doplneni zapisu o oprave: doprava k zakaznikovi a cas prace."
+  "message": "Revize ZZ: vlecne plosiny bez snimani nosnosti pouziji zkousku 150 procent."
 }
