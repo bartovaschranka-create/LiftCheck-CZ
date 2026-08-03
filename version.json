@@ -1,8 +1,8 @@
 {
-  "version": "5.333",
-  "appVersion": "1.6 / 5.333",
-  "cacheName": "liftcontrol-cz-v1-6-5-333",
-  "url": "./index.html?v=5.333",
+  "version": "5.334",
+  "appVersion": "1.6 / 5.334",
+  "cacheName": "liftcontrol-cz-v1-6-5-334",
+  "url": "./index.html?v=5.334",
   "releasedAt": "2026-08-03",
-  "message": "Revize ZZ: RCD cas/proud se cte primo z formularovych poli pred ulozenim."
+  "message": "Revize ZZ: RCD cas/proud se uklada i pri duplicitnich formularovych blocich."
 }
