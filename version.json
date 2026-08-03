@@ -1,8 +1,8 @@
 {
-  "version": "5.322",
-  "appVersion": "1.6 / 5.322",
-  "cacheName": "liftcontrol-cz-v1-6-5-322",
-  "url": "./index.html?v=5.322",
+  "version": "5.323",
+  "appVersion": "1.6 / 5.323",
+  "cacheName": "liftcontrol-cz-v1-6-5-323",
+  "url": "./index.html?v=5.323",
   "releasedAt": "2026-08-03",
-  "message": "Revize ZZ: vlecne plosiny bez snimani nosnosti pouziji zkousku 150 procent."
+  "message": "Doplnena plosina Z-62/40 RT 744 do naseptavace revizi."
 }
