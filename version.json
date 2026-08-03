@@ -1,8 +1,8 @@
 {
-  "version": "5.335",
-  "appVersion": "1.6 / 5.335",
-  "cacheName": "liftcontrol-cz-v1-6-5-335",
-  "url": "./index.html?v=5.335",
+  "version": "5.336",
+  "appVersion": "1.6 / 5.336",
+  "cacheName": "liftcontrol-cz-v1-6-5-336",
+  "url": "./index.html?v=5.336",
   "releasedAt": "2026-08-03",
-  "message": "Revize ZZ: RCD cas/proud se zapisuje primo do zaznamu pred ulozenim."
+  "message": "Revize ZZ: RCD cas/proud prijima desetinnou carku a uklada se pred ulozenim."
 }
