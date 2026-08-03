@@ -1,8 +1,8 @@
 {
-  "version": "5.329",
-  "appVersion": "1.6 / 5.329",
-  "cacheName": "liftcontrol-cz-v1-6-5-329",
-  "url": "./index.html?v=5.329",
+  "version": "5.330",
+  "appVersion": "1.6 / 5.330",
+  "cacheName": "liftcontrol-cz-v1-6-5-330",
+  "url": "./index.html?v=5.330",
   "releasedAt": "2026-08-03",
-  "message": "Revize ZZ: tisk a ulozeni PDF pouziva overeny render bez prazdnych stranek."
+  "message": "Revize ZZ: tisk a ulozeni PDF pouziva nativni tiskove okno bez prazdneho canvasu."
 }
