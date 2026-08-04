@@ -1,8 +1,8 @@
 {
-  "version": "5.340",
-  "appVersion": "1.6 / 5.340",
-  "cacheName": "liftcontrol-cz-v1-6-5-340",
-  "url": "./index.html?v=5.340",
+  "version": "5.341",
+  "appVersion": "1.6 / 5.341",
+  "cacheName": "liftcontrol-cz-v1-6-5-341",
+  "url": "./index.html?v=5.341",
   "releasedAt": "2026-08-04",
-  "message": "iPhone a iPad: rychly start, prioritni nacteni revizi a postupna synchronizace bez blokovani aplikace."
+  "message": "iOS a Android: izolovane rolovani formularu, zamknuty podklad a podpora otoceni telefonu i tabletu."
 }

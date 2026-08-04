@@ -1,5 +1,5 @@
-const CACHE_NAME = 'liftcontrol-cz-v1-6-5-340';
-const APP_VERSION_URL = './index.html?v=5.340';
+const CACHE_NAME = 'liftcontrol-cz-v1-6-5-341';
+const APP_VERSION_URL = './index.html?v=5.341';
 const APP_SHELL = [
   './',
   './index.html',
