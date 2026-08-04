@@ -2066,7 +2066,11 @@ body{position:relative!important}
 /* v1.6 / 5.237: revize ZZ modal ma vlastni scrollovatelnou cast pro kolecko mysi. */
 .revize-wizard-modal.show{overflow:hidden!important;align-items:center!important;justify-content:center!important}
 .revize-wizard-modal .modal-content{max-height:calc(100dvh - 32px)!important;display:flex!important;flex-direction:column!important;overflow:hidden!important}
-.revize-wizard-modal .revize-form{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important}
+.revize-wizard-modal{touch-action:none!important;overscroll-behavior:none!important}
+.revize-wizard-modal .modal-content{touch-action:pan-y!important;overscroll-behavior:contain!important}
+.revize-wizard-modal .revize-form{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;touch-action:pan-y!important}
+.revize-wizard-modal .revize-form textarea{touch-action:pan-y!important;overscroll-behavior:contain!important}
+body.revize-modal-open{position:fixed!important;left:0!important;right:0!important;width:100%!important;overflow:hidden!important;overscroll-behavior:none!important}
 .revize-wizard-modal .preview-actions{flex:0 0 auto!important}
 @media(max-width:640px){.revize-wizard-modal.show{align-items:flex-start!important;overflow:hidden!important}.revize-wizard-modal .modal-content{max-height:calc(100dvh - 16px)!important}.revize-wizard-modal .revize-form{max-height:calc(100dvh - 16px)!important}}
 /* v1.6 / 5.336: dlouhe zapisy o oprave maji vlastni scroll, aby se na mobilu neposouvala stranka pod modalem. */
@@ -10910,10 +10914,44 @@ function ensureRevizeWizardModal(){
     form.parentElement.insertBefore(ph, form);
     modal.querySelector('.modal-content').appendChild(form);
   }
+  if(modal.dataset.scrollIsolationInstalled !== '1'){
+    modal.dataset.scrollIsolationInstalled = '1';
+    modal.addEventListener('wheel', ev => {
+      if(!modal.classList.contains('show') || ev.ctrlKey || Math.abs(ev.deltaX) > Math.abs(ev.deltaY)) return;
+      const formScroller = modal.querySelector('#revizeFormWrap');
+      if(!formScroller) return;
+      const nested = ev.target.closest('textarea,.smart-suggest-box');
+      const canScroll = node => {
+        if(!node) return false;
+        const max = node.scrollHeight - node.clientHeight;
+        return max > 1 && ((ev.deltaY > 0 && node.scrollTop < max - 1) || (ev.deltaY < 0 && node.scrollTop > 1));
+      };
+      const scroller = canScroll(nested) ? nested : formScroller;
+      const max = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+      scroller.scrollTop = Math.max(0, Math.min(max, scroller.scrollTop + ev.deltaY));
+      ev.preventDefault();
+      ev.stopPropagation();
+    }, {passive:false, capture:true});
+  }
   return modal;
 }
-function openRevizeForm(id){ setRevizeMode('new'); editingRevizeId = id || null; revizeStepIndex = 0; const row = id ? JSON.parse(JSON.stringify((revizeData||[]).find(r=>r.id===id)||revizeDefaultRecord())) : revizeDefaultRecord(); if(!id){ const today=todayLocal(); row.datum_kontroly=today; row.platnost=addMonthsToDate(today,12); } window.currentRevizeDraft = row; const modal=ensureRevizeWizardModal(); renderRevizeForm(row); document.getElementById('revizeFormWrap')?.classList.remove('hidden'); showSection('revize'); modal.classList.add('show'); setTimeout(()=>document.getElementById(id ? 'rz_protokol' : 'rz_vyrobni_cislo')?.focus(),0); }
-function closeRevizeForm(){ editingRevizeId=null; window.currentRevizeDraft=null; document.getElementById('revizeFormWrap')?.classList.add('hidden'); document.getElementById('revizeWizardModal')?.classList.remove('show'); }
+function lockPageBehindRevize(){
+  if(document.body.classList.contains('revize-modal-open')) return;
+  const scrollY = window.scrollY || document.documentElement.scrollTop || 0;
+  document.body.dataset.revizeScrollY = String(scrollY);
+  document.body.style.top = `-${scrollY}px`;
+  document.body.classList.add('revize-modal-open');
+}
+function unlockPageBehindRevize(){
+  if(!document.body.classList.contains('revize-modal-open')) return;
+  const scrollY = Number(document.body.dataset.revizeScrollY || 0);
+  document.body.classList.remove('revize-modal-open');
+  document.body.style.top = '';
+  delete document.body.dataset.revizeScrollY;
+  window.scrollTo(0, scrollY);
+}
+function openRevizeForm(id){ setRevizeMode('new'); editingRevizeId = id || null; revizeStepIndex = 0; const row = id ? JSON.parse(JSON.stringify((revizeData||[]).find(r=>r.id===id)||revizeDefaultRecord())) : revizeDefaultRecord(); if(!id){ const today=todayLocal(); row.datum_kontroly=today; row.platnost=addMonthsToDate(today,12); } window.currentRevizeDraft = row; const modal=ensureRevizeWizardModal(); renderRevizeForm(row); document.getElementById('revizeFormWrap')?.classList.remove('hidden'); showSection('revize'); lockPageBehindRevize(); modal.classList.add('show'); const formScroller=document.getElementById('revizeFormWrap'); if(formScroller) formScroller.scrollTop=0; setTimeout(()=>document.getElementById(id ? 'rz_protokol' : 'rz_vyrobni_cislo')?.focus({preventScroll:true}),0); }
+function closeRevizeForm(){ editingRevizeId=null; window.currentRevizeDraft=null; document.getElementById('revizeFormWrap')?.classList.add('hidden'); document.getElementById('revizeWizardModal')?.classList.remove('show'); unlockPageBehindRevize(); }
 function closeRevizeToHome(){ closeRevizeForm(); showSection('home'); }
 let revizeMachineRowsCache = null;
 let revizeMachineRowsCacheAt = 0;
