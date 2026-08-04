@@ -1,8 +1,8 @@
 {
-  "version": "5.341",
-  "appVersion": "1.6 / 5.341",
-  "cacheName": "liftcontrol-cz-v1-6-5-341",
-  "url": "./index.html?v=5.341",
+  "version": "5.342",
+  "appVersion": "1.6 / 5.342",
+  "cacheName": "liftcontrol-cz-v1-6-5-342",
+  "url": "./index.html?v=5.342",
   "releasedAt": "2026-08-04",
-  "message": "iOS a Android: izolovane rolovani formularu, zamknuty podklad a podpora otoceni telefonu i tabletu."
+  "message": "Rychlejsi start: Firebase lokalne, QR a PDF knihovny az pri pouziti, bez externich blokujicich CDN."
 }
