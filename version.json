@@ -1,8 +1,8 @@
 {
-  "version": "5.337",
-  "appVersion": "1.6 / 5.337",
-  "cacheName": "liftcontrol-cz-v1-6-5-337",
-  "url": "./index.html?v=5.337",
+  "version": "5.338",
+  "appVersion": "1.6 / 5.338",
+  "cacheName": "liftcontrol-cz-v1-6-5-338",
+  "url": "./index.html?v=5.338",
   "releasedAt": "2026-08-04",
-  "message": "Hlaseni poruch: spolehlive zpracovani a ulozeni az ctyr fotografii na PC, Androidu a iOS."
+  "message": "Revize: formular zustava otevreny pri chybe Firebase, rychlejsi psani a tvrda vynucena aktualizace."
 }

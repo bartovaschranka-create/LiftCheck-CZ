@@ -1,4 +1,5 @@
-const CACHE_NAME = 'liftcontrol-cz-v1-6-5-337';
+const CACHE_NAME = 'liftcontrol-cz-v1-6-5-338';
+const APP_VERSION_URL = './index.html?v=5.338';
 const APP_SHELL = [
   './',
   './index.html',
@@ -16,6 +17,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -30,6 +32,12 @@ self.addEventListener('activate', event => {
     caches.keys()
       .then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))))
       .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({type:'window', includeUncontrolled:true}))
+      .then(clients => Promise.all(clients.map(client => {
+        const target = new URL(APP_VERSION_URL, self.registration.scope);
+        target.searchParams.set('forcedUpdate', String(Date.now()));
+        return client.navigate(target.toString()).catch(() => null);
+      })))
   );
 });
 
