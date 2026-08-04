@@ -1,8 +1,8 @@
 {
-  "version": "5.339",
-  "appVersion": "1.6 / 5.339",
-  "cacheName": "liftcontrol-cz-v1-6-5-339",
-  "url": "./index.html?v=5.339",
+  "version": "5.340",
+  "appVersion": "1.6 / 5.340",
+  "cacheName": "liftcontrol-cz-v1-6-5-340",
+  "url": "./index.html?v=5.340",
   "releasedAt": "2026-08-04",
-  "message": "Revize: dvojite lokalni ulozeni, overeni zapisu, oprava synchronizace, rolovani formulare a obnova stare PWA."
+  "message": "iPhone a iPad: rychly start, prioritni nacteni revizi a postupna synchronizace bez blokovani aplikace."
 }
