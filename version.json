@@ -1,8 +1,8 @@
 {
-  "version": "5.336",
-  "appVersion": "1.6 / 5.336",
-  "cacheName": "liftcontrol-cz-v1-6-5-336",
-  "url": "./index.html?v=5.336",
-  "releasedAt": "2026-08-03",
-  "message": "Revize ZZ: RCD cas/proud prijima desetinnou carku a uklada se pred ulozenim."
+  "version": "5.337",
+  "appVersion": "1.6 / 5.337",
+  "cacheName": "liftcontrol-cz-v1-6-5-337",
+  "url": "./index.html?v=5.337",
+  "releasedAt": "2026-08-04",
+  "message": "Hlaseni poruch: spolehlive zpracovani a ulozeni az ctyr fotografii na PC, Androidu a iOS."
 }
