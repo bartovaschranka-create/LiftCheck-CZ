@@ -3116,7 +3116,12 @@ const DEVICE_PROFILE = (() => {
   const lowCores = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
   const s20fe = /SM-G78|S20 FE/i.test(ua);
   const oldIOS = ios && ((navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || /iPhone OS 1[0-5]_/i.test(ua));
-  return {ios, android, samsung, lowMemory, lowCores, s20fe, oldIOS, safeMode: ios || (android && (samsung || s20fe || lowMemory || lowCores))};
+  const androidMajor = Number(ua.match(/Android\s+(\d+)/i)?.[1] || 0);
+  const oldAndroid = android && androidMajor > 0 && androidMajor <= 10;
+  const saveData = !!navigator.connection?.saveData;
+  const slowConnection = /(^|-)2g$/i.test(String(navigator.connection?.effectiveType || ''));
+  const safeMode = ios || (android && (samsung || s20fe || oldAndroid || lowMemory || lowCores || saveData || slowConnection));
+  return {ios, android, samsung, lowMemory, lowCores, s20fe, oldIOS, oldAndroid, saveData, slowConnection, safeMode};
 })();
 window.DEVICE_PROFILE = DEVICE_PROFILE;
 if(DEVICE_PROFILE.safeMode){
@@ -4644,7 +4649,7 @@ async function runAppCheck(){
   const versionText = document.querySelector('.side-version')?.textContent || '';
   appCheckAddResult(results, versionText.includes('5.343') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
-  appCheckAddResult(results, profile.safeMode ? 'ok' : 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, Samsung: ${profile.samsung ? 'ano' : 'ne'}, S20 FE: ${profile.s20fe ? 'ano' : 'ne'}, safe mode: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
+  appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
     const cacheKeys = window.caches ? await caches.keys() : [];
     const currentCache = cacheKeys.includes('liftcontrol-cz-v1-6-5-343');
@@ -13596,7 +13601,11 @@ installDoubleTapGuard();
 let lastForegroundRefreshAt = 0;
 window.addEventListener('online', () => {
   ensureFirestoreOnline().catch(err => console.warn('Firebase network restore failed:', err));
-  deferUiWork(() => refreshAllCloudDataFromServer('online').catch(err => console.warn('Cloud data refresh failed:', err)), DEVICE_PROFILE.safeMode ? 1200 : 250);
+  // Android/PC obnovi onSnapshot samo. Plny refresh je potreba jen na iOS
+  // nebo kdyz v zarizeni opravdu nejsou zadna data.
+  if(DEVICE_PROFILE.ios || !hasAnySyncedAppData()){
+    deferUiWork(() => refreshAllCloudDataFromServer('online').catch(err => console.warn('Cloud data refresh failed:', err)), DEVICE_PROFILE.safeMode ? 1200 : 250);
+  }
   scheduleCloudRefreshRetries('online');
   scheduleEmptyAppRecovery('online');
   schedulePendingSyncBatch('online', false, DEVICE_PROFILE.safeMode ? 3600 : 1000);
@@ -13607,7 +13616,9 @@ document.addEventListener('visibilitychange', () => {
   const now = Date.now();
   if(!lastForegroundRefreshAt || now - lastForegroundRefreshAt > (DEVICE_PROFILE.safeMode ? 90000 : 45000)){
     lastForegroundRefreshAt = now;
-    deferUiWork(() => refreshAllCloudDataFromServer('foreground').catch(err => console.warn('Cloud data foreground refresh failed:', err)), DEVICE_PROFILE.safeMode ? 1500 : 250);
+    if(DEVICE_PROFILE.ios || !hasAnySyncedAppData()){
+      deferUiWork(() => refreshAllCloudDataFromServer('foreground').catch(err => console.warn('Cloud data foreground refresh failed:', err)), DEVICE_PROFILE.safeMode ? 1500 : 250);
+    }
     scheduleCloudRefreshRetries('foreground');
   }
   scheduleEmptyAppRecovery('foreground');
