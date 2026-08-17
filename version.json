@@ -1,8 +1,8 @@
 {
-  "version": "5.343",
-  "appVersion": "1.6 / 5.343",
-  "cacheName": "liftcontrol-cz-v1-6-5-343",
-  "url": "./index.html?v=5.343",
+  "version": "5.344",
+  "appVersion": "1.6 / 5.344",
+  "cacheName": "liftcontrol-cz-v1-6-5-344",
+  "url": "./index.html?v=5.344",
   "releasedAt": "2026-08-17",
-  "message": "Plynulejsi start bez duplicitniho nacitani; fotky zapisu o oprave se bezpecne synchronizuji mezi zarizenimi."
+  "message": "Plynulejsi archiv Revizi ZZ: postupne vykreslovani po malych davkach pro stare telefony a tablety."
 }
