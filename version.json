@@ -1,8 +1,8 @@
 {
-  "version": "5.345",
-  "appVersion": "1.6 / 5.345",
-  "cacheName": "liftcontrol-cz-v1-6-5-345",
-  "url": "./index.html?v=5.345",
+  "version": "5.346",
+  "appVersion": "1.6 / 5.346",
+  "cacheName": "liftcontrol-cz-v1-6-5-346",
+  "url": "./index.html?v=5.346",
   "releasedAt": "2026-08-17",
-  "message": "Opraveny nahled protokolu kontroly na PC, iOS a Androidu; navrat do rozepsaneho formulare a neblokujici autosave."
+  "message": "Nahled protokolu se otevre okamzite a obsah se vykresli asynchronne bez zamrznuti na PC, iOS a Androidu."
 }
