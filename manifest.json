@@ -3,7 +3,7 @@
   "short_name": "LiftControl",
   "description": "Kontroly, poruchy, nahradni dily, plan prace a karty stroju.",
   "lang": "cs-CZ",
-  "start_url": "./index.html?v=5.346",
+  "start_url": "./index.html?v=5.348",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
