@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftcontrol-cz-v1-6-5-346';
+const CACHE_NAME = 'liftcontrol-cz-v1-6-5-346-storage-sync';
 const APP_VERSION_URL = './index.html?v=5.346';
 const APP_SHELL = [
   './',
