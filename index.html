@@ -3629,6 +3629,15 @@ async function compressPhoto(file, maxBytes=MAX_PHOTO_BYTES){
 function iconHtml(kind){ return ''; }
 function markBox(checked){ return '<span class="mark-box '+(checked ? 'checked' : '')+'" aria-hidden="true"></span>'; }
 function errorText(err){ return err && (err.message || err.code || String(err)) || 'Neznámá chyba'; }
+function storageSyncErrorText(err){
+  const raw = [err?.code, err?.message, String(err || '')].filter(Boolean).join(' ').toLowerCase();
+  if(/402|billing|payment|required|userprojectaccountproblem/.test(raw)) return 'Uloziste fotografii nema aktivni fakturaci. Protokol je synchronizovany a fotografie zustaly pripravene k pozdejsimu nahrani.';
+  if(/403|unauthorized|permission|forbidden/.test(raw)) return 'Uloziste fotografii odmitlo pristup. Protokol je synchronizovany a fotografie zustaly pripravene k pozdejsimu nahrani.';
+  if(/quota|limit|exceeded/.test(raw)) return 'Uloziste fotografii dosahlo limitu. Protokol je synchronizovany a fotografie zustaly pripravene k pozdejsimu nahrani.';
+  if(/network|offline|failed to fetch|internet|timeout|vyprsel|vypršel/.test(raw) || navigator.onLine === false) return 'Fotografie se nepodarilo odeslat kvuli pripojeni. Protokol je synchronizovany a fotografie zustaly bezpecne ulozene v tomto zarizeni.';
+  if(/unavailable|temporary|internal|retry|503|500/.test(raw)) return 'Uloziste fotografii je docasne nedostupne. Protokol je synchronizovany a fotografie se mohou odeslat pozdeji.';
+  return 'Fotografie se ted nepodarilo nahrat. Protokol je synchronizovany a fotografie zustaly pripravene k pozdejsi synchronizaci.';
+}
 const appLazyScriptPromises = new Map();
 function loadAppScriptOnce(src, ready){
   if(typeof ready === 'function' && ready()) return Promise.resolve(true);
@@ -3824,6 +3833,28 @@ function protocolSyncBadgeHtml(record){
   if(!protocolSyncPending(record)) return '';
   return '<span class="badge badge-warn" title="Protokol je ulozeny jen v tomto zarizeni a ceka na odeslani do Firebase.">Ceka na synchronizaci</span>';
 }
+function pendingProtocolPhotoCount(record){
+  let count = 0;
+  Object.values(record?.photos || {}).forEach(photo => { if(photo?.dataUrl) count++; });
+  Object.values(record?.issuePhotos || {}).forEach(value => {
+    const photos = Array.isArray(value) ? value : (value ? [value] : []);
+    photos.forEach(photo => { if(photo?.dataUrl) count++; });
+  });
+  return count;
+}
+function protocolPhotoSyncPending(record){ return !!(record && (record.photoSyncPending || pendingProtocolPhotoCount(record))); }
+function markProtocolPhotoSyncState(record, pending=false, err=null){
+  if(!record) return record;
+  record.photoSyncPending = !!pending;
+  record.photoSyncError = pending ? storageSyncErrorText(err) : '';
+  record.photosSyncedAt = pending ? '' : new Date().toISOString();
+  return record;
+}
+function protocolPhotoSyncBadgeHtml(record){
+  if(!protocolPhotoSyncPending(record)) return '';
+  const count = pendingProtocolPhotoCount(record);
+  return `<span class="badge badge-warn" title="${escapeHtml(record.photoSyncError || 'Fotografie zustaly bezpecne ulozene v tomto zarizeni a cekaji na Firebase Storage.')}">Fotografie cekaji na nahrani${count ? ' ('+count+')' : ''}</span>`;
+}
 function faultSyncPending(f){ return !!(f && (f.syncPending || f.cloudPending)); }
 function faultNeedsLegacySyncRetry(f){
   if(!f || faultSyncPending(f) || f.cloudSynced === true || !f.id) return false;
@@ -3920,39 +3951,63 @@ async function uploadDataUrl(path, dataUrl){
   await withTimeout(ref.put(blob, {contentType:'image/jpeg'}), 90000, 'Nahrání fotky do Firebase Storage');
   return await withTimeout(ref.getDownloadURL(), 30000, 'Získání odkazu na fotku z Firebase Storage');
 }
-async function prepareRecordForSave(record){
-  record.photos = record.photos || {};
-  record.issuePhotos = record.issuePhotos || {};
-  if(!(firebaseAvailable && storageAvailable && storage)) return record;
-  for(const step of PHOTO_STEPS){
-    const key = step.photoKey;
-    const p = record.photos[key];
-    if(p && p.dataUrl){
-      const path = `${STORAGE_PREFIX}/${record.id}/${key}.jpg`;
-      const url = await uploadDataUrl(path, p.dataUrl);
-      record.photos[key] = {url, path, label:PHOTO_LABELS[key], bytes:p.bytes||0, updatedAt:new Date().toISOString()};
-    }
-  }
-  for(const [key,p] of Object.entries(record.issuePhotos || {})){
-    const safeKey = String(key).replace(/[^a-zA-Z0-9_-]/g,'_');
-    const list = Array.isArray(p) ? p : (p ? [p] : []);
-    const out = [];
-    for(let i=0;i<list.length;i++){
-      const item = list[i];
-      if(item && item.dataUrl){
-        const path = `${STORAGE_PREFIX}/${record.id}/issue_${safeKey}_${i+1}.jpg`;
-        const url = await uploadDataUrl(path, item.dataUrl);
-        out.push({url, path, label:item.label || key, question:item.question || '', bytes:item.bytes||0, updatedAt:new Date().toISOString()});
-      } else if(item) {
-        out.push(item);
-      }
-    }
-    record.issuePhotos[key] = out;
-  }
-  return record;
-}
 function cloneForCloudSync(record){
   try { return JSON.parse(JSON.stringify(record)); } catch(e) { return Object.assign({}, record); }
+}
+function protocolCloudCopy(record){
+  const copy = cloneForCloudSync(record);
+  copy.photos = copy.photos || {};
+  copy.issuePhotos = copy.issuePhotos || {};
+  Object.entries(copy.photos).forEach(([key,photo]) => {
+    if(photo?.dataUrl) copy.photos[key] = {path:photo.path || `${STORAGE_PREFIX}/${copy.id}/${key}.jpg`, label:photo.label || PHOTO_LABELS[key] || key, bytes:photo.bytes||0, width:photo.width||0, height:photo.height||0, pendingUpload:true};
+  });
+  Object.entries(copy.issuePhotos).forEach(([key,value]) => {
+    const safeKey = String(key).replace(/[^a-zA-Z0-9_-]/g,'_');
+    const photos = Array.isArray(value) ? value : (value ? [value] : []);
+    copy.issuePhotos[key] = photos.filter(Boolean).map((photo,index) => photo.dataUrl ? {path:photo.path || `${STORAGE_PREFIX}/${copy.id}/issue_${safeKey}_${index+1}.jpg`, label:photo.label || key, question:photo.question || '', bytes:photo.bytes||0, width:photo.width||0, height:photo.height||0, pendingUpload:true} : photo);
+  });
+  return copy;
+}
+async function uploadPendingProtocolPhotos(record){
+  const errors = [];
+  record.photos = record.photos || {};
+  record.issuePhotos = record.issuePhotos || {};
+  if(!(firebaseAvailable && storageAvailable && storage)) return {record, errors:[new Error('storage/unavailable')], pending:pendingProtocolPhotoCount(record)};
+  for(const step of PHOTO_STEPS){
+    const key = step.photoKey;
+    const photo = record.photos[key];
+    if(!photo?.dataUrl) continue;
+    const path = photo.path || `${STORAGE_PREFIX}/${record.id}/${key}.jpg`;
+    try{
+      const url = await uploadDataUrl(path, photo.dataUrl);
+      record.photos[key] = {url, path, label:photo.label || PHOTO_LABELS[key], bytes:photo.bytes||0, width:photo.width||0, height:photo.height||0, updatedAt:new Date().toISOString()};
+    }catch(err){
+      photo.path = path;
+      photo.pendingUpload = true;
+      photo.uploadError = storageSyncErrorText(err);
+      errors.push(err);
+    }
+  }
+  for(const [key,value] of Object.entries(record.issuePhotos)){
+    const safeKey = String(key).replace(/[^a-zA-Z0-9_-]/g,'_');
+    const photos = Array.isArray(value) ? value : (value ? [value] : []);
+    for(let index=0; index<photos.length; index++){
+      const photo = photos[index];
+      if(!photo?.dataUrl) continue;
+      const path = photo.path || `${STORAGE_PREFIX}/${record.id}/issue_${safeKey}_${index+1}.jpg`;
+      try{
+        const url = await uploadDataUrl(path, photo.dataUrl);
+        photos[index] = {url, path, label:photo.label || key, question:photo.question || '', bytes:photo.bytes||0, width:photo.width||0, height:photo.height||0, updatedAt:new Date().toISOString()};
+      }catch(err){
+        photo.path = path;
+        photo.pendingUpload = true;
+        photo.uploadError = storageSyncErrorText(err);
+        errors.push(err);
+      }
+    }
+    record.issuePhotos[key] = photos;
+  }
+  return {record, errors, pending:pendingProtocolPhotoCount(record)};
 }
 function cloneForAuditSnapshot(record){
   const cloned = cloneForCloudSync(record);
@@ -3975,13 +4030,26 @@ function cloneForAuditSnapshot(record){
 async function syncProtocolToCloud(record){
   if(!(firebaseAvailable && db)) return cloudSaveResult(false, new Error('Firebase neni dostupny.'), record);
   try{
-    const cloudRecord = await prepareRecordForSave(cloneForCloudSync(record));
-    markProtocolSyncState(cloudRecord, true, null);
-    await setAndVerifyFirestore(COLLECTION_NAME, cloudRecord.id, cloudRecord, 'Ulozeni protokolu ctvrtletni kontroly', 90000, 30000);
-    return cloudSaveResult(true, null, cloudRecord);
+    const localRecord = cloneForCloudSync(record);
+    const initialPendingPhotos = pendingProtocolPhotoCount(localRecord);
+    markProtocolSyncState(localRecord, true, null);
+    markProtocolPhotoSyncState(localRecord, initialPendingPhotos > 0, initialPendingPhotos ? new Error('Fotografie cekaji na nahrani.') : null);
+    await setAndVerifyFirestore(COLLECTION_NAME, localRecord.id, protocolCloudCopy(localRecord), 'Ulozeni dat protokolu ctvrtletni kontroly', 90000, 30000);
+    if(!initialPendingPhotos) return cloudSaveResult(true, null, localRecord, {pendingPhotos:0, photoErrors:[]});
+
+    const photoResult = await uploadPendingProtocolPhotos(localRecord);
+    markProtocolPhotoSyncState(localRecord, photoResult.pending > 0, photoResult.errors[0] || null);
+    try{
+      await setAndVerifyFirestore(COLLECTION_NAME, localRecord.id, protocolCloudCopy(localRecord), 'Aktualizace fotografii protokolu', 90000, 30000);
+    }catch(metadataErr){
+      markProtocolPhotoSyncState(localRecord, true, metadataErr);
+      photoResult.errors.push(metadataErr);
+      console.warn('Metadata fotografii se zapisi pri dalsi synchronizaci.', metadataErr);
+    }
+    return cloudSaveResult(true, null, localRecord, {pendingPhotos:pendingProtocolPhotoCount(localRecord), photoErrors:photoResult.errors});
   }catch(err){
     console.warn('Cloud sync protokolu selhal, lokální data zůstávají uložená.', err);
-    return cloudSaveResult(false, err);
+    return cloudSaveResult(false, err, record, {pendingPhotos:pendingProtocolPhotoCount(record)});
   }
 }
 function finishProtocolBackgroundSync(record, promise){
@@ -4008,6 +4076,7 @@ async function saveProtocol(record){
   record.photos = record.photos || {};
   record.issuePhotos = record.issuePhotos || {};
   markProtocolSyncState(record, false, null);
+  markProtocolPhotoSyncState(record, pendingProtocolPhotoCount(record) > 0, pendingProtocolPhotoCount(record) ? new Error('Fotografie cekaji na nahrani.') : null);
   unmarkProtocolDeleted(record.id);
   data = upsertLocalRow(loadLocalData, saveLocalData, record);
   render();
@@ -4032,7 +4101,7 @@ async function saveProtocol(record){
 }
 async function retryPendingProtocolSync(){
   if(!(firebaseAvailable && db)) return;
-  const pending = loadLocalData().filter(protocolSyncPending);
+  const pending = loadLocalData().filter(record => protocolSyncPending(record) || protocolPhotoSyncPending(record));
   if(!pending.length) return;
   for(const record of pending){
     try{
@@ -4047,6 +4116,22 @@ async function retryPendingProtocolSync(){
   data = mergeCloudWithLocal(data, loadLocalData(), saveLocalData);
   render();
   updateMainOverview?.();
+}
+async function retrySingleProtocolSync(id){
+  const record = loadLocalData().find(row => String(row.id) === String(id));
+  if(!record) return;
+  const result = await syncProtocolToCloud(record);
+  if(result?.cloud && result.record){
+    data = upsertLocalRow(loadLocalData, saveLocalData, result.record);
+    render();
+    updateMainOverview?.();
+    alert(result.pendingPhotos || protocolPhotoSyncPending(result.record) ? storageSyncErrorText(result.photoErrors?.[0] || new Error('Fotografie cekaji na nahrani.')) : 'Protokol a fotografie jsou synchronizovane.');
+  }else{
+    markProtocolSyncState(record, false, result?.error || new Error('Firebase synchronizace protokolu selhala.'));
+    data = upsertLocalRow(loadLocalData, saveLocalData, record);
+    render();
+    alertCloudResult(result, 'Protokol');
+  }
 }
 function schedulePendingProtocolSync(reason='protocols-open', delay=300){
   try{
@@ -4392,6 +4477,8 @@ function preferMergedRow(current, next){
   if(!next) return current;
   if(protocolSyncPending(next) && !protocolSyncPending(current)) return next;
   if(protocolSyncPending(current) && !protocolSyncPending(next)) return current;
+  if(protocolPhotoSyncPending(next) && !protocolPhotoSyncPending(current)) return next;
+  if(protocolPhotoSyncPending(current) && !protocolPhotoSyncPending(next)) return current;
   if(partSyncPending(next) && !partSyncPending(current)) return next;
   if(partSyncPending(current) && !partSyncPending(next)) return current;
   if(revizeSyncPending(next) && !revizeSyncPending(current)) return next;
@@ -4662,8 +4749,8 @@ async function runAppCheck(){
   appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
     const cacheKeys = window.caches ? await caches.keys() : [];
-    const currentCache = cacheKeys.includes('liftcontrol-cz-v1-6-5-346');
-    const oldCaches = cacheKeys.filter(k => /^liftcontrol-cz-/i.test(k) && k !== 'liftcontrol-cz-v1-6-5-346');
+    const currentCache = cacheKeys.includes('liftcontrol-cz-v1-6-5-346-storage-sync');
+    const oldCaches = cacheKeys.filter(k => /^liftcontrol-cz-/i.test(k) && k !== 'liftcontrol-cz-v1-6-5-346-storage-sync');
     appCheckAddResult(results, currentCache && !oldCaches.length ? 'ok' : 'warn', 'Cache aplikace', `Aktualni: ${currentCache ? 'ano' : 'ne'}, stare baliky: ${oldCaches.length}.`);
   }catch(err){ appCheckAddResult(results, 'warn', 'Cache aplikace', errorText(err)); }
   try{
@@ -5403,7 +5490,7 @@ function render(){
   if(customerFilter === 'internal') rows = rows.filter(r => !r.externalCustomer);
   if(filter === 'issues') rows = rows.filter(hasIssue);
   if(filter === 'ok') rows = rows.filter(r => !hasIssue(r));
-  if(filter === 'draft') rows = rows.filter(protocolSyncPending);
+  if(filter === 'draft') rows = rows.filter(row => protocolSyncPending(row) || protocolPhotoSyncPending(row));
   rows.sort((a,b)=>{
     if(sort === 'created_desc') return (archiveTimeValue(b.savedAt || b.createdAt || b.updatedAt || b.datum) - archiveTimeValue(a.savedAt || a.createdAt || a.updatedAt || a.datum)) || archiveStringCompare(a.vc,b.vc);
     if(sort === 'serial_asc') return archiveStringCompare(a.vc,b.vc) || (archiveTimeValue(b.datum)-archiveTimeValue(a.datum));
@@ -5423,6 +5510,7 @@ function render(){
             ${r.externalCustomer ? '<span class="badge badge-external">Externí zákazník</span>' : ''}
             ${firebaseAvailable ? '' : '<span class="badge badge-warn">Sdílení vypnuté</span>'}
             ${protocolSyncBadgeHtml(r)}
+            ${protocolPhotoSyncBadgeHtml(r)}
           </div>
           ${hasIssue(r) ? `<div class="card-sub"><strong>Důvod:</strong> ${escapeHtml(protocolIssueSummary(r))}</div>` : ''}
         </div>
@@ -5439,6 +5527,7 @@ function render(){
       <div class="actions">
         <button class="secondary mini" data-action="preview" data-id="${r.id}">Náhled</button>
         <button class="secondary mini" data-action="edit" data-id="${r.id}">Upravit</button>
+        ${(protocolSyncPending(r) || protocolPhotoSyncPending(r)) ? `<button class="secondary mini" data-action="retry-sync" data-id="${r.id}">Synchronizovat</button>` : ''}
         <button class="danger mini" data-action="delete" data-id="${r.id}">Smazat</button>
       </div>
     </div>`).join('');
@@ -5727,7 +5816,8 @@ async function saveQuarterlyEditedProtocolFromWizard(){
     showSection('archive');
     render();
     if(!saveResult?.cloud) alertCloudResult(saveResult, 'Protokol');
-    if(saveResult?.cloud) alert('Změny protokolu jsou uložené a synchronizované.');
+    if(saveResult?.cloud && (saveResult.pendingPhotos || protocolPhotoSyncPending(saveResult.record))) alert(storageSyncErrorText(saveResult.photoErrors?.[0] || new Error('Fotografie cekaji na nahrani.')));
+    if(saveResult?.cloud && !saveResult.pendingPhotos && !protocolPhotoSyncPending(saveResult.record)) alert('Změny protokolu jsou uložené a synchronizované.');
     return true;
   }catch(err){
     console.error(err);
@@ -6310,7 +6400,8 @@ async function nextStep(){
     clearQuarterlyDraft();
     closeWizard();
     render();
-    if(saveResult?.cloud) alert('Protokol uložen a synchronizován.');
+    if(saveResult?.cloud && (saveResult.pendingPhotos || protocolPhotoSyncPending(saveResult.record))) alert(storageSyncErrorText(saveResult.photoErrors?.[0] || new Error('Fotografie cekaji na nahrani.')));
+    if(saveResult?.cloud && !saveResult.pendingPhotos && !protocolPhotoSyncPending(saveResult.record)) alert('Protokol uložen a synchronizován.');
     else alertCloudResult(saveResult, 'Protokol');
   }catch(err){
     console.error(err);
@@ -13377,13 +13468,14 @@ function handleQuarterlyActionButton(btn){
   const action = btn.dataset.action;
   if(action === 'preview') openPreviewById(btn.dataset.id);
   if(action === 'edit') openWizard(btn.dataset.id);
+  if(action === 'retry-sync') retrySingleProtocolSync(btn.dataset.id);
   if(action === 'pdf') downloadById(btn.dataset.id);
   if(action === 'delete') delById(btn.dataset.id);
   if(action === 'draft-preview') openQuarterlyDraftPreview();
   if(action === 'draft-edit') continueQuarterlyDraftFromArchive();
   if(action === 'draft-delete') deleteQuarterlyDraftFromArchive();
   if(action === 'history') openHistoryModal(btn.dataset.vc);
-  return ['preview','edit','pdf','delete','draft-preview','draft-edit','draft-delete','history'].includes(action);
+  return ['preview','edit','retry-sync','pdf','delete','draft-preview','draft-edit','draft-delete','history'].includes(action);
 }
 els.list.addEventListener('click', (e) => {
   const btn = e.target.closest('button[data-action]');
