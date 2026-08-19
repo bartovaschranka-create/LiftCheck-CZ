@@ -1,8 +1,8 @@
 {
-  "version": "5.346",
-  "appVersion": "1.6 / 5.346",
-  "cacheName": "liftcontrol-cz-v1-6-5-346",
-  "url": "./index.html?v=5.346",
-  "releasedAt": "2026-08-17",
-  "message": "Nahled protokolu se otevre okamzite a obsah se vykresli asynchronne bez zamrznuti na PC, iOS a Androidu."
+  "version": "5.348",
+  "appVersion": "1.6 / 5.348",
+  "cacheName": "liftcontrol-cz-v1-6-5-348",
+  "url": "./index.html?v=5.348",
+  "releasedAt": "2026-08-19",
+  "message": "Rychlejsi start na starsich telefonech bez opakovaneho nacitani revizi a zamrzani aplikace."
 }
