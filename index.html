@@ -4505,9 +4505,16 @@ function mergeCloudWithLocal(cloudRows, localRows, saveLocal){
 function mergeAndNormalizeRevizeRows(cloudRows){
   const cloud = Array.isArray(cloudRows) ? cloudRows : [];
   const merged = mergeRowsById(cloud, readLocalRevizeRaw());
-  const normalized = normalizeRevizeLoadRows(merged);
+  let normalized;
+  try{
+    normalized = normalizeRevizeLoadRows(merged);
+  }catch(err){
+    console.warn('Revize normalization skipped to keep original records available.', err);
+    normalized = {rows:merged, changedRows:[]};
+  }
   revizeData = normalized.rows;
-  writeLocalRevizeRows(revizeData);
+  const localSave = writeLocalRevizeRows(revizeData);
+  if(!localSave.ok) console.warn('Merged revize records remain in memory; local persistence failed.', localSave.error);
   clearRevizeMachineRowsCache();
   return normalized;
 }
