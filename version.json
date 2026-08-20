@@ -1,8 +1,8 @@
 {
-  "version": "5.349",
-  "appVersion": "1.6 / 5.349",
-  "cacheName": "liftcontrol-cz-v1-6-5-349",
-  "url": "./index.html?v=5.349",
+  "version": "5.350",
+  "appVersion": "1.6 / 5.350",
+  "cacheName": "liftcontrol-cz-v1-6-5-350",
+  "url": "./index.html?v=5.350",
   "releasedAt": "2026-08-20",
-  "message": "Naseptavac se po vyberu hodnoty okamzite zavre a pri dalsim psani se znovu standardne zobrazi."
+  "message": "Fotografie hlaseni poruchy se zpracovavaji spolehlive a nadlimitni vyber se ihned uvolni pro novy pokus."
 }
