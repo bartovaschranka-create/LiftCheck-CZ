@@ -1,8 +1,8 @@
 {
-  "version": "5.348",
-  "appVersion": "1.6 / 5.348",
-  "cacheName": "liftcontrol-cz-v1-6-5-348",
-  "url": "./index.html?v=5.348",
-  "releasedAt": "2026-08-19",
-  "message": "Rychlejsi start na starsich telefonech bez opakovaneho nacitani revizi a zamrzani aplikace."
+  "version": "5.349",
+  "appVersion": "1.6 / 5.349",
+  "cacheName": "liftcontrol-cz-v1-6-5-349",
+  "url": "./index.html?v=5.349",
+  "releasedAt": "2026-08-20",
+  "message": "Naseptavac se po vyberu hodnoty okamzite zavre a pri dalsim psani se znovu standardne zobrazi."
 }
