@@ -1,5 +1,5 @@
-const CACHE_NAME = 'liftcontrol-cz-v1-6-5-351';
-const APP_VERSION_URL = './index.html?v=5.351';
+const CACHE_NAME = 'liftcontrol-cz-v1-6-5-352';
+const APP_VERSION_URL = './index.html?v=5.352';
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,6 +10,8 @@ const APP_SHELL = [
   './assets/vendor/firebase-app-compat-10.12.5.js',
   './assets/vendor/firebase-firestore-compat-10.12.5.js',
   './assets/vendor/firebase-storage-compat-10.12.5.js',
+  './assets/vendor/heic-converter-0.3.0/index.mjs',
+  './assets/vendor/heic-converter-0.3.0/heic-decoder.wasm',
   './icon-192.png',
   './icon-512.png',
   './assets/stamps/revizni-razitko-zz.png',

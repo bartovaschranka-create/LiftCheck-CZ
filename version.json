@@ -1,8 +1,8 @@
 {
-  "version": "5.351",
-  "appVersion": "1.6 / 5.351",
-  "cacheName": "liftcontrol-cz-v1-6-5-351",
-  "url": "./index.html?v=5.351",
+  "version": "5.352",
+  "appVersion": "1.6 / 5.352",
+  "cacheName": "liftcontrol-cz-v1-6-5-352",
+  "url": "./index.html?v=5.352",
   "releasedAt": "2026-08-21",
-  "message": "Hlaseni poruchy uklada a zobrazuje misto, spolehlive zpracuje az 4 fotografie a nabizi nahled zapisu s tiskem."
+  "message": "Hlaseni poruchy podporuje take fotografie HEIC z iPhonu a prevadi je lokalne pred kompresi a ulozenim."
 }
