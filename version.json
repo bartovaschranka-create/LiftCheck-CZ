@@ -1,8 +1,8 @@
 {
-  "version": "5.350",
-  "appVersion": "1.6 / 5.350",
-  "cacheName": "liftcontrol-cz-v1-6-5-350",
-  "url": "./index.html?v=5.350",
-  "releasedAt": "2026-08-20",
-  "message": "Fotografie hlaseni poruchy se zpracovavaji spolehlive a nadlimitni vyber se ihned uvolni pro novy pokus."
+  "version": "5.351",
+  "appVersion": "1.6 / 5.351",
+  "cacheName": "liftcontrol-cz-v1-6-5-351",
+  "url": "./index.html?v=5.351",
+  "releasedAt": "2026-08-21",
+  "message": "Hlaseni poruchy uklada a zobrazuje misto, spolehlive zpracuje az 4 fotografie a nabizi nahled zapisu s tiskem."
 }
