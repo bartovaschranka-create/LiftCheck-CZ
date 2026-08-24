@@ -1,8 +1,8 @@
 {
-  "version": "5.352",
-  "appVersion": "1.6 / 5.352",
-  "cacheName": "liftcontrol-cz-v1-6-5-352",
-  "url": "./index.html?v=5.352",
-  "releasedAt": "2026-08-21",
-  "message": "Hlaseni poruchy podporuje take fotografie HEIC z iPhonu a prevadi je lokalne pred kompresi a ulozenim."
+  "version": "5.353",
+  "appVersion": "1.6 / 5.353",
+  "cacheName": "liftcontrol-cz-v1-6-5-353",
+  "url": "./index.html?v=5.353",
+  "releasedAt": "2026-08-24",
+  "message": "Aplikace se po prvnim online nacteni otevre z lokalni cache i bez signalu a automaticky dosynchronizuje data po obnoveni pripojeni."
 }
