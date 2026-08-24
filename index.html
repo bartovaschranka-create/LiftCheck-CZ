@@ -2167,13 +2167,13 @@ body.lightbox-open{
 body.mobile-safe-mode *{
   scroll-behavior:auto!important;
 }
-/* Samsung Internet/Chrome on Galaxy devices needs a single root page scroller. */
-html.samsung-android{
+/* Android Chrome/Samsung Internet need a single native root page scroller. */
+html.android-native-scroll{
   overflow-y:auto!important;
   overscroll-behavior-y:auto!important;
   touch-action:auto!important;
 }
-html.samsung-android body:not(.app-modal-open):not(.revize-modal-open):not(.lightbox-open){
+html.android-native-scroll body:not(.app-modal-open):not(.revize-modal-open):not(.lightbox-open){
   overflow-y:visible!important;
   overscroll-behavior-y:auto!important;
   touch-action:auto!important;
@@ -3173,8 +3173,9 @@ const MAX_PHOTO_BYTES = 500 * 1024;
 const MAX_STORAGE_PHOTO_BYTES = 10 * 1024 * 1024;
 const DEVICE_PROFILE = (() => {
   const ua = navigator.userAgent || '';
+  const uaPlatform = navigator.userAgentData?.platform || '';
   const ios = /iPad|iPhone|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const android = /Android/i.test(ua);
+  const android = /Android/i.test(`${ua} ${uaPlatform}`);
   const samsung = /Samsung|SM-|XCover/i.test(ua);
   const lowMemory = navigator.deviceMemory && navigator.deviceMemory <= 4;
   const lowCores = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4;
@@ -3191,11 +3192,19 @@ window.DEVICE_PROFILE = DEVICE_PROFILE;
 if(DEVICE_PROFILE.safeMode){
   try{ document.body.classList.add('mobile-safe-mode'); }catch(_e){}
 }
-if(DEVICE_PROFILE.android && DEVICE_PROFILE.samsung){
+if(DEVICE_PROFILE.android){
   try{
-    document.documentElement.classList.add('samsung-android');
-    document.body.classList.add('samsung-android');
+    document.documentElement.classList.add('android-native-scroll');
+    document.body.classList.add('android-native-scroll');
   }catch(_e){}
+}
+if(DEVICE_PROFILE.android && !DEVICE_PROFILE.samsung && navigator.userAgentData?.getHighEntropyValues){
+  navigator.userAgentData.getHighEntropyValues(['model']).then(info => {
+    if(!/Samsung|SM-|XCover/i.test(String(info?.model || ''))) return;
+    DEVICE_PROFILE.samsung = true;
+    DEVICE_PROFILE.safeMode = true;
+    document.body.classList.add('mobile-safe-mode');
+  }).catch(() => {});
 }
 function deferUiWork(fn, delay=0){
   if(typeof fn !== 'function') return;
