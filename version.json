@@ -1,8 +1,8 @@
 {
-  "version": "5.353",
-  "appVersion": "1.6 / 5.353",
-  "cacheName": "liftcontrol-cz-v1-6-5-353",
-  "url": "./index.html?v=5.353",
+  "version": "5.354",
+  "appVersion": "1.6 / 5.354",
+  "cacheName": "liftcontrol-cz-v1-6-5-354",
+  "url": "./index.html?v=5.354",
   "releasedAt": "2026-08-24",
-  "message": "Aplikace se po prvnim online nacteni otevre z lokalni cache i bez signalu a automaticky dosynchronizuje data po obnoveni pripojeni."
+  "message": "Hlaseni poruchy ma prehledny nahled zapisu primo v aplikaci i bez vytvoreneho protokolu po oprave."
 }
