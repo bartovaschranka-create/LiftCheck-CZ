@@ -1,8 +1,8 @@
 {
-  "version": "5.355",
-  "appVersion": "1.6 / 5.355",
-  "cacheName": "liftcontrol-cz-v1-6-5-355",
-  "url": "./index.html?v=5.355",
+  "version": "5.356",
+  "appVersion": "1.6 / 5.356",
+  "cacheName": "liftcontrol-cz-v1-6-5-356",
+  "url": "./index.html?v=5.356",
   "releasedAt": "2026-08-24",
-  "message": "Hlaseni poruchy ma prehledny nahled zapisu primo v aplikaci i bez vytvoreneho protokolu po oprave."
+  "message": "Opraveno plynule rolovani hlavni stranky na telefonech Samsung Galaxy XCover a FE."
 }
