@@ -1,8 +1,8 @@
 {
-  "version": "5.356",
-  "appVersion": "1.6 / 5.356",
-  "cacheName": "liftcontrol-cz-v1-6-5-356",
-  "url": "./index.html?v=5.356",
+  "version": "5.357",
+  "appVersion": "1.6 / 5.357",
+  "cacheName": "liftcontrol-cz-v1-6-5-357",
+  "url": "./index.html?v=5.357",
   "releasedAt": "2026-08-24",
-  "message": "Opraveno plynule rolovani hlavni stranky na telefonech Samsung Galaxy XCover a FE."
+  "message": "Opraveno plynule rolovani hlavni stranky v Chrome a Samsung Internet na telefonech Android."
 }
