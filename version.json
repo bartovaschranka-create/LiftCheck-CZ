@@ -1,8 +1,8 @@
 {
-  "version": "5.363",
-  "appVersion": "1.6 / 5.363",
-  "cacheName": "liftcontrol-cz-v1-6-5-363",
-  "url": "./index.html?v=5.363",
+  "version": "5.364",
+  "appVersion": "1.6 / 5.364",
+  "cacheName": "liftcontrol-cz-v1-6-5-364",
+  "url": "./index.html?v=5.364",
   "releasedAt": "2026-08-25",
-  "message": "Technicke udaje se skladaji bez prazdnych bunek v levem sloupci."
+  "message": "Smazane revize se po novem otevreni aplikace uz neobnovi ze zalohy."
 }
