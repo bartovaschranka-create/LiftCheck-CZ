@@ -1,8 +1,8 @@
 {
-  "version": "5.361",
-  "appVersion": "1.6 / 5.361",
-  "cacheName": "liftcontrol-cz-v1-6-5-361",
-  "url": "./index.html?v=5.361",
+  "version": "5.362",
+  "appVersion": "1.6 / 5.362",
+  "cacheName": "liftcontrol-cz-v1-6-5-362",
+  "url": "./index.html?v=5.362",
   "releasedAt": "2026-08-25",
-  "message": "Stoupavost je v technickych udajich umistena primo pod naklonem podvozku."
+  "message": "Stoupavost se zobrazuje i bez dat, kdy je uvedena pomlcka."
 }
