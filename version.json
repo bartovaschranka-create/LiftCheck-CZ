@@ -1,8 +1,8 @@
 {
-  "version": "5.359",
-  "appVersion": "1.6 / 5.359",
-  "cacheName": "liftcontrol-cz-v1-6-5-359",
-  "url": "./index.html?v=5.359",
+  "version": "5.360",
+  "appVersion": "1.6 / 5.360",
+  "cacheName": "liftcontrol-cz-v1-6-5-360",
+  "url": "./index.html?v=5.360",
   "releasedAt": "2026-08-25",
-  "message": "Opraven tisk revizniho protokolu, aby po spravnem nahledu nevznikal prazdny list."
+  "message": "Neaktivni elektro mereni se v protokolu oznacuje pomlckou bez sikmeho preskrtnuti bunek."
 }
