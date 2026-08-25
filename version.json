@@ -1,8 +1,8 @@
 {
-  "version": "5.360",
-  "appVersion": "1.6 / 5.360",
-  "cacheName": "liftcontrol-cz-v1-6-5-360",
-  "url": "./index.html?v=5.360",
+  "version": "5.361",
+  "appVersion": "1.6 / 5.361",
+  "cacheName": "liftcontrol-cz-v1-6-5-361",
+  "url": "./index.html?v=5.361",
   "releasedAt": "2026-08-25",
-  "message": "Neaktivni elektro mereni se v protokolu oznacuje pomlckou bez sikmeho preskrtnuti bunek."
+  "message": "Stoupavost je v technickych udajich umistena primo pod naklonem podvozku."
 }
