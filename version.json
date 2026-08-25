@@ -1,8 +1,8 @@
 {
-  "version": "5.357",
-  "appVersion": "1.6 / 5.357",
-  "cacheName": "liftcontrol-cz-v1-6-5-357",
-  "url": "./index.html?v=5.357",
-  "releasedAt": "2026-08-24",
-  "message": "Opraveno plynule rolovani hlavni stranky v Chrome a Samsung Internet na telefonech Android."
+  "version": "5.358",
+  "appVersion": "1.6 / 5.358",
+  "cacheName": "liftcontrol-cz-v1-6-5-358",
+  "url": "./index.html?v=5.358",
+  "releasedAt": "2026-08-25",
+  "message": "Revizni protokol ma prehlednejsi identifikaci stroje, mirne vetsi pismo a zachovava vsechny navazane kontroly."
 }
