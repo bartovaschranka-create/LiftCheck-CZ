@@ -1,8 +1,8 @@
 {
-  "version": "5.362",
-  "appVersion": "1.6 / 5.362",
-  "cacheName": "liftcontrol-cz-v1-6-5-362",
-  "url": "./index.html?v=5.362",
+  "version": "5.363",
+  "appVersion": "1.6 / 5.363",
+  "cacheName": "liftcontrol-cz-v1-6-5-363",
+  "url": "./index.html?v=5.363",
   "releasedAt": "2026-08-25",
-  "message": "Stoupavost se zobrazuje i bez dat, kdy je uvedena pomlcka."
+  "message": "Technicke udaje se skladaji bez prazdnych bunek v levem sloupci."
 }
