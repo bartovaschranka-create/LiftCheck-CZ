@@ -2340,7 +2340,7 @@ body.mobile-safe-mode .attention-count:hover{
     <button type="button" class="side-link" id="sideSettingsBtn">Nastavení</button>
   </nav>
   <div class="side-bottom">
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.363</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.364</div>
   </div>
 </aside>
 
@@ -4376,7 +4376,7 @@ async function exportBackup(){
     }
     const payload = {
       app: 'LiftControl CZ',
-      appVersion: '1.6 / 5.363',
+      appVersion: '1.6 / 5.364',
       backupType: 'complete',
       schemaVersion: 2,
       exportedAt: new Date().toISOString(),
@@ -4604,7 +4604,7 @@ function mergeCloudWithLocal(cloudRows, localRows, saveLocal){
   return merged.length ? merged : local;
 }
 function mergeAndNormalizeRevizeRows(cloudRows){
-  const cloud = Array.isArray(cloudRows) ? cloudRows : [];
+  const cloud = filterDeletedRevizeRows(Array.isArray(cloudRows) ? cloudRows : []);
   const merged = mergeRowsById(cloud, readLocalRevizeRaw());
   let normalized;
   try{
@@ -4835,7 +4835,7 @@ function renderAppCheckResults(results, running=false){
 }
 async function testAppCheckFirestore(){
   const id = 'APP_CHECK_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-  const record = {id, appCheck:true, date:todayLocal(), note:'docasny diagnosticky zaznam', createdAt:new Date().toISOString(), appVersion:'1.6 / 5.363'};
+  const record = {id, appCheck:true, date:todayLocal(), note:'docasny diagnosticky zaznam', createdAt:new Date().toISOString(), appVersion:'1.6 / 5.364'};
   try{
     await setAndVerifyFirestoreRest(SCHEDULE_COLLECTION_NAME, id, record, 'Kontrola Firestore', 15000, 10000);
     return {ok:true, id};
@@ -4860,7 +4860,7 @@ async function runAppCheck(){
   renderAppCheckResults(results, true);
   appCheckAddResult(results, navigator.onLine ? 'ok' : 'error', 'Internet', navigator.onLine ? 'Zarizeni hlasi online rezim.' : 'Prohlizec hlasi offline rezim.');
   const versionText = document.querySelector('.side-version')?.textContent || '';
-  appCheckAddResult(results, versionText.includes('5.363') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
+  appCheckAddResult(results, versionText.includes('5.364') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
   appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
@@ -4940,14 +4940,14 @@ function scheduleEmptyAppRecovery(reason='startup'){
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.363');
+        url.searchParams.set('v','5.364');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
       }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_336') !== '1'){
         sessionStorage.setItem('liftcontrol_cache_recovery_5_336','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.363');
+        url.searchParams.set('v','5.364');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -5010,7 +5010,7 @@ function cloneQuarterlyDraftForStorage(record){
     const copy = JSON.parse(JSON.stringify(record || {}));
     copy._draftStepIndex = stepIndex || 0;
     copy._draftSavedAt = new Date().toISOString();
-    copy._draftAppVersion = '1.6 / 5.363';
+    copy._draftAppVersion = '1.6 / 5.364';
     return copy;
   }catch(e){
     return null;
@@ -5849,10 +5849,10 @@ function openWizard(editId=null, prefill={}){
       }
     }
   }
-  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.363'};
+  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.364'};
   rec = Object.assign({}, rec, prefill || {});
   if(!editId && !rec.cLogic) rec.cLogic = 'legacy';
-  if(!editId) rec.appVersion = '1.6 / 5.363';
+  if(!editId) rec.appVersion = '1.6 / 5.364';
 
   // Auto doplneni z historie podle vyrobniho cisla.
   if(rec.vc){
@@ -5918,7 +5918,7 @@ async function saveQuarterlyEditedProtocolFromWizard(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    rec.appVersion = '1.6 / 5.363';
+    rec.appVersion = '1.6 / 5.364';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -6503,7 +6503,7 @@ async function nextStep(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    rec.appVersion = '1.6 / 5.363';
+    rec.appVersion = '1.6 / 5.364';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -6602,7 +6602,7 @@ async function logAuditAction(action, entity, record, by, detail, beforeRecord){
       serial: record?.vc || record?.serial || '',
       type: record?.typ || record?.type || '',
       createdAt: new Date().toISOString(),
-      appVersion: '1.6 / 5.363',
+      appVersion: '1.6 / 5.364',
       restoreVersion: 1,
       before: beforeSnapshot ? cloneForAuditSnapshot(beforeSnapshot) : null,
       after: afterSnapshot ? cloneForAuditSnapshot(afterSnapshot) : null
@@ -6659,6 +6659,7 @@ async function restoreSetRecord(entity, record){
   const cfg = restoreEntityConfig(entity);
   if(!cfg) return false;
   if(entity === 'protocol') unmarkProtocolDeleted(record.id);
+  if(entity === 'revize_zz') unmarkRevizeDeleted(record.id);
   const rows = upsertLocalRow(cfg.load, cfg.save, cloneForCloudSync(record));
   cfg.set(rows);
   if(firebaseAvailable && db){
@@ -8650,7 +8651,7 @@ async function saveWorkPlanFromForm(){
       place,
       extraPlaces,
       note,
-      appVersion:'1.6 / 5.363'
+      appVersion:'1.6 / 5.364'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     const saveResult = await saveWorkPlan(record);
@@ -9437,7 +9438,7 @@ async function saveFaultFromForm(){
       inService: status === 'service' ? true : (existing ? !!existing.inService : false),
       waitingParts: status === 'waiting_parts' ? true : (existing ? !!existing.waitingParts : false),
       photos: currentFaultPhotos,
-      appVersion:'1.6 / 5.363'
+      appVersion:'1.6 / 5.364'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     setLastEnteredBy(record.enteredBy);
@@ -10134,7 +10135,7 @@ function mergeRepairCloudWithLocal(cloudRows=[], localRows=[]){
 function upsertLocalRepairRow(record){
   const rows = loadLocalRepairs();
   record = normalizeRepairRecordForProtocol(record);
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.363'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.364'});
   const idx = rows.findIndex(x => String(x.id) === String(rec.id));
   if(idx >= 0) rows[idx] = rec; else rows.unshift(rec);
   const localResult = saveLocalRepairs(rows.slice(0,300));
@@ -10150,7 +10151,7 @@ async function saveRepairRecord(record){
   record.id = record.id || repairUid();
   record.savedAt = new Date().toISOString();
   record.updatedAt = record.savedAt;
-  record.appVersion = '1.6 / 5.363';
+  record.appVersion = '1.6 / 5.364';
   markRepairSyncState(record, false, null);
   const localSave = upsertLocalRepairRow(record);
   if(!localSave.localResult || !localSave.localResult.ok){
@@ -10207,7 +10208,7 @@ function startLocalRepairsMode(){
 }
 function saveRepairRecordLocal(record){
   record = normalizeRepairRecordForProtocol(record);
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.363'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.364'});
   markRepairSyncState(rec, false, new Error('Starsí lokální uložení čeká na synchronizaci.'));
   upsertLocalRepairRow(rec);
   return rec;
@@ -11072,7 +11073,7 @@ async function savePartFromForm(){
       orderedAt: (statusVal === 'ordered' || statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.orderedAt) || new Date().toISOString()) : '',
       sentAt: (statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.sentAt) || new Date().toISOString()) : '',
       resolvedAt: statusVal === 'resolved' ? ((existing && existing.resolvedAt) || new Date().toISOString()) : '',
-      appVersion:'1.6 / 5.363'
+      appVersion:'1.6 / 5.364'
     });
     record.photos = JSON.parse(JSON.stringify(currentPartPhotos || []));
     record.photo = record.photos[0] || null;
@@ -11360,13 +11361,34 @@ revizeAllB = function(input){
     .filter(([key]) => key !== 'B_elektrika' || hasElectro));
 };
 const REVIZE_LOCAL_KEY = 'revize_zz_local';
+const REVIZE_DELETED_IDS_KEY = 'revize_zz_deleted_ids';
 const REVIZE_IDB_NAME = 'liftcontrol-durable';
 const REVIZE_IDB_STORE = 'records';
 let revizeLoadNormalizationDepth = 0;
+function loadDeletedRevizeIds(){
+  try{ return JSON.parse(localStorage.getItem(REVIZE_DELETED_IDS_KEY) || '[]').map(String); }
+  catch(e){ return []; }
+}
+function saveDeletedRevizeIds(ids){
+  try{ localStorage.setItem(REVIZE_DELETED_IDS_KEY, JSON.stringify(Array.from(new Set((ids || []).map(String))))); }
+  catch(e){}
+}
+function markRevizeDeleted(id){
+  if(!id) return;
+  saveDeletedRevizeIds([...loadDeletedRevizeIds(), String(id)]);
+}
+function unmarkRevizeDeleted(id){
+  if(!id) return;
+  saveDeletedRevizeIds(loadDeletedRevizeIds().filter(value => value !== String(id)));
+}
+function filterDeletedRevizeRows(rows){
+  const deleted = new Set(loadDeletedRevizeIds());
+  return (rows || []).filter(row => row && !deleted.has(String(row.id)));
+}
 function readLocalRevizeRaw(){
   try{
     const rows = JSON.parse(localStorage.getItem(REVIZE_LOCAL_KEY) || '[]');
-    return Array.isArray(rows) ? rows : [];
+    return filterDeletedRevizeRows(Array.isArray(rows) ? rows : []);
   }catch(e){
     console.warn('Revize localStorage read failed:', e);
     return [];
@@ -11428,7 +11450,7 @@ async function readRevizeDurableBackup(){
     return await new Promise((resolve, reject) => {
       const tx = db.transaction(REVIZE_IDB_STORE, 'readonly');
       const request = tx.objectStore(REVIZE_IDB_STORE).get(REVIZE_LOCAL_KEY);
-      request.onsuccess = () => resolve(normalizeRevizeLoadRows(request.result || []).rows);
+      request.onsuccess = () => resolve(normalizeRevizeLoadRows(filterDeletedRevizeRows(request.result || [])).rows);
       request.onerror = () => reject(request.error || new Error('IndexedDB cteni revize selhalo.'));
     });
   }finally{ db.close(); }
@@ -12119,7 +12141,7 @@ async function syncQuarterlyAfterRevize(r){
   last.typ=last.typ||r.model||r.typ||'';
   last.rok=last.rok||r.rok_vyroby||'';
   last.umisteni=r.umisteni||last.umisteni||'';
-  last.appVersion='1.6 / 5.363';
+  last.appVersion='1.6 / 5.364';
   const replaceByIdOrSerial=(arr, updated)=>{
     const idx=(arr||[]).findIndex(x=>(updated.id && x.id===updated.id) || matchesSerial(x));
     if(idx>=0) arr[idx]={...arr[idx],...updated};
@@ -12587,6 +12609,7 @@ async function saveRevizeRecord(r){
 }
 saveRevizeRecord = async function(r){
   r.id = r.id || uid();
+  unmarkRevizeDeleted(r.id);
   revizeNormalizeTiltAxes(r);
   applyRevizeCalculatedLoads(r);
   normalizeRevizeElectroForConfig(r);
@@ -12641,7 +12664,25 @@ async function retryPendingRevizeSync(){
   renderRevize();
   updateMainOverview?.();
 }
-async function deleteRevize(id){ const r=(revizeData||[]).find(x=>x.id===id); if(!r || !confirm('Smazat revizi ZZ '+(r.protokol||'')+'?')) return; const who=promptDeleteActor('Revize ZZ '+(r.protokol||'')); if(!who) return; revizeData=revizeData.filter(x=>x.id!==id); saveLocalRevize(revizeData); if(firebaseAvailable&&db) await withTimeout(db.collection(REVIZE_ZZ_COLLECTION_NAME).doc(id).delete(), 12000, 'Smazání revize ZZ ve Firebase'); await logAuditAction('delete','revize_zz',r,who,'Smazána revize ZZ · '+(r.protokol||'')); renderRevize(); }
+async function deleteRevize(id){
+  const r=(revizeData||[]).find(x=>x.id===id);
+  if(!r || !confirm('Smazat revizi ZZ '+(r.protokol||'')+'?')) return;
+  const who=promptDeleteActor('Revize ZZ '+(r.protokol||''));
+  if(!who) return;
+  markRevizeDeleted(id);
+  revizeData=filterDeletedRevizeRows((revizeData||[]).filter(x=>String(x.id)!==String(id)));
+  await persistRevizeRowsDurably(revizeData);
+  clearRevizeMachineRowsCache();
+  renderRevize();
+  updateMainOverview?.();
+  let cloudDeleteError = null;
+  if(firebaseAvailable&&db){
+    try{ await withTimeout(db.collection(REVIZE_ZZ_COLLECTION_NAME).doc(id).delete(), 12000, 'Smazání revize ZZ ve Firebase'); }
+    catch(e){ cloudDeleteError=e; console.warn('Revize ZZ Firebase delete failed', e); }
+  }
+  await logAuditAction('delete','revize_zz',r,who,'Smazána revize ZZ · '+(r.protokol||''));
+  if(cloudDeleteError) alert('Revize byla smazána v tomto zařízení a už se po restartu neobnoví. Smazání ve Firebase se nyní nepodařilo; záznam zůstává v tomto zařízení skrytý.\n\n'+errorText(cloudDeleteError));
+}
 function renderRevize(){ const list=document.getElementById('revizeList'); if(!list) return; const q=(document.getElementById('revizeSearch')?.value||'').toLowerCase(); const tf=document.getElementById('revizeTypeFilter')?.value||'all'; const rf=document.getElementById('revizeResultFilter')?.value||'all'; const sf=document.getElementById('revizeSort')?.value||'inspection_desc'; const sortName=r=>[r?.vyrobce,r?.model,r?.typ,r?.vyrobni_cislo,r?.evidencni_cislo,r?.protokol].filter(Boolean).join(' ').trim(); const sortTime=v=>{ const d=parseAttentionDate(v); return d?d.getTime():0; }; const createdTime=r=>sortTime(r?.createdAt||r?.savedAt||r?.draftSavedAt||r?.updatedAt||r?.datum_kontroly||r?.datum); const compareRows=(a,b)=>{ if(sf==='protocol_desc'){ const protoNum=r=>{ const m=String(r?.protokol||'').match(/\d+/); return m?Number(m[0]):-1; }; const n=protoNum(b)-protoNum(a); return n || String(b?.protokol||'').localeCompare(String(a?.protokol||''),'cs',{numeric:true,sensitivity:'base'}); } if(sf==='created_desc') return (createdTime(b)-createdTime(a)) || sortName(a).localeCompare(sortName(b),'cs',{numeric:true,sensitivity:'base'}); if(sf==='valid_until_asc'){ const av=sortTime(a?.platnost)||Number.MAX_SAFE_INTEGER; const bv=sortTime(b?.platnost)||Number.MAX_SAFE_INTEGER; return (av-bv) || sortName(a).localeCompare(sortName(b),'cs',{numeric:true,sensitivity:'base'}); } return String(b?.datum_kontroly||'').localeCompare(String(a?.datum_kontroly||'')) || createdTime(b)-createdTime(a); }; let rows=[...(revizeData||[])].sort(compareRows); rows=rows.filter(r=>(tf==='all'||r.typ_zarizeni===tf)&&(r.draft||rf==='all'||(rf==='ok'?revizeResult(r)==='VYHOVUJE':revizeResult(r)==='NEVYHOVUJE'))&&(!q||[r.protokol,r.vyrobni_cislo,r.evidencni_cislo,r.model,r.vyrobce,r.provozovatel,r.umisteni].join(' ').toLowerCase().includes(q))); list.innerHTML=rows.length?rows.map(r=>`<div class="card revize-card ${r.draft?'draft':(revizeResult(r)==='VYHOVUJE'?'ok':'bad')}"><div class="card-head"><label class="bulk-print-check"><input type="checkbox" data-bulk-revize="${escapeHtml(r.id || '')}"><span>Do tisku</span></label><div><strong>${escapeHtml(r.protokol||'Bez čísla')}</strong><div class="meta">${escapeHtml(r.typ||'')} · ${escapeHtml(r.vyrobce||'')} ${escapeHtml(r.model||'')} · v.č. ${escapeHtml(r.vyrobni_cislo||'')}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><span class="badge ${r.draft?'':(revizeResult(r)==='VYHOVUJE'?'badge-ok':'badge-warn')}">${escapeHtml(r.draft?'Rozpracované':revizeResult(r))}</span>${revizeSyncBadgeHtml(r)}</div></div><div class="meta-grid"><div class="meta"><div class="meta-label">Datum</div><div class="meta-value">${escapeHtml(formatDate(r.datum_kontroly))}</div></div><div class="meta"><div class="meta-label">${r.draft?'Uloženo':'Platnost'}</div><div class="meta-value">${escapeHtml(r.draft?formatDate(r.draftSavedAt):formatDate(r.platnost))}</div></div><div class="meta"><div class="meta-label">Provozovatel</div><div class="meta-value">${escapeHtml(r.provozovatel||'')}</div></div><div class="meta"><div class="meta-label">RT</div><div class="meta-value">${escapeHtml(r.rt_jmeno||'')}</div></div></div><div class="card-actions"><button class="secondary mini" data-rz-edit="${r.id}">${r.draft?'Pokračovat':'Upravit'}</button><button class="secondary mini" data-rz-print="${r.id}">Náhled</button><button class="secondary mini" data-rz-docx="${r.id}">DOCX</button><button class="danger mini" data-rz-del="${r.id}">Smazat</button></div></div>`).join(''):'<div class="empty">Zatím není uložená žádná revize ZZ.</div>'; list.querySelectorAll('[data-rz-edit]').forEach(b=>b.addEventListener('click',()=>openRevizeForm(b.dataset.rzEdit))); list.querySelectorAll('[data-rz-print]').forEach(b=>b.addEventListener('click',()=>printRevizeById(b.dataset.rzPrint))); list.querySelectorAll('[data-rz-docx]').forEach(b=>b.addEventListener('click',()=>downloadRevizeDocx(b.dataset.rzDocx))); list.querySelectorAll('[data-rz-del]').forEach(b=>b.addEventListener('click',()=>deleteRevize(b.dataset.rzDel))); }
 renderRevize = function(){
   const list = document.getElementById('revizeList');
@@ -13014,7 +13055,7 @@ collectRevizeDraft = function(){
     applyRevizeRcdFormPartsToRecord(r, rcdFormParts, ok, note);
   }
   r.normy_revize = revizeNormyForRecord(r);
-  r.appVersion = '1.6 / 5.363';
+  r.appVersion = '1.6 / 5.364';
   window.currentRevizeDraft = r;
   return r;
 };
@@ -13621,7 +13662,7 @@ document.getElementById('appCheckCacheBtn')?.addEventListener('click', async () 
   if(!confirm('Vyčistit pouze cache aplikace? Uložená data ve Firebase ani lokální záznamy se nemažou.')) return;
   await resetAppShellCacheOnly('app-check-cache');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.363');
+  url.searchParams.set('v','5.364');
   url.searchParams.set('appCheckCache', String(Date.now()));
   location.replace(url.toString());
 });
@@ -13630,7 +13671,7 @@ document.getElementById('closeAppCheckTopBtn')?.addEventListener('click', () => 
 async function forceRefreshApplication(){
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.363');
+  url.searchParams.set('v','5.364');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 }
@@ -14196,7 +14237,7 @@ setTimeout(() => {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  const APP_CURRENT_VERSION = '5.363';
+  const APP_CURRENT_VERSION = '5.364';
   let appUpdateRegistration = null;
   let appUpdateWorker = null;
   let appReloadingForUpdate = false;
@@ -14342,7 +14383,7 @@ if ('serviceWorker' in navigator) {
   });
   window.addEventListener('load', () => {
     try{ sessionStorage.removeItem(APP_UPDATE_RELOAD_KEY); }catch(e){}
-    navigator.serviceWorker.register(new URL('./sw.js?v=5.363', location.href), {scope:'./', updateViaCache:'none'})
+    navigator.serviceWorker.register(new URL('./sw.js?v=5.364', location.href), {scope:'./', updateViaCache:'none'})
       .then(registration => {
         installUpdateWatcher(registration);
         registration.update().catch(err => console.warn('Service worker update check failed', err));
