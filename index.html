@@ -2294,9 +2294,31 @@ body.mobile-safe-mode .attention-count:hover{
   body.fault-report-printing #faultReportPreviewModal .photo-grid img{height:95mm;break-inside:avoid}
   @page{size:A4 portrait;margin:0}
 }
+.auth-gate{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(145deg,#0f172a 0%,#1e3a5f 55%,#0f5fbf 100%)}
+.auth-gate.hidden{display:none}.auth-card{width:min(100%,430px);padding:26px;border-radius:24px;background:#fff;color:#0f172a;box-shadow:0 28px 80px rgba(0,0,0,.35)}
+.auth-card h1{margin:0 0 8px;font-size:1.55rem}.auth-card p{margin:0 0 18px;color:#64748b;line-height:1.45}.auth-card .field{margin-top:12px}.auth-card input{background:#fff;color:#0f172a}
+.auth-actions{display:grid;gap:10px;margin-top:18px}.auth-actions button{width:100%}.auth-status{min-height:22px;margin-top:12px;font-size:.88rem;color:#475569}.auth-status.error{color:#b91c1c}.auth-status.ok{color:#15803d}
+.auth-user-line{margin-top:14px;padding:10px 12px;border-radius:12px;background:#eff6ff;color:#1e40af;font-size:.86rem}
 </style>
 </head>
 <body>
+<div class="auth-gate" id="authGate" aria-live="polite">
+  <div class="auth-card">
+    <h1>LiftControl CZ - test přihlášení</h1>
+    <p id="authIntro">Přihlaste se testovacím účtem. Produkční aplikace a data nejsou touto verzí dotčena.</p>
+    <form id="authLoginForm">
+      <div class="field"><label for="authEmail">E-mail</label><input id="authEmail" type="email" autocomplete="username" required></div>
+      <div class="field"><label for="authPassword">Heslo</label><input id="authPassword" type="password" autocomplete="current-password" minlength="8" required></div>
+      <div class="auth-actions"><button class="primary" type="submit">Přihlásit</button><button class="secondary" id="authResetBtn" type="button">Zapomenuté heslo</button></div>
+    </form>
+    <div id="authVerifyPanel" hidden>
+      <div class="auth-user-line" id="authUserLine"></div>
+      <p>E-mail zatím není ověřený. Otevřete ověřovací zprávu a potom obnovte kontrolu.</p>
+      <div class="auth-actions"><button class="primary" id="authResendBtn" type="button">Poslat ověřovací e-mail</button><button class="secondary" id="authReloadBtn" type="button">Už jsem ověřil - zkontrolovat</button><button class="secondary" id="authSignOutBtn" type="button">Odhlásit</button></div>
+    </div>
+    <div class="auth-status" id="authStatus"></div>
+  </div>
+</div>
 <header>
   <button id="sideToggleBtn" class="settings-btn menu-toggle" type="button" aria-label="Menu" onclick="(function(e){if(e&&e.stopImmediatePropagation)e.stopImmediatePropagation();var b=document.body;if(!b)return;if(window.matchMedia&&window.matchMedia('(max-width:1180px)').matches)b.classList.toggle('side-open');else b.classList.toggle('side-collapsed');})(typeof event!=='undefined'?event:window.event)"><span class="css-icon icon-menu" aria-hidden="true"><span></span></span></button>
   <div><div class="header-title">LiftControl CZ</div><div class="header-sub">Kontroly, poruchy, plán práce a stroje</div></div>
@@ -2340,7 +2362,7 @@ body.mobile-safe-mode .attention-count:hover{
     <button type="button" class="side-link" id="sideSettingsBtn">Nastavení</button>
   </nav>
   <div class="side-bottom">
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.364</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>TEST PŘIHLÁŠENÍ - NEPOUŽÍVAT PRO OSTRÁ DATA<br>Verze: 1.6 / 5.365</div>
   </div>
 </aside>
 
@@ -3142,20 +3164,21 @@ body.mobile-safe-mode .attention-count:hover{
 </div>
 
 <script src="./assets/vendor/firebase-app-compat-10.12.5.js"></script>
+<script src="./assets/vendor/firebase-auth-compat-10.12.5.js"></script>
 <script src="./assets/vendor/firebase-firestore-compat-10.12.5.js"></script>
 <script src="./assets/vendor/firebase-storage-compat-10.12.5.js"></script>
 <script src="./revize-machine-db.js"></script>
-<script src="./liftcontrol-backup-data.js"></script>
 <script>
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyAwWq_3iHtTYEMxFeo0CY30gqF3XzALBjI',
-  authDomain: 'doctype-test.firebaseapp.com',
-  projectId: 'doctype-test',
-  storageBucket: 'doctype-test.firebasestorage.app',
-  messagingSenderId: '248395640600',
-  appId: '1:248395640600:web:6bb92e4cf075801966786d'
+  apiKey: 'AIzaSyB9T2ibiD-ofd8j2hY5AzUSKXYsN2SxYSs',
+  authDomain: 'liftcontrol-cz-auth-test.firebaseapp.com',
+  projectId: 'liftcontrol-cz-auth-test',
+  storageBucket: 'liftcontrol-cz-auth-test.firebasestorage.app',
+  messagingSenderId: '1089820916674',
+  appId: '1:1089820916674:web:11de0cfbca0f80f394f45b'
 };
+const AUTH_TEST_MODE = true;
 
 const COLLECTION_NAME = 'protokoly_test';
 const SCHEDULE_COLLECTION_NAME = 'plan_prace';
@@ -3498,6 +3521,7 @@ let firebaseAvailable = false;
 let storageAvailable = false;
 let db = null;
 let storage = null;
+let auth = null;
 function isIOSFirestoreTransportDevice(){
   try{
     const ua = navigator.userAgent || '';
@@ -3514,10 +3538,11 @@ function firestoreTransportSettings(){
 try {
   if (window.firebase && firebase.initializeApp && firebase.firestore) {
     firebase.initializeApp(firebaseConfig);
+    if(firebase.auth){ auth = firebase.auth(); auth.useDeviceLanguage(); }
     db = firebase.firestore();
     try{ db.settings(firestoreTransportSettings()); }catch(settingsErr){ console.warn('Firestore settings already locked or unavailable:', settingsErr); }
-    firebaseAvailable = true;
-    if(firebase.storage){
+    firebaseAvailable = !AUTH_TEST_MODE;
+    if(firebase.storage && !AUTH_TEST_MODE){
       storage = firebase.storage();
       storageAvailable = true;
     }
@@ -3526,6 +3551,64 @@ try {
   console.warn('Firebase není dostupný, přepínám na lokální režim.', e);
   firebaseAvailable = false;
   storageAvailable = false;
+}
+function authMessage(error){
+  const code=String(error?.code||'');
+  if(code.includes('invalid-credential')||code.includes('wrong-password')||code.includes('user-not-found')) return 'E-mail nebo heslo není správné.';
+  if(code.includes('invalid-email')) return 'Zadejte platnou e-mailovou adresu.';
+  if(code.includes('too-many-requests')) return 'Příliš mnoho pokusů. Chvíli počkejte a zkuste to znovu.';
+  if(code.includes('network-request-failed')) return 'Přihlášení se nepodařilo kvůli připojení k internetu.';
+  return error?.message || 'Operace se nepodařila.';
+}
+function setAuthStatus(message='', type=''){
+  const el=document.getElementById('authStatus');
+  if(!el) return;
+  el.textContent=message;
+  el.className='auth-status'+(type?' '+type:'');
+}
+function renderAuthGate(user){
+  const gate=document.getElementById('authGate');
+  const form=document.getElementById('authLoginForm');
+  const verify=document.getElementById('authVerifyPanel');
+  if(!gate||!form||!verify) return;
+  const allowed=!!(user&&user.emailVerified);
+  gate.classList.toggle('hidden',allowed);
+  form.hidden=!!user;
+  verify.hidden=!user||allowed;
+  const line=document.getElementById('authUserLine');
+  if(line) line.textContent=user?.email||'';
+  if(allowed) setAuthStatus('Přihlášení bylo ověřeno.','ok');
+  else if(user) setAuthStatus('Pro vstup je nutné ověřit e-mail.');
+  else setAuthStatus('');
+}
+if(auth){
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(error=>console.warn('Auth persistence failed',error));
+  auth.onAuthStateChanged(user=>renderAuthGate(user),error=>setAuthStatus(authMessage(error),'error'));
+  document.getElementById('authLoginForm')?.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const email=String(document.getElementById('authEmail')?.value||'').trim();
+    const password=String(document.getElementById('authPassword')?.value||'');
+    setAuthStatus('Přihlašuji...');
+    try{ await auth.signInWithEmailAndPassword(email,password); }
+    catch(error){ setAuthStatus(authMessage(error),'error'); }
+  });
+  document.getElementById('authResetBtn')?.addEventListener('click',async()=>{
+    const email=String(document.getElementById('authEmail')?.value||'').trim();
+    if(!email){ setAuthStatus('Nejdřív zadejte e-mail.','error'); return; }
+    try{ await auth.sendPasswordResetEmail(email); setAuthStatus('Odkaz pro nastavení nového hesla byl odeslán.','ok'); }
+    catch(error){ setAuthStatus(authMessage(error),'error'); }
+  });
+  document.getElementById('authResendBtn')?.addEventListener('click',async()=>{
+    try{ await auth.currentUser?.sendEmailVerification(); setAuthStatus('Ověřovací e-mail byl odeslán.','ok'); }
+    catch(error){ setAuthStatus(authMessage(error),'error'); }
+  });
+  document.getElementById('authReloadBtn')?.addEventListener('click',async()=>{
+    try{ await auth.currentUser?.reload(); renderAuthGate(auth.currentUser); if(!auth.currentUser?.emailVerified) setAuthStatus('E-mail zatím není ověřený.','error'); }
+    catch(error){ setAuthStatus(authMessage(error),'error'); }
+  });
+  document.getElementById('authSignOutBtn')?.addEventListener('click',()=>auth.signOut());
+}else{
+  setAuthStatus('Firebase Authentication se nepodařilo načíst.','error');
 }
 function loadLocalData(){
   try { return JSON.parse(localStorage.getItem('ctvrtletni_protokoly_local') || '[]'); } catch(e) { return []; }
@@ -4376,7 +4459,7 @@ async function exportBackup(){
     }
     const payload = {
       app: 'LiftControl CZ',
-      appVersion: '1.6 / 5.364',
+      appVersion: '1.6 / 5.365',
       backupType: 'complete',
       schemaVersion: 2,
       exportedAt: new Date().toISOString(),
@@ -4835,7 +4918,7 @@ function renderAppCheckResults(results, running=false){
 }
 async function testAppCheckFirestore(){
   const id = 'APP_CHECK_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-  const record = {id, appCheck:true, date:todayLocal(), note:'docasny diagnosticky zaznam', createdAt:new Date().toISOString(), appVersion:'1.6 / 5.364'};
+  const record = {id, appCheck:true, date:todayLocal(), note:'docasny diagnosticky zaznam', createdAt:new Date().toISOString(), appVersion:'1.6 / 5.365'};
   try{
     await setAndVerifyFirestoreRest(SCHEDULE_COLLECTION_NAME, id, record, 'Kontrola Firestore', 15000, 10000);
     return {ok:true, id};
@@ -4860,7 +4943,7 @@ async function runAppCheck(){
   renderAppCheckResults(results, true);
   appCheckAddResult(results, navigator.onLine ? 'ok' : 'error', 'Internet', navigator.onLine ? 'Zarizeni hlasi online rezim.' : 'Prohlizec hlasi offline rezim.');
   const versionText = document.querySelector('.side-version')?.textContent || '';
-  appCheckAddResult(results, versionText.includes('5.364') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
+  appCheckAddResult(results, versionText.includes('5.365') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
   appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
@@ -4940,14 +5023,14 @@ function scheduleEmptyAppRecovery(reason='startup'){
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.364');
+        url.searchParams.set('v','5.365');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
       }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_336') !== '1'){
         sessionStorage.setItem('liftcontrol_cache_recovery_5_336','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.364');
+        url.searchParams.set('v','5.365');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -5010,7 +5093,7 @@ function cloneQuarterlyDraftForStorage(record){
     const copy = JSON.parse(JSON.stringify(record || {}));
     copy._draftStepIndex = stepIndex || 0;
     copy._draftSavedAt = new Date().toISOString();
-    copy._draftAppVersion = '1.6 / 5.364';
+    copy._draftAppVersion = '1.6 / 5.365';
     return copy;
   }catch(e){
     return null;
@@ -5849,10 +5932,10 @@ function openWizard(editId=null, prefill={}){
       }
     }
   }
-  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.364'};
+  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.365'};
   rec = Object.assign({}, rec, prefill || {});
   if(!editId && !rec.cLogic) rec.cLogic = 'legacy';
-  if(!editId) rec.appVersion = '1.6 / 5.364';
+  if(!editId) rec.appVersion = '1.6 / 5.365';
 
   // Auto doplneni z historie podle vyrobniho cisla.
   if(rec.vc){
@@ -5918,7 +6001,7 @@ async function saveQuarterlyEditedProtocolFromWizard(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    rec.appVersion = '1.6 / 5.364';
+    rec.appVersion = '1.6 / 5.365';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -6503,7 +6586,7 @@ async function nextStep(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    rec.appVersion = '1.6 / 5.364';
+    rec.appVersion = '1.6 / 5.365';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -6602,7 +6685,7 @@ async function logAuditAction(action, entity, record, by, detail, beforeRecord){
       serial: record?.vc || record?.serial || '',
       type: record?.typ || record?.type || '',
       createdAt: new Date().toISOString(),
-      appVersion: '1.6 / 5.364',
+      appVersion: '1.6 / 5.365',
       restoreVersion: 1,
       before: beforeSnapshot ? cloneForAuditSnapshot(beforeSnapshot) : null,
       after: afterSnapshot ? cloneForAuditSnapshot(afterSnapshot) : null
@@ -8651,7 +8734,7 @@ async function saveWorkPlanFromForm(){
       place,
       extraPlaces,
       note,
-      appVersion:'1.6 / 5.364'
+      appVersion:'1.6 / 5.365'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     const saveResult = await saveWorkPlan(record);
@@ -9438,7 +9521,7 @@ async function saveFaultFromForm(){
       inService: status === 'service' ? true : (existing ? !!existing.inService : false),
       waitingParts: status === 'waiting_parts' ? true : (existing ? !!existing.waitingParts : false),
       photos: currentFaultPhotos,
-      appVersion:'1.6 / 5.364'
+      appVersion:'1.6 / 5.365'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     setLastEnteredBy(record.enteredBy);
@@ -10135,7 +10218,7 @@ function mergeRepairCloudWithLocal(cloudRows=[], localRows=[]){
 function upsertLocalRepairRow(record){
   const rows = loadLocalRepairs();
   record = normalizeRepairRecordForProtocol(record);
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.364'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.365'});
   const idx = rows.findIndex(x => String(x.id) === String(rec.id));
   if(idx >= 0) rows[idx] = rec; else rows.unshift(rec);
   const localResult = saveLocalRepairs(rows.slice(0,300));
@@ -10151,7 +10234,7 @@ async function saveRepairRecord(record){
   record.id = record.id || repairUid();
   record.savedAt = new Date().toISOString();
   record.updatedAt = record.savedAt;
-  record.appVersion = '1.6 / 5.364';
+  record.appVersion = '1.6 / 5.365';
   markRepairSyncState(record, false, null);
   const localSave = upsertLocalRepairRow(record);
   if(!localSave.localResult || !localSave.localResult.ok){
@@ -10208,7 +10291,7 @@ function startLocalRepairsMode(){
 }
 function saveRepairRecordLocal(record){
   record = normalizeRepairRecordForProtocol(record);
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.364'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.365'});
   markRepairSyncState(rec, false, new Error('Starsí lokální uložení čeká na synchronizaci.'));
   upsertLocalRepairRow(rec);
   return rec;
@@ -11073,7 +11156,7 @@ async function savePartFromForm(){
       orderedAt: (statusVal === 'ordered' || statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.orderedAt) || new Date().toISOString()) : '',
       sentAt: (statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.sentAt) || new Date().toISOString()) : '',
       resolvedAt: statusVal === 'resolved' ? ((existing && existing.resolvedAt) || new Date().toISOString()) : '',
-      appVersion:'1.6 / 5.364'
+      appVersion:'1.6 / 5.365'
     });
     record.photos = JSON.parse(JSON.stringify(currentPartPhotos || []));
     record.photo = record.photos[0] || null;
@@ -12141,7 +12224,7 @@ async function syncQuarterlyAfterRevize(r){
   last.typ=last.typ||r.model||r.typ||'';
   last.rok=last.rok||r.rok_vyroby||'';
   last.umisteni=r.umisteni||last.umisteni||'';
-  last.appVersion='1.6 / 5.364';
+  last.appVersion='1.6 / 5.365';
   const replaceByIdOrSerial=(arr, updated)=>{
     const idx=(arr||[]).findIndex(x=>(updated.id && x.id===updated.id) || matchesSerial(x));
     if(idx>=0) arr[idx]={...arr[idx],...updated};
@@ -13055,7 +13138,7 @@ collectRevizeDraft = function(){
     applyRevizeRcdFormPartsToRecord(r, rcdFormParts, ok, note);
   }
   r.normy_revize = revizeNormyForRecord(r);
-  r.appVersion = '1.6 / 5.364';
+  r.appVersion = '1.6 / 5.365';
   window.currentRevizeDraft = r;
   return r;
 };
@@ -13662,7 +13745,7 @@ document.getElementById('appCheckCacheBtn')?.addEventListener('click', async () 
   if(!confirm('Vyčistit pouze cache aplikace? Uložená data ve Firebase ani lokální záznamy se nemažou.')) return;
   await resetAppShellCacheOnly('app-check-cache');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.364');
+  url.searchParams.set('v','5.365');
   url.searchParams.set('appCheckCache', String(Date.now()));
   location.replace(url.toString());
 });
@@ -13671,7 +13754,7 @@ document.getElementById('closeAppCheckTopBtn')?.addEventListener('click', () => 
 async function forceRefreshApplication(){
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.364');
+  url.searchParams.set('v','5.365');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 }
@@ -14237,7 +14320,7 @@ setTimeout(() => {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  const APP_CURRENT_VERSION = '5.364';
+  const APP_CURRENT_VERSION = '5.365';
   let appUpdateRegistration = null;
   let appUpdateWorker = null;
   let appReloadingForUpdate = false;
@@ -14383,7 +14466,7 @@ if ('serviceWorker' in navigator) {
   });
   window.addEventListener('load', () => {
     try{ sessionStorage.removeItem(APP_UPDATE_RELOAD_KEY); }catch(e){}
-    navigator.serviceWorker.register(new URL('./sw.js?v=5.364', location.href), {scope:'./', updateViaCache:'none'})
+    navigator.serviceWorker.register(new URL('./sw.js?v=5.365', location.href), {scope:'./', updateViaCache:'none'})
       .then(registration => {
         installUpdateWatcher(registration);
         registration.update().catch(err => console.warn('Service worker update check failed', err));

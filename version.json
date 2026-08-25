@@ -1,8 +1,8 @@
 {
-  "version": "5.364",
-  "appVersion": "1.6 / 5.364",
-  "cacheName": "liftcontrol-cz-v1-6-5-364",
-  "url": "./index.html?v=5.364",
+  "version": "5.365-auth-test",
+  "appVersion": "1.6 / 5.365 auth test",
+  "cacheName": "liftcontrol-cz-auth-test-v1-6-5-365",
+  "url": "./index.html?v=5.365-auth-test",
   "releasedAt": "2026-08-25",
-  "message": "Smazane revize se po novem otevreni aplikace uz neobnovi ze zalohy."
+  "message": "Oddelena testovaci verze prihlaseni e-mailem a heslem."
 }

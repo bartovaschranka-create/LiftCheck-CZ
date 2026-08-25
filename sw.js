@@ -1,9 +1,9 @@
-const CACHE_NAME = 'liftcontrol-cz-v1-6-5-364';
+const CACHE_NAME = 'liftcontrol-cz-auth-test-v1-6-5-365';
 const CORE_APP_SHELL = [
   './index.html',
   './revize-machine-db.js',
-  './liftcontrol-backup-data.js',
   './assets/vendor/firebase-app-compat-10.12.5.js',
+  './assets/vendor/firebase-auth-compat-10.12.5.js',
   './assets/vendor/firebase-firestore-compat-10.12.5.js',
   './assets/vendor/firebase-storage-compat-10.12.5.js'
 ];
