@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>LiftControl CZ – test přihlášení</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, system-ui, sans-serif; background: #eef2f6; color: #172033; }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 20px; }
+    main { width: min(100%, 430px); background: white; border-radius: 18px; padding: 28px; box-shadow: 0 18px 55px rgba(24,39,75,.14); }
+    .badge { display: inline-block; padding: 6px 10px; border-radius: 999px; background: #fff0d8; color: #9a4f00; font-size: 12px; font-weight: 800; }
+    h1 { margin: 18px 0 8px; font-size: 27px; }
+    p { color: #5f6c80; line-height: 1.5; }
+    label { display: block; margin: 18px 0 6px; font-size: 14px; font-weight: 700; }
+    input { width: 100%; border: 1px solid #cbd3df; border-radius: 10px; padding: 12px; font-size: 16px; }
+    button { width: 100%; margin-top: 16px; border: 0; border-radius: 10px; padding: 13px; background: #1266d4; color: white; font-weight: 800; font-size: 15px; cursor: pointer; }
+    button.secondary { background: #e8eef7; color: #1d3f6e; }
+    button.link { background: transparent; color: #1266d4; margin-top: 10px; padding: 8px; }
+    button:disabled { opacity: .55; cursor: wait; }
+    #message { min-height: 24px; margin-top: 16px; font-weight: 650; }
+    .error { color: #b42318; }
+    .ok { color: #067647; }
+    [hidden] { display: none !important; }
+    .email { font-weight: 800; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <span class="badge">TEST – BEZ PROVOZNÍCH DAT</span>
+    <section id="login">
+      <h1>Přihlášení</h1>
+      <p>Tato stránka slouží pouze k ověření přístupu do budoucí verze LiftControl CZ.</p>
+      <form id="login-form">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" autocomplete="username" required>
+        <label for="password">Heslo</label>
+        <input id="password" type="password" autocomplete="current-password" minlength="8" required>
+        <button id="login-button" type="submit">Přihlásit se</button>
+      </form>
+      <button id="reset" class="link" type="button">Zapomenuté heslo</button>
+    </section>
+    <section id="verify" hidden>
+      <h1>Ověřte e-mail</h1>
+      <p>Na adresu <span id="verify-email" class="email"></span> jsme poslali ověřovací odkaz.</p>
+      <button id="reload" type="button">Už jsem e-mail ověřil</button>
+      <button id="resend" class="secondary" type="button">Poslat odkaz znovu</button>
+      <button class="link signout" type="button">Odhlásit se</button>
+    </section>
+    <section id="success" hidden>
+      <h1>Přihlášení funguje</h1>
+      <p>Účet <span id="success-email" class="email"></span> je přihlášený a e-mail je ověřený.</p>
+      <button class="secondary signout" type="button">Odhlásit se</button>
+    </section>
+    <div id="message" role="status" aria-live="polite"></div>
+  </main>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+  <script>
+    firebase.initializeApp({
+      apiKey: "AIzaSyA2UWfsQSizRIEQNHRuIHrYUJEtB2EWo4Y",
+      authDomain: "liftcontrol-cz-auth-test.firebaseapp.com",
+      projectId: "liftcontrol-cz-auth-test",
+      appId: "1:1089820916674:web:11de0cfbca0f80f394f45b"
+    });
+
+    const auth = firebase.auth();
+    const sections = ["login", "verify", "success"];
+    const message = document.getElementById("message");
+    const show = id => sections.forEach(x => document.getElementById(x).hidden = x !== id);
+    const report = (text, ok = false) => { message.textContent = text; message.className = ok ? "ok" : "error"; };
+    const friendly = error => ({
+      "auth/invalid-credential": "Nesprávný e-mail nebo heslo.",
+      "auth/invalid-email": "E-mail nemá platný formát.",
+      "auth/too-many-requests": "Příliš mnoho pokusů. Zkuste to později.",
+      "auth/user-disabled": "Tento účet je zablokovaný."
+    }[error.code] || "Operace se nepodařila. Zkuste to znovu.");
+
+    auth.onAuthStateChanged(user => {
+      report("");
+      if (!user) return show("login");
+      if (!user.emailVerified) {
+        document.getElementById("verify-email").textContent = user.email || "";
+        return show("verify");
+      }
+      document.getElementById("success-email").textContent = user.email || "";
+      show("success");
+    });
+
+    document.getElementById("login-form").addEventListener("submit", async event => {
+      event.preventDefault();
+      const button = document.getElementById("login-button");
+      button.disabled = true;
+      report("");
+      try {
+        await auth.signInWithEmailAndPassword(
+          document.getElementById("email").value.trim(),
+          document.getElementById("password").value
+        );
+      } catch (error) { report(friendly(error)); }
+      finally { button.disabled = false; }
+    });
+
+    document.getElementById("reset").addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      if (!email) return report("Nejdřív vyplňte e-mail.");
+      try { await auth.sendPasswordResetEmail(email); report("Pokud účet existuje, poslali jsme odkaz pro nastavení hesla.", true); }
+      catch (error) { report(friendly(error)); }
+    });
+
+    document.getElementById("resend").addEventListener("click", async () => {
+      try { await auth.currentUser.sendEmailVerification(); report("Ověřovací e-mail byl znovu odeslán.", true); }
+      catch (error) { report(friendly(error)); }
+    });
+
+    document.getElementById("reload").addEventListener("click", async () => {
+      try {
+        await auth.currentUser.reload();
+        if (auth.currentUser.emailVerified) location.reload();
+        else report("E-mail zatím není ověřený.");
+      } catch (error) { report(friendly(error)); }
+    });
+
+    document.querySelectorAll(".signout").forEach(button => button.addEventListener("click", () => auth.signOut()));
+  </script>
+</body>
+</html>
