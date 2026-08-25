@@ -1,8 +1,8 @@
 {
-  "version": "5.358",
-  "appVersion": "1.6 / 5.358",
-  "cacheName": "liftcontrol-cz-v1-6-5-358",
-  "url": "./index.html?v=5.358",
+  "version": "5.359",
+  "appVersion": "1.6 / 5.359",
+  "cacheName": "liftcontrol-cz-v1-6-5-359",
+  "url": "./index.html?v=5.359",
   "releasedAt": "2026-08-25",
-  "message": "Revizni protokol ma prehlednejsi identifikaci stroje, mirne vetsi pismo a zachovava vsechny navazane kontroly."
+  "message": "Opraven tisk revizniho protokolu, aby po spravnem nahledu nevznikal prazdny list."
 }
