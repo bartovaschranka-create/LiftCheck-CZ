@@ -13106,8 +13106,14 @@ revizePaperHtml = function(r){
     record.stoupavost_stupne ? String(record.stoupavost_stupne).replace(/\s*°$/,'') + '°' : '',
     record.stoupavost_procento ? String(record.stoupavost_procento).replace(/\s*%$/,'') + ' %' : ''
   ].filter(Boolean).join(' / ') || '-';
-  const tiltRowIndex = techRows.findIndex(row => row[2] === 'Náklon podvozku');
-  techRows.splice(tiltRowIndex >= 0 ? tiltRowIndex + 1 : techRows.length, 0, ['', '', 'Stoupavost', grade]);
+  const emptyLeftRow = techRows.find(row => !row[0] && row[2]);
+  const emptyRightRow = techRows.find(row => row[0] && !row[2]);
+  if(emptyLeftRow) emptyLeftRow.splice(0, 2, 'Stoupavost', grade);
+  else if(emptyRightRow) emptyRightRow.splice(2, 2, 'Stoupavost', grade);
+  else {
+    const tiltRowIndex = techRows.findIndex(row => row[2] === 'Náklon podvozku');
+    techRows.splice(tiltRowIndex >= 0 ? tiltRowIndex + 1 : techRows.length, 0, ['Stoupavost', grade, '', '']);
+  }
   const techTable = `<table><tr><td class="section" colspan="4">Technické údaje</td></tr>${techRows.map(x=>`<tr><td><b>${escapeHtml(x[0])}</b></td><td>${escapeHtml(x[1]||'')}</td><td><b>${escapeHtml(x[2])}</b></td><td>${escapeHtml(x[3]||'')}</td></tr>`).join('')}</table>`;
   html = html.replace(/<table><tr><td class="section" colspan="4">Technické údaje<\/td><\/tr>[\s\S]*?<\/table><table><thead><tr><th>Kontrolovaný bod revize ZZ/, techTable + '<table><thead><tr><th>Kontrolovaný bod revize ZZ');
   const ynLegend = '<div class="revize-yn-legend">Význam zaškrtnutí: ANO = vyhovuje / ověřeno bez závad, NE = nevyhovuje / zjištěna závada nebo nedostatek.</div>';
