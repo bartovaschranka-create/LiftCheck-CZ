@@ -13219,10 +13219,9 @@ revizePaperHtml = function(r){
   Object.keys(REVIZE_NUMERIC_UNITS).forEach(k=>{ record[k]=revizeFormatTechValue(k, record[k]); });
   const hasOutdoorLimits = revizeHasOutdoorLimits(record);
   const indoorOutdoor = (indoor,outdoor) => [indoor, hasOutdoorLimits ? outdoor : ''].filter(Boolean).join(' / ');
-  const capacityDisplay = indoorOutdoor(
-    revizeCapacityDisplay(record.nosnost, record.nosnost_osoby, record.bocni_sila),
-    revizeCapacityDisplay(record.venkovni_nosnost, record.venkovni_nosnost_osoby, record.venkovni_bocni_sila)
-  );
+  const capacityIndoor = revizeCapacityDisplay(record.nosnost, record.nosnost_osoby, record.bocni_sila);
+  const capacityOutdoor = hasOutdoorLimits ? revizeCapacityDisplay(record.venkovni_nosnost, record.venkovni_nosnost_osoby, record.venkovni_bocni_sila) : '';
+  const capacityDisplay = capacityOutdoor ? `${capacityIndoor}\n/ ${capacityOutdoor}` : capacityIndoor;
   let html = revizePaperHtmlOriginal5166(record)
     .replace(/<p><b>ZÁVĚREČNÉ VYHODNOCENÍ:<\/b>([\s\S]*?)<\/p>/, '<div class="revize-final-note"><b>ZÁVĚREČNÉ VYHODNOCENÍ:</b>$1</div>')
     .replace(/<p>Rozdělovník: (?:1x provozovatel|2x objednatel) \/ 1x revizní technik<\/p>/, '<div class="revize-distribution">Rozdělovník: 2x objednatel / 1x revizní technik</div>');
@@ -13267,7 +13266,8 @@ revizePaperHtml = function(r){
     techRows.push([left[0], left[1], right[0], right[1]]);
   }
   const techSectionTitle = hasOutdoorLimits ? `Technické údaje · hodnoty za lomítkem platí pro venkovní prostředí při rychlosti větru do ${record.venkovni_vitr || '12,5 m/s'}` : 'Technické údaje';
-  const techTable = `<table><tr><td class="section" colspan="4">${escapeHtml(techSectionTitle)}</td></tr>${techRows.map(x=>`<tr><td><b>${escapeHtml(x[0])}</b></td><td>${escapeHtml(x[1]||'')}</td><td><b>${escapeHtml(x[2])}</b></td><td>${escapeHtml(x[3]||'')}</td></tr>`).join('')}</table>`;
+  const techCell = value => escapeHtml(value || '').replace(/\n/g,'<br>');
+  const techTable = `<table><tr><td class="section" colspan="4">${escapeHtml(techSectionTitle)}</td></tr>${techRows.map(x=>`<tr><td><b>${escapeHtml(x[0])}</b></td><td>${techCell(x[1])}</td><td><b>${escapeHtml(x[2])}</b></td><td>${techCell(x[3])}</td></tr>`).join('')}</table>`;
   html = html.replace(/<table><tr><td class="section" colspan="4">Technické údaje<\/td><\/tr>[\s\S]*?<\/table><table><thead><tr><th>Kontrolovaný bod revize ZZ/, techTable + '<table><thead><tr><th>Kontrolovaný bod revize ZZ');
   const ynLegend = '<div class="revize-yn-legend">Význam zaškrtnutí: ANO = vyhovuje / ověřeno bez závad, NE = nevyhovuje / zjištěna závada nebo nedostatek.</div>';
   if(!html.includes('revize-yn-legend')){
