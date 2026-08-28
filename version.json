@@ -1,8 +1,8 @@
 {
-  "version": "5.368",
-  "appVersion": "1.6 / 5.368",
-  "cacheName": "liftcontrol-cz-v1-6-5-368",
-  "url": "./index.html?v=5.368",
+  "version": "5.369",
+  "appVersion": "1.6 / 5.369",
+  "cacheName": "liftcontrol-cz-v1-6-5-369",
+  "url": "./index.html?v=5.369",
   "releasedAt": "2026-08-28",
-  "message": "Opakovana revize prevezme pocet osob, bocni silu a venkovni omezeni z posledni revize stroje; novy stroj muze pouzit posledni hodnoty shodneho modelu."
+  "message": "Stoupavost se zobrazuje ve stupnich a procentech v zavorce; hodnoty za lomitkem plati pro venkovni prostredi do 12,5 m/s."
 }
