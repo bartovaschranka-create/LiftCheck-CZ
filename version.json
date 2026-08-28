@@ -1,8 +1,8 @@
 {
-  "version": "5.366",
-  "appVersion": "1.6 / 5.366",
-  "cacheName": "liftcontrol-cz-v1-6-5-366",
-  "url": "./index.html?v=5.366",
-  "releasedAt": "2026-08-25",
-  "message": "Do protokolu doplnena opravneni, osvedceni a merici pristroje; dynamicka zkouska je pod statickou."
+  "version": "5.367",
+  "appVersion": "1.6 / 5.367",
+  "cacheName": "liftcontrol-cz-v1-6-5-367",
+  "url": "./index.html?v=5.367",
+  "releasedAt": "2026-08-28",
+  "message": "Jedno kliknuti po vyberu stroje; typ zarizeni, vysuvny deck a snimani zatizeni se chytre predvyplni a lze je zmenit."
 }
