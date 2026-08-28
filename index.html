@@ -13221,7 +13221,7 @@ revizePaperHtml = function(r){
   const indoorOutdoor = (indoor,outdoor) => [indoor, hasOutdoorLimits ? outdoor : ''].filter(Boolean).join(' / ');
   const capacityIndoor = revizeCapacityDisplay(record.nosnost, record.nosnost_osoby, record.bocni_sila);
   const capacityOutdoor = hasOutdoorLimits ? revizeCapacityDisplay(record.venkovni_nosnost, record.venkovni_nosnost_osoby, record.venkovni_bocni_sila) : '';
-  const capacityDisplay = capacityOutdoor ? `${capacityIndoor}\n/ ${capacityOutdoor}` : capacityIndoor;
+  const capacityDisplay = capacityOutdoor ? `${capacityIndoor}\n${capacityOutdoor}` : capacityIndoor;
   let html = revizePaperHtmlOriginal5166(record)
     .replace(/<p><b>ZÁVĚREČNÉ VYHODNOCENÍ:<\/b>([\s\S]*?)<\/p>/, '<div class="revize-final-note"><b>ZÁVĚREČNÉ VYHODNOCENÍ:</b>$1</div>')
     .replace(/<p>Rozdělovník: (?:1x provozovatel|2x objednatel) \/ 1x revizní technik<\/p>/, '<div class="revize-distribution">Rozdělovník: 2x objednatel / 1x revizní technik</div>');
