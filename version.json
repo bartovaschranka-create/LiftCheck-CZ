@@ -1,8 +1,8 @@
 {
-  "version": "5.369",
-  "appVersion": "1.6 / 5.369",
-  "cacheName": "liftcontrol-cz-v1-6-5-369",
-  "url": "./index.html?v=5.369",
+  "version": "5.370",
+  "appVersion": "1.6 / 5.370",
+  "cacheName": "liftcontrol-cz-v1-6-5-370",
+  "url": "./index.html?v=5.370",
   "releasedAt": "2026-08-28",
-  "message": "Stoupavost se zobrazuje ve stupnich a procentech v zavorce; hodnoty za lomitkem plati pro venkovni prostredi do 12,5 m/s."
+  "message": "Obnoveni cache pro zobrazeni snizene nosnosti na druhem radku bez lomitka."
 }
