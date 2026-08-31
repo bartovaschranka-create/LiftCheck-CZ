@@ -1955,11 +1955,12 @@ body.dark .part-handler-note-display{background:rgba(59,130,246,.12);border-colo
 .dark .revize-form{background:#0f172a}.revize-form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.revize-form-grid .wide{grid-column:span 2}.revize-form-grid .full{grid-column:1/-1}
 .revize-section-title{grid-column:1/-1;margin:8px 0 0;padding:7px 9px;border-left:4px solid var(--brand);background:#eff6ff;color:#0f2f5f;font-weight:900;font-size:.82rem;text-transform:uppercase;letter-spacing:.04em}.dark .revize-section-title{background:#172554;color:#dbeafe}
 .revize-check-grid{display:grid;grid-template-columns:1fr;gap:7px;margin-top:8px}.revize-check-row{display:grid;grid-template-columns:minmax(0,1fr) 150px minmax(160px,.55fr);gap:8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:7px;background:#f8fbff}.dark .revize-check-row{background:#111827}.revize-check-row strong{font-size:.88rem}.revize-check-row .yesno{display:flex;gap:5px}.revize-check-row input{min-height:38px}.revize-mini-table{width:100%;border-collapse:collapse;margin-top:8px}.revize-mini-table th,.revize-mini-table td{border:1px solid var(--line);padding:5px 6px;font-size:.82rem}.revize-mini-table th{background:#eaf2ff;text-align:left}.revize-paper{width:210mm;min-height:297mm;margin:0 auto 12px;background:#fff;color:#111;padding:9mm 9mm 8mm;font-family:Arial,sans-serif;box-shadow:0 10px 30px rgba(15,23,42,.18)}.revize-paper.page-break{page-break-before:always}.revize-paper h1{font-size:15px;margin:0 0 4px;text-align:center}.revize-paper .legal{font-size:8.4px;line-height:1.25;text-align:center;margin-bottom:5px}.revize-paper table{width:100%;border-collapse:collapse}.revize-paper th,.revize-paper td{border:1px solid #111;padding:3px 4px;font-size:8.7px;vertical-align:top}.revize-paper th{background:#e5e7eb}.revize-paper .kv td:nth-child(odd){font-weight:bold;background:#f3f4f6;width:17%}.revize-paper .section{font-weight:bold;background:#dbeafe;text-transform:uppercase}.revize-paper .yn{text-align:center;width:42px}.revize-paper .note{width:34%}.revize-paper .sign{height:34px}.revize-result-ok{color:#166534;font-weight:900}.revize-result-bad{color:#991b1b;font-weight:900}.revize-card{border-left:5px solid #0f5fbf}.revize-card.bad{border-left-color:#dc2626}.revize-card.ok{border-left-color:#16a34a}.revize-card.draft{border-left-color:#2563eb}
-@media(max-width:900px){.revize-form-grid{grid-template-columns:1fr}.revize-form-grid .wide{grid-column:auto}.revize-check-row{grid-template-columns:1fr}.revize-paper{width:100%;min-height:auto;padding:12px;box-shadow:none}.revize-toolbar .search{min-width:0;flex:1}}
+@media(max-width:900px){.revize-form-grid{grid-template-columns:1fr}.revize-form-grid .wide{grid-column:auto}.revize-check-row{grid-template-columns:1fr}.revize-paper{width:100%;min-height:auto;padding:12px;box-shadow:none}.revize-paper .revize-kind-badge{position:static;align-self:flex-end;margin:0 0 2px}.revize-toolbar .search{min-width:0;flex:1}}
 @media print{body.printing-revize header,body.printing-revize aside,body.printing-revize .container,body.printing-revize .preview-actions{display:none!important}.revize-paper{box-shadow:none;margin:0;padding:8mm;page-break-after:always}}
 
 /* v1.6 / 5.159: Revize ZZ tisknout jako přesné dvě čitelné A4 strany bez křížků/fajfek. */
-.revize-paper{box-sizing:border-box;display:flex;flex-direction:column;gap:4px;min-height:297mm}
+.revize-paper{box-sizing:border-box;display:flex;flex-direction:column;gap:4px;min-height:297mm;position:relative}
+.revize-paper .revize-kind-badge{position:absolute;top:3.5mm;right:9mm;z-index:2;min-width:34mm;max-width:44mm;border:1px solid #111;padding:1mm 2.2mm;background:#fff;color:#111;text-align:center;font-size:8.4px;line-height:1.1;font-weight:600;text-transform:uppercase;white-space:nowrap}
 .revize-paper table{table-layout:fixed;margin:0 0 4px;break-inside:avoid;page-break-inside:avoid}
 .revize-paper tr{break-inside:avoid;page-break-inside:avoid}
 .revize-paper h1{line-height:1.15}
@@ -2349,7 +2350,7 @@ body.mobile-safe-mode .attention-count:hover{
     <button type="button" class="side-link" id="sideSettingsBtn">Nastavení</button>
   </nav>
   <div class="side-bottom">
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.373</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.375</div>
   </div>
 </aside>
 
@@ -4385,7 +4386,7 @@ async function exportBackup(){
     }
     const payload = {
       app: 'LiftControl CZ',
-      appVersion: '1.6 / 5.373',
+      appVersion: '1.6 / 5.375',
       backupType: 'complete',
       schemaVersion: 2,
       exportedAt: new Date().toISOString(),
@@ -4844,7 +4845,7 @@ function renderAppCheckResults(results, running=false){
 }
 async function testAppCheckFirestore(){
   const id = 'APP_CHECK_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-  const record = {id, appCheck:true, date:todayLocal(), note:'docasny diagnosticky zaznam', createdAt:new Date().toISOString(), appVersion:'1.6 / 5.373'};
+  const record = {id, appCheck:true, date:todayLocal(), note:'docasny diagnosticky zaznam', createdAt:new Date().toISOString(), appVersion:'1.6 / 5.375'};
   try{
     await setAndVerifyFirestoreRest(SCHEDULE_COLLECTION_NAME, id, record, 'Kontrola Firestore', 15000, 10000);
     return {ok:true, id};
@@ -4869,7 +4870,7 @@ async function runAppCheck(){
   renderAppCheckResults(results, true);
   appCheckAddResult(results, navigator.onLine ? 'ok' : 'error', 'Internet', navigator.onLine ? 'Zarizeni hlasi online rezim.' : 'Prohlizec hlasi offline rezim.');
   const versionText = document.querySelector('.side-version')?.textContent || '';
-  appCheckAddResult(results, versionText.includes('5.373') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
+  appCheckAddResult(results, versionText.includes('5.375') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
   appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
@@ -4949,14 +4950,14 @@ function scheduleEmptyAppRecovery(reason='startup'){
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.373');
+        url.searchParams.set('v','5.375');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
       }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_336') !== '1'){
         sessionStorage.setItem('liftcontrol_cache_recovery_5_336','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.373');
+        url.searchParams.set('v','5.375');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -5019,7 +5020,7 @@ function cloneQuarterlyDraftForStorage(record){
     const copy = JSON.parse(JSON.stringify(record || {}));
     copy._draftStepIndex = stepIndex || 0;
     copy._draftSavedAt = new Date().toISOString();
-    copy._draftAppVersion = '1.6 / 5.373';
+    copy._draftAppVersion = '1.6 / 5.375';
     return copy;
   }catch(e){
     return null;
@@ -5858,10 +5859,10 @@ function openWizard(editId=null, prefill={}){
       }
     }
   }
-  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.373'};
+  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.375'};
   rec = Object.assign({}, rec, prefill || {});
   if(!editId && !rec.cLogic) rec.cLogic = 'legacy';
-  if(!editId) rec.appVersion = '1.6 / 5.373';
+  if(!editId) rec.appVersion = '1.6 / 5.375';
 
   // Auto doplneni z historie podle vyrobniho cisla.
   if(rec.vc){
@@ -5927,7 +5928,7 @@ async function saveQuarterlyEditedProtocolFromWizard(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    rec.appVersion = '1.6 / 5.373';
+    rec.appVersion = '1.6 / 5.375';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -6512,7 +6513,7 @@ async function nextStep(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    rec.appVersion = '1.6 / 5.373';
+    rec.appVersion = '1.6 / 5.375';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -6611,7 +6612,7 @@ async function logAuditAction(action, entity, record, by, detail, beforeRecord){
       serial: record?.vc || record?.serial || '',
       type: record?.typ || record?.type || '',
       createdAt: new Date().toISOString(),
-      appVersion: '1.6 / 5.373',
+      appVersion: '1.6 / 5.375',
       restoreVersion: 1,
       before: beforeSnapshot ? cloneForAuditSnapshot(beforeSnapshot) : null,
       after: afterSnapshot ? cloneForAuditSnapshot(afterSnapshot) : null
@@ -7907,10 +7908,11 @@ html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,Helvet
 .print-toolbar button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;background:#2563eb;color:#fff;cursor:pointer}
 .print-toolbar .secondary{background:#e5e7eb;color:#111827}.print-toolbar small{color:#cbd5e1}
 #preview,#previewBody{width:210mm;margin:0 auto;padding:0;background:#fff}
-.revize-paper{width:210mm!important;height:296mm!important;min-height:296mm!important;max-height:296mm!important;margin:0 auto!important;padding:10mm 9mm 8mm!important;box-sizing:border-box!important;display:flex!important;flex-direction:column!important;gap:4px!important;overflow:hidden!important;background:#fff!important;color:#111!important;font-family:Arial,Helvetica,sans-serif!important;box-shadow:none!important;transform:none!important;break-before:auto!important;page-break-before:auto!important;break-after:page!important;page-break-after:always!important;break-inside:auto!important;page-break-inside:auto!important}
+.revize-paper{width:210mm!important;height:296mm!important;min-height:296mm!important;max-height:296mm!important;margin:0 auto!important;padding:10mm 9mm 8mm!important;box-sizing:border-box!important;display:flex!important;flex-direction:column!important;gap:4px!important;overflow:hidden!important;position:relative!important;background:#fff!important;color:#111!important;font-family:Arial,Helvetica,sans-serif!important;box-shadow:none!important;transform:none!important;break-before:auto!important;page-break-before:auto!important;break-after:page!important;page-break-after:always!important;break-inside:auto!important;page-break-inside:auto!important}
 .revize-paper.page-break{break-before:auto!important;page-break-before:auto!important}
 .revize-paper:last-child{break-after:auto!important;page-break-after:auto!important}
 .revize-paper h1{font-size:15px;line-height:1.15;margin:0 0 4px;text-align:center;font-weight:600!important}
+.revize-paper .revize-kind-badge{position:absolute!important;top:3.5mm!important;right:9mm!important;z-index:2!important;min-width:34mm!important;max-width:44mm!important;border:1px solid #111!important;padding:1mm 2.2mm!important;background:#fff!important;color:#111!important;text-align:center!important;font-size:8.4px!important;line-height:1.1!important;font-weight:600!important;text-transform:uppercase!important;white-space:nowrap!important}
 .revize-paper .legal{font-size:9px;line-height:1.25;text-align:center;margin-bottom:5px}
 .revize-paper table{width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 4px;border:1.35px solid #111!important;break-inside:avoid;page-break-inside:avoid}
 .revize-paper tr{break-inside:avoid;page-break-inside:avoid}
@@ -8660,7 +8662,7 @@ async function saveWorkPlanFromForm(){
       place,
       extraPlaces,
       note,
-      appVersion:'1.6 / 5.373'
+      appVersion:'1.6 / 5.375'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     const saveResult = await saveWorkPlan(record);
@@ -9447,7 +9449,7 @@ async function saveFaultFromForm(){
       inService: status === 'service' ? true : (existing ? !!existing.inService : false),
       waitingParts: status === 'waiting_parts' ? true : (existing ? !!existing.waitingParts : false),
       photos: currentFaultPhotos,
-      appVersion:'1.6 / 5.373'
+      appVersion:'1.6 / 5.375'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     setLastEnteredBy(record.enteredBy);
@@ -10144,7 +10146,7 @@ function mergeRepairCloudWithLocal(cloudRows=[], localRows=[]){
 function upsertLocalRepairRow(record){
   const rows = loadLocalRepairs();
   record = normalizeRepairRecordForProtocol(record);
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.373'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.375'});
   const idx = rows.findIndex(x => String(x.id) === String(rec.id));
   if(idx >= 0) rows[idx] = rec; else rows.unshift(rec);
   const localResult = saveLocalRepairs(rows.slice(0,300));
@@ -10160,7 +10162,7 @@ async function saveRepairRecord(record){
   record.id = record.id || repairUid();
   record.savedAt = new Date().toISOString();
   record.updatedAt = record.savedAt;
-  record.appVersion = '1.6 / 5.373';
+  record.appVersion = '1.6 / 5.375';
   markRepairSyncState(record, false, null);
   const localSave = upsertLocalRepairRow(record);
   if(!localSave.localResult || !localSave.localResult.ok){
@@ -10217,7 +10219,7 @@ function startLocalRepairsMode(){
 }
 function saveRepairRecordLocal(record){
   record = normalizeRepairRecordForProtocol(record);
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.373'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.375'});
   markRepairSyncState(rec, false, new Error('Starsí lokální uložení čeká na synchronizaci.'));
   upsertLocalRepairRow(rec);
   return rec;
@@ -11082,7 +11084,7 @@ async function savePartFromForm(){
       orderedAt: (statusVal === 'ordered' || statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.orderedAt) || new Date().toISOString()) : '',
       sentAt: (statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.sentAt) || new Date().toISOString()) : '',
       resolvedAt: statusVal === 'resolved' ? ((existing && existing.resolvedAt) || new Date().toISOString()) : '',
-      appVersion:'1.6 / 5.373'
+      appVersion:'1.6 / 5.375'
     });
     record.photos = JSON.parse(JSON.stringify(currentPartPhotos || []));
     record.photo = record.photos[0] || null;
@@ -12182,7 +12184,7 @@ async function syncQuarterlyAfterRevize(r){
   last.typ=last.typ||r.model||r.typ||'';
   last.rok=last.rok||r.rok_vyroby||'';
   last.umisteni=r.umisteni||last.umisteni||'';
-  last.appVersion='1.6 / 5.373';
+  last.appVersion='1.6 / 5.375';
   const replaceByIdOrSerial=(arr, updated)=>{
     const idx=(arr||[]).findIndex(x=>(updated.id && x.id===updated.id) || matchesSerial(x));
     if(idx>=0) arr[idx]={...arr[idx],...updated};
@@ -13180,7 +13182,7 @@ collectRevizeDraft = function(){
     applyRevizeRcdFormPartsToRecord(r, rcdFormParts, ok, note);
   }
   r.normy_revize = revizeNormyForRecord(r);
-  r.appVersion = '1.6 / 5.373';
+  r.appVersion = '1.6 / 5.375';
   window.currentRevizeDraft = r;
   return r;
 };
@@ -13246,7 +13248,7 @@ revizePaperHtml = function(r){
   const indoorOutdoor = (indoor,outdoor) => [indoor, hasOutdoorLimits ? outdoor : ''].filter(Boolean).join(' / ');
   const capacityIndoor = revizeCapacityDisplay(record.nosnost, record.nosnost_osoby, record.bocni_sila);
   const capacityOutdoor = hasOutdoorLimits ? revizeCapacityDisplay(record.venkovni_nosnost, record.venkovni_nosnost_osoby, record.venkovni_bocni_sila) : '';
-  const capacityDisplay = capacityOutdoor ? `${capacityIndoor}\n${capacityOutdoor}` : capacityIndoor;
+  const capacityDisplay = capacityOutdoor ? `${capacityIndoor} /\n${capacityOutdoor}` : capacityIndoor;
   let html = revizePaperHtmlOriginal5166(record)
     .replace(/<p><b>ZÁVĚREČNÉ VYHODNOCENÍ:<\/b>([\s\S]*?)<\/p>/, '<div class="revize-final-note"><b>ZÁVĚREČNÉ VYHODNOCENÍ:</b>$1</div>')
     .replace(/<p>Rozdělovník: (?:1x provozovatel|2x objednatel) \/ 1x revizní technik<\/p>/, '<div class="revize-distribution">Rozdělovník: 2x objednatel / 1x revizní technik</div>');
@@ -13386,6 +13388,19 @@ revizePaperHtml = function(r){
   table.className = 'revize-credentials-table';
   table.innerHTML = `<tr><td colspan="4"><b>Revizní technik – oprávnění a měřicí přístroje</b></td></tr><tr><td><b>ZZ osvědčení</b></td><td>${escapeHtml(r?.rt_zz_osvedceni || '-')}</td><td><b>ZZ oprávnění</b></td><td>${escapeHtml(r?.rt_zz_opravneni || '-')}</td></tr><tr><td><b>EZ osvědčení</b></td><td colspan="3">${escapeHtml(r?.rt_ez_osvedceni || '-')}</td></tr>${revizeMeterPrintRows5366(r)}`;
   signatureTable.parentNode.insertBefore(table, signatureTable);
+  return template.innerHTML;
+};
+const revizePaperHtmlKind5374Base = revizePaperHtml;
+revizePaperHtml = function(r){
+  const template = document.createElement('template');
+  template.innerHTML = String(revizePaperHtmlKind5374Base(r) || '');
+  const pageA = template.content.querySelector('.revize-paper');
+  if(pageA && !pageA.querySelector('.revize-kind-badge')){
+    const badge = document.createElement('div');
+    badge.className = 'revize-kind-badge';
+    badge.textContent = `Revize: ${String(r?.druh_kontroly || 'Pravidelná').trim()}`;
+    pageA.insertBefore(badge, pageA.firstChild);
+  }
   return template.innerHTML;
 };
 // events
@@ -13840,7 +13855,7 @@ document.getElementById('appCheckCacheBtn')?.addEventListener('click', async () 
   if(!confirm('Vyčistit pouze cache aplikace? Uložená data ve Firebase ani lokální záznamy se nemažou.')) return;
   await resetAppShellCacheOnly('app-check-cache');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.373');
+  url.searchParams.set('v','5.375');
   url.searchParams.set('appCheckCache', String(Date.now()));
   location.replace(url.toString());
 });
@@ -13849,7 +13864,7 @@ document.getElementById('closeAppCheckTopBtn')?.addEventListener('click', () => 
 async function forceRefreshApplication(){
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.373');
+  url.searchParams.set('v','5.375');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 }
@@ -14427,7 +14442,7 @@ setTimeout(() => {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  const APP_CURRENT_VERSION = '5.373';
+  const APP_CURRENT_VERSION = '5.375';
   let appUpdateRegistration = null;
   let appUpdateWorker = null;
   let appReloadingForUpdate = false;
@@ -14573,7 +14588,7 @@ if ('serviceWorker' in navigator) {
   });
   window.addEventListener('load', () => {
     try{ sessionStorage.removeItem(APP_UPDATE_RELOAD_KEY); }catch(e){}
-    navigator.serviceWorker.register(new URL('./sw.js?v=5.373', location.href), {scope:'./', updateViaCache:'none'})
+    navigator.serviceWorker.register(new URL('./sw.js?v=5.375', location.href), {scope:'./', updateViaCache:'none'})
       .then(registration => {
         installUpdateWatcher(registration);
         registration.update().catch(err => console.warn('Service worker update check failed', err));
