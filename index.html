@@ -1948,7 +1948,7 @@ body.dark .part-handler-note-display{background:rgba(59,130,246,.12);border-colo
 /* v1.6 / 5.159: Revize ZZ / PZP */
 .revize-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 14px}.revize-toolbar .search{min-width:min(100%,280px)}
 .revize-archive-head{border:1px solid var(--line);background:linear-gradient(180deg,#f8fbff,#eef6ff);border-radius:10px;padding:10px 12px;margin:12px 0 10px}.dark .revize-archive-head{background:#111827}.revize-archive-head .step-title{margin:2px 0 3px;font-size:1.02rem}
-.revize-stepbar{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);background:#f8fbff;border-radius:10px;padding:9px 11px;margin:0 0 12px}.dark .revize-stepbar{background:#111827}.revize-stepbar strong{font-size:.95rem}.revize-stepbar span{color:var(--muted);font-size:.82rem}.revize-stepbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}.revize-stepbar-actions button{min-height:36px;white-space:nowrap}.revize-prefill-warning{border:1px solid #f59e0b;border-radius:9px;background:#fffbeb;color:#78350f;padding:8px 10px;margin:-4px 0 12px;font-size:.84rem;line-height:1.35}.dark .revize-prefill-warning{background:#451a03;color:#fef3c7}.revize-step-controls{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.revize-step-progress{min-width:72px;text-align:center;color:var(--muted);font-size:.85rem}.rz-hidden-step{display:none!important}
+.revize-stepbar{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);background:#f8fbff;border-radius:10px;padding:9px 11px;margin:0 0 12px}.dark .revize-stepbar{background:#111827}.revize-stepbar strong{font-size:.95rem}.revize-stepbar span{color:var(--muted);font-size:.82rem}.revize-stepbar-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}.revize-stepbar-actions button{min-height:36px;white-space:nowrap}.revize-step-controls{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.revize-step-progress{min-width:72px;text-align:center;color:var(--muted);font-size:.85rem}.rz-hidden-step{display:none!important}
 .revize-wizard-modal .modal-content{width:min(96vw,860px);max-height:min(94dvh,820px)}.revize-wizard-modal .revize-form{display:block;border:0;box-shadow:none;border-radius:0;margin:0;padding:22px;background:linear-gradient(180deg,#fff 0%,#f9fbff 100%)}.dark .revize-wizard-modal .revize-form{background:linear-gradient(180deg,#111827 0%,#0f172a 100%)}.revize-wizard-modal #revizeFormWrap>h3,.revize-wizard-modal #revizeFormWrap>.helper{display:none}.revize-wizard-modal .revize-form-grid{grid-template-columns:1fr}.revize-wizard-modal .revize-section-title{margin:0 0 10px;padding:0;border:0;background:transparent;color:var(--text);font-size:1.28rem;text-transform:none;letter-spacing:0}.dark .revize-wizard-modal .revize-section-title{background:transparent;color:var(--text)}.revize-wizard-modal .field{margin-top:0}.revize-wizard-modal .field label{display:none}.revize-wizard-modal .preview-actions{margin-top:18px}.revize-wizard-modal .revize-stepbar{margin-bottom:14px}.revize-wizard-placeholder{display:none}
 @media(max-width:640px){.revize-wizard-modal{padding:8px!important}.revize-wizard-modal .modal-content{width:100%;max-height:calc(100dvh - 16px)}.revize-wizard-modal .revize-form{padding:16px}.revize-wizard-modal .preview-actions-right{display:grid;grid-template-columns:1fr 1fr;width:100%}.revize-wizard-modal .preview-actions-right button{width:100%}}
 .revize-form{border:1px solid var(--line);background:#fff;border-radius:12px;padding:14px;margin:12px 0 16px;box-shadow:0 10px 28px rgba(15,47,95,.08)}
@@ -2350,7 +2350,7 @@ body.mobile-safe-mode .attention-count:hover{
     <button type="button" class="side-link" id="sideSettingsBtn">Nastavení</button>
   </nav>
   <div class="side-bottom">
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.376</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.375</div>
   </div>
 </aside>
 
@@ -4386,7 +4386,7 @@ async function exportBackup(){
     }
     const payload = {
       app: 'LiftControl CZ',
-      appVersion: '1.6 / 5.376',
+      appVersion: '1.6 / 5.375',
       backupType: 'complete',
       schemaVersion: 2,
       exportedAt: new Date().toISOString(),
@@ -4845,7 +4845,7 @@ function renderAppCheckResults(results, running=false){
 }
 async function testAppCheckFirestore(){
   const id = 'APP_CHECK_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-  const record = {id, appCheck:true, date:todayLocal(), note:'docasny diagnosticky zaznam', createdAt:new Date().toISOString(), appVersion:'1.6 / 5.376'};
+  const record = {id, appCheck:true, date:todayLocal(), note:'docasny diagnosticky zaznam', createdAt:new Date().toISOString(), appVersion:'1.6 / 5.375'};
   try{
     await setAndVerifyFirestoreRest(SCHEDULE_COLLECTION_NAME, id, record, 'Kontrola Firestore', 15000, 10000);
     return {ok:true, id};
@@ -4870,7 +4870,7 @@ async function runAppCheck(){
   renderAppCheckResults(results, true);
   appCheckAddResult(results, navigator.onLine ? 'ok' : 'error', 'Internet', navigator.onLine ? 'Zarizeni hlasi online rezim.' : 'Prohlizec hlasi offline rezim.');
   const versionText = document.querySelector('.side-version')?.textContent || '';
-  appCheckAddResult(results, versionText.includes('5.376') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
+  appCheckAddResult(results, versionText.includes('5.375') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
   appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
@@ -4950,14 +4950,14 @@ function scheduleEmptyAppRecovery(reason='startup'){
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.376');
+        url.searchParams.set('v','5.375');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
       }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_336') !== '1'){
         sessionStorage.setItem('liftcontrol_cache_recovery_5_336','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.376');
+        url.searchParams.set('v','5.375');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -5020,7 +5020,7 @@ function cloneQuarterlyDraftForStorage(record){
     const copy = JSON.parse(JSON.stringify(record || {}));
     copy._draftStepIndex = stepIndex || 0;
     copy._draftSavedAt = new Date().toISOString();
-    copy._draftAppVersion = '1.6 / 5.376';
+    copy._draftAppVersion = '1.6 / 5.375';
     return copy;
   }catch(e){
     return null;
@@ -5859,10 +5859,10 @@ function openWizard(editId=null, prefill={}){
       }
     }
   }
-  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.376'};
+  rec = editId ? JSON.parse(JSON.stringify(data.find(r=>r.id===editId) || {id:uid()})) : {id:uid(), cLogic:'legacy', appVersion:'1.6 / 5.375'};
   rec = Object.assign({}, rec, prefill || {});
   if(!editId && !rec.cLogic) rec.cLogic = 'legacy';
-  if(!editId) rec.appVersion = '1.6 / 5.376';
+  if(!editId) rec.appVersion = '1.6 / 5.375';
 
   // Auto doplneni z historie podle vyrobniho cisla.
   if(rec.vc){
@@ -5928,7 +5928,7 @@ async function saveQuarterlyEditedProtocolFromWizard(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    rec.appVersion = '1.6 / 5.376';
+    rec.appVersion = '1.6 / 5.375';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -6513,7 +6513,7 @@ async function nextStep(){
     syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
-    rec.appVersion = '1.6 / 5.376';
+    rec.appVersion = '1.6 / 5.375';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
@@ -6612,7 +6612,7 @@ async function logAuditAction(action, entity, record, by, detail, beforeRecord){
       serial: record?.vc || record?.serial || '',
       type: record?.typ || record?.type || '',
       createdAt: new Date().toISOString(),
-      appVersion: '1.6 / 5.376',
+      appVersion: '1.6 / 5.375',
       restoreVersion: 1,
       before: beforeSnapshot ? cloneForAuditSnapshot(beforeSnapshot) : null,
       after: afterSnapshot ? cloneForAuditSnapshot(afterSnapshot) : null
@@ -8662,7 +8662,7 @@ async function saveWorkPlanFromForm(){
       place,
       extraPlaces,
       note,
-      appVersion:'1.6 / 5.376'
+      appVersion:'1.6 / 5.375'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     const saveResult = await saveWorkPlan(record);
@@ -9449,7 +9449,7 @@ async function saveFaultFromForm(){
       inService: status === 'service' ? true : (existing ? !!existing.inService : false),
       waitingParts: status === 'waiting_parts' ? true : (existing ? !!existing.waitingParts : false),
       photos: currentFaultPhotos,
-      appVersion:'1.6 / 5.376'
+      appVersion:'1.6 / 5.375'
     });
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     setLastEnteredBy(record.enteredBy);
@@ -10146,7 +10146,7 @@ function mergeRepairCloudWithLocal(cloudRows=[], localRows=[]){
 function upsertLocalRepairRow(record){
   const rows = loadLocalRepairs();
   record = normalizeRepairRecordForProtocol(record);
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.376'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.375'});
   const idx = rows.findIndex(x => String(x.id) === String(rec.id));
   if(idx >= 0) rows[idx] = rec; else rows.unshift(rec);
   const localResult = saveLocalRepairs(rows.slice(0,300));
@@ -10162,7 +10162,7 @@ async function saveRepairRecord(record){
   record.id = record.id || repairUid();
   record.savedAt = new Date().toISOString();
   record.updatedAt = record.savedAt;
-  record.appVersion = '1.6 / 5.376';
+  record.appVersion = '1.6 / 5.375';
   markRepairSyncState(record, false, null);
   const localSave = upsertLocalRepairRow(record);
   if(!localSave.localResult || !localSave.localResult.ok){
@@ -10219,7 +10219,7 @@ function startLocalRepairsMode(){
 }
 function saveRepairRecordLocal(record){
   record = normalizeRepairRecordForProtocol(record);
-  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.376'});
+  const rec = Object.assign({}, record, {id:record.id || repairUid(), savedAt:new Date().toISOString(), appVersion:'1.6 / 5.375'});
   markRepairSyncState(rec, false, new Error('Starsí lokální uložení čeká na synchronizaci.'));
   upsertLocalRepairRow(rec);
   return rec;
@@ -11084,7 +11084,7 @@ async function savePartFromForm(){
       orderedAt: (statusVal === 'ordered' || statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.orderedAt) || new Date().toISOString()) : '',
       sentAt: (statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.sentAt) || new Date().toISOString()) : '',
       resolvedAt: statusVal === 'resolved' ? ((existing && existing.resolvedAt) || new Date().toISOString()) : '',
-      appVersion:'1.6 / 5.376'
+      appVersion:'1.6 / 5.375'
     });
     record.photos = JSON.parse(JSON.stringify(currentPartPhotos || []));
     record.photo = record.photos[0] || null;
@@ -11644,7 +11644,7 @@ function normalizeBranchAddress(value, owner=''){
   return normalizeCanonicalBranch(raw);
 }
 function revizeFieldSourceKey(field){
-  return {typ_zarizeni:'deviceType',vyrobni_cislo:'serial',evidencni_cislo:'evidencni',vyrobce:'maker',model:'model',rok_vyroby:'year',motohodiny:'motohodiny',skupina:'group',umisteni:'place',provozovatel:'owner',norma:'norma',normy_revize:'normyRevize',hmotnost:'weight',nosnost:'capacity',nosnost_osoby:'capacityPersons',bocni_sila:'sideForce',snimani_nosnosti:'loadSensing',pracovni_vyska:'workHeight',vyska_podlahy:'floorHeight',rozmer_plosiny:'platform',bocni_dosah:'reach',naklon:'tilt',venkovni_omezeni:'outdoorLimited',venkovni_vitr:'outdoorWind',venkovni_pracovni_vyska:'outdoorWorkHeight',venkovni_vyska_podlahy:'outdoorFloorHeight',venkovni_bocni_dosah:'outdoorReach',venkovni_nosnost:'outdoorCapacity',venkovni_nosnost_osoby:'outdoorCapacityPersons',venkovni_bocni_sila:'outdoorSideForce',staticka_zatez:'staticLoad',dynamicka_zatez:'dynamicLoad',pohon:'drive',napajeni:'power',stabilizatory:'stabilizers',deck:'deck',nabijec:'charger',zasuvka_kos:'socket',rcd:'rcd'}[field] || '';
+  return {typ_zarizeni:'deviceType',vyrobni_cislo:'serial',evidencni_cislo:'evidencni',vyrobce:'maker',model:'model',rok_vyroby:'year',motohodiny:'motohodiny',skupina:'group',umisteni:'place',provozovatel:'owner',norma:'norma',normy_revize:'normyRevize',hmotnost:'weight',nosnost:'capacity',snimani_nosnosti:'loadSensing',pracovni_vyska:'workHeight',vyska_podlahy:'floorHeight',rozmer_plosiny:'platform',bocni_dosah:'reach',naklon:'tilt',staticka_zatez:'staticLoad',dynamicka_zatez:'dynamicLoad',pohon:'drive',napajeni:'power',stabilizatory:'stabilizers',deck:'deck',nabijec:'charger',zasuvka_kos:'socket',rcd:'rcd'}[field] || '';
 }
 function revizeLatestMachine(serial){
   const s=normalizeSerial(serial);
@@ -11708,321 +11708,6 @@ function revizeSameModelDefaults(info){
   }
   return out;
 }
-const SAFETY_CRITICAL_MACHINE_FIELDS = new Set([
-  'capacity','capacityPersons','sideForce','loadSensing','reach','tilt','workHeight','floorHeight',
-  'outdoorLimited','outdoorWind','outdoorWorkHeight','outdoorFloorHeight','outdoorReach',
-  'outdoorCapacity','outdoorCapacityPersons','outdoorSideForce',
-  'restrictedCapacity','restrictedCapacityPersons','restrictedReach','unrestrictedCapacity','unrestrictedReach'
-]);
-const MACHINE_NO_MODEL_FALLBACK_FIELDS = new Set(['weight','electro']);
-const MACHINE_MODEL_FALLBACK_FIELDS = new Set([
-  ...SAFETY_CRITICAL_MACHINE_FIELDS,
-  'platform','drive','power','stabilizers','deck','charger','socket','rcd','deviceType'
-]);
-const MACHINE_FIELD_LABELS = {
-  weight:'Hmotnost',capacity:'Nosnost',capacityPersons:'Počet osob',sideForce:'Boční síla',loadSensing:'Snímání nosnosti',
-  reach:'Boční dosah',tilt:'Náklon podvozku',workHeight:'Pracovní výška',floorHeight:'Výška podlahy',
-  outdoorLimited:'Venkovní omezení',outdoorWind:'Rychlost větru',outdoorWorkHeight:'Venkovní pracovní výška',
-  outdoorFloorHeight:'Venkovní výška podlahy',outdoorReach:'Venkovní boční dosah',outdoorCapacity:'Venkovní / snížená nosnost',
-  outdoorCapacityPersons:'Počet osob při snížené nosnosti',outdoorSideForce:'Snížená boční síla'
-};
-const MACHINE_SAFETY_MAX_AUTO_YEAR_GAP = 2;
-function revizeMachineHasValue(value){
-  if(value === undefined || value === null) return false;
-  if(typeof value === 'object') return Object.keys(value).length > 0;
-  return String(value).trim() !== '';
-}
-function revizeProtocolYear(row){
-  const protocol = String(row?.protocol || row?.protokol || '').trim();
-  const match = protocol.match(/(?:RZ|ZSB|KZ)\s*\/\s*(\d{2,4})\s*$/i) || protocol.match(/\/\s*(\d{2,4})\s*$/);
-  if(!match) return 0;
-  const year = Number(match[1]);
-  return Number.isFinite(year) ? (year < 100 ? 2000 + year : year) : 0;
-}
-function revizeMachineYear(value){
-  const match = String(value || '').match(/(?:19|20)\d{2}/);
-  return match ? Number(match[0]) : 0;
-}
-function revizeMachineModelKey(value){
-  return normalizeSearchText(value).replace(/[–—]/g,'-');
-}
-function revizeMachineMakerKey(value){
-  return normalizeSearchText(value).replace(/[^a-z0-9]/g,'');
-}
-function revizeMachineModelMatches(target, row){
-  const targetModel = revizeMachineModelKey(target?.model || target?.type || '');
-  const rowModel = revizeMachineModelKey(row?.model || row?.type || '');
-  if(!targetModel || !rowModel || targetModel !== rowModel) return false;
-  const targetMaker = revizeMachineMakerKey(target?.maker || '');
-  const rowMaker = revizeMachineMakerKey(row?.maker || '');
-  return !targetMaker || !rowMaker || targetMaker === rowMaker;
-}
-function revizeCorrectDeviceType(explicit, model, maker=''){
-  const stated = String(explicit || '').trim();
-  const inferred = inferRevizeDeviceType([maker,model].filter(Boolean).join(' '));
-  if(inferred && stated === 'scissor' && inferred !== 'scissor') return inferred;
-  return stated || inferred || '';
-}
-function revizeImportedCapacitySegment(text){
-  const raw = String(text || '').trim();
-  const kg = revizeKgValuesFromText(raw)[0];
-  const persons = revizeCapacityComposition(raw).persons;
-  const forceMatch = raw.match(/([0-9]+(?:[,.][0-9]+)?)\s*N\b/i);
-  return {
-    capacity:Number.isFinite(kg) ? String(kg).replace('.',',') : '',
-    persons,
-    sideForce:forceMatch ? forceMatch[1].replace('.',',') : ''
-  };
-}
-function revizeImportedCapacityDetails(row){
-  const raw = String(row?.capacity || '').replace(/\s+/g,' ').trim();
-  if(!raw) return {};
-  const windMatches = [...raw.matchAll(/([0-9]+(?:[,.][0-9]+)?)\s*m\s*\/\s*s/gi)];
-  if(windMatches.length >= 2){
-    const segments = windMatches.map((match,index)=>({
-      wind:Number(match[1].replace(',','.')),
-      text:raw.slice(match.index, windMatches[index+1]?.index ?? raw.length)
-    }));
-    const indoor = segments.find(segment=>segment.wind === 0);
-    const outdoor = segments.filter(segment=>segment.wind > 0).sort((a,b)=>b.wind-a.wind)[0];
-    if(indoor && outdoor){
-      const inside = revizeImportedCapacitySegment(indoor.text);
-      const outside = revizeImportedCapacitySegment(outdoor.text);
-      return {
-        capacity:inside.capacity || raw,
-        capacityPersons:inside.persons,
-        sideForce:inside.sideForce,
-        outdoorLimited:'ANO',
-        outdoorWind:String(outdoor.wind).replace('.',','),
-        outdoorCapacity:outside.capacity,
-        outdoorCapacityPersons:outside.persons,
-        outdoorSideForce:outside.sideForce,
-        capacityRaw:raw,
-        capacityMode:'indoor-outdoor'
-      };
-    }
-  }
-  const unrestricted = raw.match(/neomezen[^)]*?([0-9]+(?:[,.][0-9]+)?)\s*kg/i);
-  const kgValues = revizeKgValuesFromText(raw);
-  if(unrestricted && kgValues.length >= 2){
-    const primaryText = raw.slice(0, unrestricted.index ?? raw.length);
-    const primary = revizeImportedCapacitySegment(primaryText);
-    return {
-      capacity:primary.capacity || String(kgValues[0]).replace('.',','),
-      capacityPersons:primary.persons,
-      sideForce:primary.sideForce,
-      outdoorLimited:'ANO',
-      outdoorCapacity:unrestricted[1].replace('.',','),
-      capacityRaw:raw,
-      capacityMode:'restricted-unrestricted'
-    };
-  }
-  const base = revizeImportedCapacitySegment(raw);
-  return {capacity:base.capacity || raw,capacityPersons:base.persons,sideForce:base.sideForce,capacityRaw:raw};
-}
-function revizeMapExcelMachineRow(r){
-  const capacity = revizeImportedCapacityDetails(r);
-  return {
-    source:r.source || 'excel-import', protocol:r.protocol || '', created:r.created || '', file:r.file || '',
-    serial:r.serial, evidencni:r.evidencni || '', maker:r.maker, model:r.model, type:r.model,
-    deviceType:revizeCorrectDeviceType(r.deviceType,r.model,r.maker), year:r.year, motohodiny:r.motohodiny || r.mh || '',
-    group:revizeCombinedGroup(r.group,r.typeGroup), place:r.place, owner:r.owner || 'Zeppelin CZ s.r.o.',
-    norma:r.norma, normyRevize:r.normy_revize || r.normyRevize || revizeDefaultNormy(r.norma),
-    weight:r.weight, capacity:r.capacityStructured || capacity.capacity, capacityPersons:r.capacityPersons || capacity.capacityPersons,
-    sideForce:r.sideForce || capacity.sideForce, loadSensing:r.loadSensing, workHeight:r.workHeight, floorHeight:r.floorHeight,
-    platform:r.platform, reach:r.reach, tilt:r.tilt,
-    outdoorLimited:r.outdoorLimited || capacity.outdoorLimited, outdoorWind:r.outdoorWind || capacity.outdoorWind,
-    outdoorWorkHeight:r.outdoorWorkHeight, outdoorFloorHeight:r.outdoorFloorHeight, outdoorReach:r.outdoorReach,
-    outdoorCapacity:r.outdoorCapacity || capacity.outdoorCapacity,
-    outdoorCapacityPersons:r.outdoorCapacityPersons || capacity.outdoorCapacityPersons,
-    outdoorSideForce:r.outdoorSideForce || capacity.outdoorSideForce,
-    capacityRaw:capacity.capacityRaw, capacityMode:capacity.capacityMode,
-    restrictedCapacity:r.restrictedCapacity, restrictedCapacityPersons:r.restrictedCapacityPersons, restrictedReach:r.restrictedReach,
-    unrestrictedCapacity:r.unrestrictedCapacity, unrestrictedReach:r.unrestrictedReach,
-    staticLoad:r.staticLoad, dynamicLoad:r.dynamicLoad, drive:r.drive, power:r.power, stabilizers:r.stabilizers,
-    deck:r.deck, pothole:r.pothole, charger:r.charger, socket:r.socket, rcd:r.rcd, electro:r.electro
-  };
-}
-function revizeMapAppMachineRow(r){
-  return {
-    source:'app-revize', protocol:r.protokol || '', created:r.updatedAt || r.savedAt || r.datum_kontroly || '',
-    serial:r.vyrobni_cislo, evidencni:r.evidencni_cislo, maker:r.vyrobce, model:r.model, type:r.typ,
-    deviceType:revizeCorrectDeviceType(r.typ_zarizeni,r.model,r.vyrobce), year:r.rok_vyroby, motohodiny:r.motohodiny,
-    group:r.skupina, place:r.umisteni, owner:r.provozovatel, norma:r.norma,
-    normyRevize:r.normy_revize || r.normyRevize || revizeDefaultNormy(r.norma), weight:r.hmotnost,
-    capacity:r.nosnost, capacityPersons:r.nosnost_osoby, sideForce:r.bocni_sila, loadSensing:r.snimani_nosnosti,
-    workHeight:r.pracovni_vyska, floorHeight:r.vyska_podlahy, platform:r.rozmer_plosiny, reach:r.bocni_dosah,
-    outdoorLimited:r.venkovni_omezeni, outdoorWind:r.venkovni_vitr, outdoorWorkHeight:r.venkovni_pracovni_vyska,
-    outdoorFloorHeight:r.venkovni_vyska_podlahy, outdoorReach:r.venkovni_bocni_dosah,
-    outdoorCapacity:r.venkovni_nosnost, outdoorCapacityPersons:r.venkovni_nosnost_osoby,
-    outdoorSideForce:r.venkovni_bocni_sila, restrictedCapacity:r.restrictedCapacity,
-    restrictedCapacityPersons:r.restrictedCapacityPersons, restrictedReach:r.restrictedReach,
-    unrestrictedCapacity:r.unrestrictedCapacity, unrestrictedReach:r.unrestrictedReach,
-    tilt:r.naklon, staticLoad:r.staticka_zatez, dynamicLoad:r.dynamicka_zatez, drive:r.pohon, power:r.napajeni,
-    stabilizers:r.stabilizatory, deck:r.deck, pothole:r.pothole, charger:r.nabijec, socket:r.zasuvka_kos, rcd:r.rcd, electro:r.electro
-  };
-}
-function revizeMapQuarterlyMachineRow(r){
-  return {
-    source:'app-quarterly', created:r.savedAt || r.updatedAt || r.datum || '', serial:r.vc,
-    evidencni:r.evCislo || r.evidencni_cislo || r.ec || '', maker:r.vyrobce || '', model:r.typ || r.model || '', type:r.typ || r.model || '',
-    deviceType:revizeCorrectDeviceType(r.deviceType || r.typ_zarizeni,r.typ || r.model,r.vyrobce), year:r.rok || r.rok_vyroby,
-    motohodiny:r.mh || r.motohodiny, place:r.umisteni, owner:r.provozovatel || 'Zeppelin CZ s.r.o.',
-    weight:r.hmotnost || r.weight, capacity:r.nosnost || r.capacity, capacityPersons:r.nosnost_osoby || r.capacityPersons,
-    sideForce:r.bocni_sila || r.sideForce, workHeight:r.pracovni_vyska || r.workHeight,
-    floorHeight:r.vyska_podlahy || r.floorHeight, reach:r.bocni_dosah || r.reach, tilt:r.naklon || r.tilt,
-    outdoorLimited:r.venkovni_omezeni || r.outdoorLimited, outdoorWind:r.venkovni_vitr || r.outdoorWind,
-    outdoorWorkHeight:r.venkovni_pracovni_vyska || r.outdoorWorkHeight,
-    outdoorFloorHeight:r.venkovni_vyska_podlahy || r.outdoorFloorHeight,
-    outdoorReach:r.venkovni_bocni_dosah || r.outdoorReach, outdoorCapacity:r.venkovni_nosnost || r.outdoorCapacity,
-    outdoorCapacityPersons:r.venkovni_nosnost_osoby || r.outdoorCapacityPersons,
-    outdoorSideForce:r.venkovni_bocni_sila || r.outdoorSideForce,
-    charger:r.chargerPresent, socket:r.socket230Present
-  };
-}
-revizeMachineSourceRank = function(row){
-  const source = String(row?.source || '');
-  if(source === 'app-revize') return 500;
-  if(source === 'app-quarterly') return 400;
-  const protocolYear = revizeProtocolYear(row);
-  if(protocolYear >= 2026) return 300 + Math.min(50,protocolYear-2026);
-  if(protocolYear === 2025) return 250;
-  if(protocolYear) return 100 + protocolYear / 10000;
-  if(source === 'excel-2026-revize-import') return 300;
-  if(source.includes('2025')) return 250;
-  if(source.includes('2024')) return 200;
-  return 100;
-};
-function revizeCompareMachineRows(a,b){
-  const rank = revizeMachineSourceRank(b) - revizeMachineSourceRank(a);
-  if(rank) return rank;
-  return String(b?.created || '').localeCompare(String(a?.created || ''));
-}
-revizeMachineRows = function(){
-  const now = Date.now();
-  if(revizeMachineRowsCache && (now-revizeMachineRowsCacheAt)<30000) return revizeMachineRowsCache;
-  const revizeRows = [...(revizeData || []),...loadLocalRevize()].filter(r=>r && !r.draft);
-  const quarterlyRows = [...(data || []),...loadLocalData()].filter(Boolean);
-  const excelRows = Array.isArray(window.REVIZE_MACHINE_DB) ? window.REVIZE_MACHINE_DB : [];
-  const rows = [
-    ...revizeRows.map(revizeMapAppMachineRow),
-    ...quarterlyRows.map(revizeMapQuarterlyMachineRow),
-    ...excelRows.map(revizeMapExcelMachineRow)
-  ].filter(row=>normalizeSerial(row?.serial));
-  const seen = new Set();
-  revizeMachineRowsCache = rows.filter(row=>{
-    const key=[row.source,row.protocol,normalizeSerial(row.serial),row.created,row.file].join('|');
-    if(seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-  revizeMachineRowsCacheAt=now;
-  return revizeMachineRowsCache;
-};
-function revizeMachineConflictKey(field,value){
-  const formField = {capacity:'nosnost',capacityPersons:'nosnost_osoby',sideForce:'bocni_sila',reach:'bocni_dosah',tilt:'naklon',workHeight:'pracovni_vyska',floorHeight:'vyska_podlahy',outdoorWind:'venkovni_vitr',outdoorWorkHeight:'venkovni_pracovni_vyska',outdoorFloorHeight:'venkovni_vyska_podlahy',outdoorReach:'venkovni_bocni_dosah',outdoorCapacity:'venkovni_nosnost',outdoorCapacityPersons:'venkovni_nosnost_osoby',outdoorSideForce:'venkovni_bocni_sila'}[field];
-  let normalized = value;
-  if(formField){ try{ normalized=revizeInputValue(formField,value); }catch(e){} }
-  return normalizeSearchText(normalized).replace(/[.,]/g,',');
-}
-function revizeMachineBestPerSerial(rows,field){
-  const best = new Map();
-  [...rows].sort(revizeCompareMachineRows).forEach(row=>{
-    const serial = normalizeSerial(row.serial);
-    if(serial && !best.has(serial) && revizeMachineHasValue(row[field])) best.set(serial,row);
-  });
-  return [...best.values()];
-}
-function revizeMachineConsensus(rows,field,strict){
-  const candidates = revizeMachineBestPerSerial(rows,field);
-  if(!candidates.length) return {row:null,value:'',conflict:false};
-  if(!strict) return {row:candidates.sort(revizeCompareMachineRows)[0],value:candidates.sort(revizeCompareMachineRows)[0][field],conflict:false};
-  const groups = new Map();
-  candidates.forEach(row=>{
-    const key=revizeMachineConflictKey(field,row[field]);
-    if(!key) return;
-    const group=groups.get(key)||[];
-    group.push(row);
-    groups.set(key,group);
-  });
-  const ranked=[...groups.entries()].sort((a,b)=>b[1].length-a[1].length || revizeCompareMachineRows(a[1].sort(revizeCompareMachineRows)[0],b[1].sort(revizeCompareMachineRows)[0]));
-  if(!ranked.length) return {row:null,value:'',conflict:false};
-  if(ranked.length>1 && ranked[0][1].length===ranked[1][1].length) return {row:null,value:'',conflict:true,values:ranked.map(entry=>entry[1][0][field])};
-  const row=ranked[0][1].sort(revizeCompareMachineRows)[0];
-  return {row,value:row[field],conflict:false,values:ranked.map(entry=>entry[1][0][field])};
-}
-function resolveMachineField({field,serial='',model='',year='',maker='',deviceType='',rows=null}={}){
-  const allRows = Array.isArray(rows) ? rows : revizeMachineRows();
-  const serialKey = normalizeSerial(serial);
-  let exactRows = serialKey ? allRows.filter(row=>normalizeSerial(row.serial)===serialKey) : [];
-  if(!exactRows.length && serialKey.length>=3 && !MACHINE_NO_MODEL_FALLBACK_FIELDS.has(field)){
-    exactRows=allRows.filter(row=>serialMatchesCandidate(serialKey,row.serial));
-  }
-  exactRows.sort(revizeCompareMachineRows);
-  const exact = exactRows.find(row=>revizeMachineHasValue(row?.[field]));
-  if(exact){
-    return {value:exact[field],source:exact.source,sourceProtocol:exact.protocol||'',sourceSerial:exact.serial,sourceYear:exact.year||'',exactSerial:normalizeSerial(exact.serial)===serialKey,exactYear:revizeMachineYear(exact.year)===revizeMachineYear(year),modelFallback:false,conflict:false,needsVerification:false};
-  }
-  if(MACHINE_NO_MODEL_FALLBACK_FIELDS.has(field) || !MACHINE_MODEL_FALLBACK_FIELDS.has(field)){
-    return {value:'',source:'',sourceSerial:'',sourceYear:'',exactSerial:false,exactYear:false,modelFallback:false,conflict:false,needsVerification:false};
-  }
-  const target={model,maker,year,deviceType};
-  let candidates=allRows.filter(row=>revizeMachineModelMatches(target,row) && revizeMachineHasValue(row?.[field]));
-  if(deviceType) candidates=candidates.filter(row=>!row.deviceType || String(row.deviceType)===String(deviceType));
-  if(!candidates.length) return {value:'',source:'',sourceSerial:'',sourceYear:'',exactSerial:false,exactYear:false,modelFallback:true,conflict:false,needsVerification:false};
-  const targetYear=revizeMachineYear(year);
-  const sameYear=targetYear ? candidates.filter(row=>revizeMachineYear(row.year)===targetYear) : [];
-  let cohort=sameYear;
-  let yearGap=0;
-  if(!cohort.length){
-    if(SAFETY_CRITICAL_MACHINE_FIELDS.has(field) && targetYear){
-      const withYear=candidates.filter(row=>revizeMachineYear(row.year));
-      if(withYear.length){
-        yearGap=Math.min(...withYear.map(row=>Math.abs(revizeMachineYear(row.year)-targetYear)));
-        cohort=withYear.filter(row=>Math.abs(revizeMachineYear(row.year)-targetYear)===yearGap);
-      }
-    }
-    if(!cohort.length) cohort=candidates;
-  }
-  if(SAFETY_CRITICAL_MACHINE_FIELDS.has(field) && targetYear && yearGap>MACHINE_SAFETY_MAX_AUTO_YEAR_GAP){
-    return {value:'',source:'',sourceSerial:'',sourceYear:'',exactSerial:false,exactYear:false,modelFallback:true,conflict:false,needsVerification:true,reason:`nejbližší dostupný rok se liší o ${yearGap}`};
-  }
-  const consensus=revizeMachineConsensus(cohort,field,SAFETY_CRITICAL_MACHINE_FIELDS.has(field));
-  if(consensus.conflict){
-    return {value:'',source:'',sourceSerial:'',sourceYear:'',exactSerial:false,exactYear:!!sameYear.length,modelFallback:true,conflict:true,needsVerification:true,values:consensus.values||[],reason:'rozdílné hodnoty u stejného modelu a roku'};
-  }
-  const picked=consensus.row;
-  return {value:consensus.value,source:picked?.source||'',sourceProtocol:picked?.protocol||'',sourceSerial:picked?.serial||'',sourceYear:picked?.year||'',exactSerial:false,exactYear:!!targetYear&&revizeMachineYear(picked?.year)===targetYear,modelFallback:true,conflict:false,needsVerification:false,yearGap};
-}
-revizeLatestMachine = function(serial){
-  const serialKey=normalizeSerial(serial);
-  if(!serialKey) return null;
-  const all=revizeMachineRows();
-  let rows=all.filter(row=>normalizeSerial(row.serial)===serialKey);
-  if(!rows.length && serialKey.length>=3) rows=all.filter(row=>serialMatchesCandidate(serialKey,row.serial));
-  rows.sort(revizeCompareMachineRows);
-  if(!rows.length) return null;
-  const merged={__fieldMeta:{},__sourceRows:rows};
-  const fields=new Set(rows.flatMap(row=>Object.keys(row||{})));
-  fields.forEach(field=>{
-    if(field.startsWith('__')) return;
-    const result=resolveMachineField({field,serial,rows:all});
-    if(revizeMachineHasValue(result.value)) merged[field]=result.value;
-    merged.__fieldMeta[field]=result;
-  });
-  merged.serial=rows[0].serial||serial;
-  if(merged.place) merged.place=normalizeBranchAddress(merged.place,merged.owner);
-  return merged;
-};
-revizeSameModelDefaults = function(info){
-  const out={__meta:{}};
-  MACHINE_MODEL_FALLBACK_FIELDS.forEach(field=>{
-    const result=resolveMachineField({field,serial:info?.serial||'',model:info?.model||info?.type||'',year:info?.year||'',maker:info?.maker||'',deviceType:info?.deviceType||''});
-    out.__meta[field]=result;
-    if(revizeMachineHasValue(result.value)) out[field]=result.value;
-  });
-  return out;
-};
 function revizeSuggestValues(field){ if(isRevizeLoadField(field)) return []; const rows=revizeMachineRows(); const values=[]; const add=v=>{ if(v!==undefined && v!==null && String(v).trim()){ const out=REVIZE_TECH_FIELDS.includes(field)?revizeInputValue(field,v):String(v).trim(); if(out) values.push(out); } };
   const currentSerial = document.getElementById('rz_vyrobni_cislo')?.value || window.currentRevizeDraft?.vyrobni_cislo || '';
   const exact = revizeLatestMachine(currentSerial);
@@ -12276,28 +11961,6 @@ function syncRevizeMeterFields(){ const p=document.getElementById('rz_pristroj')
 function inferRevizeDeviceType(text){ const t=String(text||'').toLowerCase(); if(!t) return ''; if(/nuz|nuzk|scissor|gs-|es[0-9]|r[0-9]{3,4}|compact|slab/.test(t)) return 'scissor'; if(/kloub|articul|z-?[0-9]|ha[0-9]|(^|[^a-z0-9])e?[0-9]{3,4}\s*ajp?n?([^a-z0-9]|$)|(^|[^a-z0-9])ajp?([^a-z0-9]|$)/.test(t)) return 'articulated'; if(/teleskop|telescop|(^|[^a-z0-9])[0-9]{3,4}\s*sjp?([^a-z0-9]|$)|(^|[^a-z0-9])sjp?([^a-z0-9]|$)|s-?[0-9]|tb[0-9]/.test(t)) return 'telescopic'; if(/vlecn|trailer|tz|tm/.test(t)) return 'trailer'; if(/sloup|mast|toucan|star/.test(t)) return 'mast'; return ''; }
 function safeCollectRevizeDraft(context=''){ try{ return collectRevizeDraft(); }catch(e){ console.error('Revize draft sync failed'+(context?': '+context:''), e); return window.currentRevizeDraft || null; } }
 function markRevizeManualInputs(){ document.querySelectorAll('#revizeFormBody input,#revizeFormBody select,#revizeFormBody textarea').forEach(el=>{ if(el.dataset.rzManualWatch==='1') return; el.dataset.rzManualWatch='1'; const mark=()=>{ if(!window.revizeApplyingDefaults) el.dataset.rzAuto='0'; }; el.addEventListener('input', mark); el.addEventListener('change', mark); }); }
-function revizeRenderMachineResolutionWarnings(warnings=[]){
-  const wrap=document.getElementById('revizeFormWrap');
-  if(!wrap) return;
-  let box=document.getElementById('revizeMachineResolutionWarnings');
-  if(!warnings.length){ box?.remove(); return; }
-  if(!box){
-    box=document.createElement('div');
-    box.id='revizeMachineResolutionWarnings';
-    box.className='revize-prefill-warning';
-    const bar=document.getElementById('revizeStepbar');
-    if(bar?.parentNode) bar.parentNode.insertBefore(box,bar.nextSibling);
-    else wrap.prepend(box);
-  }
-  box.textContent='Ověřit před uložením: '+warnings.join(' · ');
-}
-function revizeMachineResolutionWarnings(meta){
-  return Object.entries(meta || {}).flatMap(([field,result])=>{
-    if(!result?.needsVerification && !result?.conflict) return [];
-    const label=MACHINE_FIELD_LABELS[field] || field;
-    return [`${label} – ${result.reason || 'hodnota nebyla bezpečně určena'}`];
-  });
-}
 function applyRevizeDefaultsFromSerial(serial){
   serial = String(serial || '').trim();
   if(!serial) return;
@@ -12306,8 +11969,6 @@ function applyRevizeDefaultsFromSerial(serial){
   window.lastRevizeSerialDefaultValue = serial;
   window.lastRevizeSerialDefaultAt = now;
   try{
-    revizeRenderMachineResolutionWarnings([]);
-    window.revizeCurrentMachineResolution=null;
     const info=revizeLatestMachine(serial);
     if(!info) return;
     window.revizeApplyingDefaults = true;
@@ -12316,13 +11977,7 @@ function applyRevizeDefaultsFromSerial(serial){
     const deckDefault = String(info.deck || '').trim() || (inferredType === 'scissor' ? 'ANO' : 'NE');
     const loadSensingDefault = String(info.loadSensing || '').trim() || (isRevizeOmmeTrailer({...info, typ_zarizeni:inferredType}) ? 'NE' : 'ANO');
     const sameModel = revizeSameModelDefaults(info);
-    const resolutionMeta={};
-    const resolved = key => {
-      const exactValue=info[key];
-      const useExact=revizeMachineHasValue(exactValue);
-      resolutionMeta[key]=useExact ? (info.__fieldMeta?.[key] || {}) : (sameModel.__meta?.[key] || {});
-      return useExact ? exactValue : sameModel[key];
-    };
+    const resolved = key => String(info[key] ?? '').trim() ? info[key] : sameModel[key];
     const capacity = resolved('capacity');
     const capacityComposition = revizeCapacityComposition(capacity, resolved('capacityPersons'));
     const sideForce = revizeSideForceValue(capacity, resolved('sideForce')) || '400';
@@ -12339,8 +11994,6 @@ function applyRevizeDefaultsFromSerial(serial){
       window.currentRevizeDraft = draft;
       refreshRevizeElectroBlock?.();
     }
-    window.revizeCurrentMachineResolution={serial:info.serial || serial,model:info.model || info.type || '',year:info.year || '',fields:resolutionMeta};
-    revizeRenderMachineResolutionWarnings(revizeMachineResolutionWarnings(resolutionMeta));
     syncNormaFromRokVyroby(false);
   }catch(e){
     console.error('Revize defaults from serial failed', e);
@@ -12531,7 +12184,7 @@ async function syncQuarterlyAfterRevize(r){
   last.typ=last.typ||r.model||r.typ||'';
   last.rok=last.rok||r.rok_vyroby||'';
   last.umisteni=r.umisteni||last.umisteni||'';
-  last.appVersion='1.6 / 5.376';
+  last.appVersion='1.6 / 5.375';
   const replaceByIdOrSerial=(arr, updated)=>{
     const idx=(arr||[]).findIndex(x=>(updated.id && x.id===updated.id) || matchesSerial(x));
     if(idx>=0) arr[idx]={...arr[idx],...updated};
@@ -13529,7 +13182,7 @@ collectRevizeDraft = function(){
     applyRevizeRcdFormPartsToRecord(r, rcdFormParts, ok, note);
   }
   r.normy_revize = revizeNormyForRecord(r);
-  r.appVersion = '1.6 / 5.376';
+  r.appVersion = '1.6 / 5.375';
   window.currentRevizeDraft = r;
   return r;
 };
@@ -14202,7 +13855,7 @@ document.getElementById('appCheckCacheBtn')?.addEventListener('click', async () 
   if(!confirm('Vyčistit pouze cache aplikace? Uložená data ve Firebase ani lokální záznamy se nemažou.')) return;
   await resetAppShellCacheOnly('app-check-cache');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.376');
+  url.searchParams.set('v','5.375');
   url.searchParams.set('appCheckCache', String(Date.now()));
   location.replace(url.toString());
 });
@@ -14211,7 +13864,7 @@ document.getElementById('closeAppCheckTopBtn')?.addEventListener('click', () => 
 async function forceRefreshApplication(){
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.376');
+  url.searchParams.set('v','5.375');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 }
@@ -14789,7 +14442,7 @@ setTimeout(() => {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  const APP_CURRENT_VERSION = '5.376';
+  const APP_CURRENT_VERSION = '5.375';
   let appUpdateRegistration = null;
   let appUpdateWorker = null;
   let appReloadingForUpdate = false;
@@ -14935,7 +14588,7 @@ if ('serviceWorker' in navigator) {
   });
   window.addEventListener('load', () => {
     try{ sessionStorage.removeItem(APP_UPDATE_RELOAD_KEY); }catch(e){}
-    navigator.serviceWorker.register(new URL('./sw.js?v=5.376', location.href), {scope:'./', updateViaCache:'none'})
+    navigator.serviceWorker.register(new URL('./sw.js?v=5.375', location.href), {scope:'./', updateViaCache:'none'})
       .then(registration => {
         installUpdateWatcher(registration);
         registration.update().catch(err => console.warn('Service worker update check failed', err));
