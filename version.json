@@ -1,8 +1,8 @@
 {
-  "version": "5.371",
-  "appVersion": "1.6 / 5.371",
-  "cacheName": "liftcontrol-cz-v1-6-5-371",
-  "url": "./index.html?v=5.371",
+  "version": "5.372",
+  "appVersion": "1.6 / 5.372",
+  "cacheName": "liftcontrol-cz-v1-6-5-372",
+  "url": "./index.html?v=5.372",
   "releasedAt": "2026-08-31",
-  "message": "Lepsi ovladani zapisu, prubezne ulozeni revize a uprava identifikacnich udaju v protokolu."
+  "message": "Vyrobni a evidencni cislo jsou v protokolu popsana spolecne a hodnoty oddeluje lomitko."
 }
