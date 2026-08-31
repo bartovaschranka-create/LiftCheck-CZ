@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <base href="../">
+  <title>Revize print QA</title>
+</head>
+<body>
+  <iframe id="app" src="../index.html?print-harness=5377" hidden></iframe>
+  <script>
+  document.getElementById('app').addEventListener('load',()=>{
+    const frame=document.getElementById('app');
+    const win=frame.contentWindow;
+    frame.contentDocument.querySelectorAll('style').forEach(style=>document.head.appendChild(style.cloneNode(true)));
+    const checks={};
+    const notes={};
+    const record={
+      protokol:'TEST-RZ/26',datum_kontroly:'2026-08-28',revizeStartDate:'2026-08-28',revizeEndDate:'2026-08-28',
+      kontrolaStartDate:'2026-08-28',kontrolaEndDate:'2026-08-28',platnost:'2027-08-28',druh_kontroly:'Výchozí',
+      provozovatel:'Zeppelin CZ s.r.o.',umisteni:'Zeppelin CZ s.r.o. – Zděbradská 57, 251 01 Jažlovice',
+      typ_zarizeni:'telescopic',typ:'Teleskopická plošina',vyrobce:'JLG INDUSTRIES, INC.',model:'660 SJ',
+      vyrobni_cislo:'C300001355',evidencni_cislo:'TEST-660',rok_vyroby:'2025',skupina:'B/3',motohodiny:'293',
+      norma:'ČSN EN 280-1:2023',normy_revize:'ČSN EN 280-1:2023; zákon č. 250/2021 Sb.; NV č. 193/2022 Sb.; NV č. 378/2001 Sb.; ČSN ISO 18893',
+      hmotnost:'13154',nosnost:'250',nosnost_osoby:'2',bocni_sila:'400',snimani_nosnosti:'ANO',
+      pracovni_vyska:'22,02',vyska_podlahy:'20,02',bocni_dosah:'17,4',naklon_x:'3',naklon_y:'3',
+      stoupavost_stupne:'24',stoupavost_procento:'45',pohon:'Diesel',napajeni:'ovládací obvody 12 V DC',
+      stabilizatory:'NE',deck:'NE',nabijec:'Bez nabíječe',zasuvka_kos:'NE',rcd:'NE',venkovni_omezeni:'NE',
+      workingEnvelopes:[
+        {mode:'unrestricted',label:'Neomezená pracovní obálka',capacity:'250',persons:'2',workHeight:'22,02',floorHeight:'20,02',reach:'17,4'},
+        {mode:'restricted',label:'Omezená pracovní obálka',capacity:'340',persons:'3',workHeight:'',floorHeight:'',reach:''}
+      ],
+      rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',
+      rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:'Přístroj: REVEX plus v.č.011134 kal.do 1.7.2029, Eurotest XE v.č.17200404 kal.do 1.7.2027',
+      predal:'Jan Bartoš',prevzal:'Petr Čáp',predal_datum:'2026-08-28',prevzal_datum:'2026-08-28',
+      checks,notes,electro:{},zavady:''
+    };
+    document.body.className='printing-revize';
+    document.body.innerHTML='<div id="preview" class="modal show"><div class="modal-content"><div class="preview-shell"><div id="previewBody">'+win.revizePaperHtml(record)+'</div></div></div></div>';
+    document.documentElement.dataset.printReady='1';
+  });
+  </script>
+</body>
+</html>
