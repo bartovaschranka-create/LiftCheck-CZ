@@ -19,5 +19,6 @@ for(const key of ['workingEnvelopes','revizeStartDate','revizeEndDate','kontrola
 }
 
 assert.ok(html.includes('padding:12mm 9mm 6mm!important'),'print content is shifted down without changing total vertical padding');
+assert.ok(html.includes('revize-unit-lower') && html.includes('>m/s</span>'),'wind-speed unit remains lowercase inside an uppercase heading');
 assert.ok(html.includes("result==='VYHOVUJE'?'je':'není'"),'binary final evaluation remains unchanged');
 console.log('revize-addendum-static: all tests passed');
