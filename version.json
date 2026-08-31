@@ -1,8 +1,8 @@
 {
-  "version": "5.372",
-  "appVersion": "1.6 / 5.372",
-  "cacheName": "liftcontrol-cz-v1-6-5-372",
-  "url": "./index.html?v=5.372",
+  "version": "5.373",
+  "appVersion": "1.6 / 5.373",
+  "cacheName": "liftcontrol-cz-v1-6-5-373",
+  "url": "./index.html?v=5.373",
   "releasedAt": "2026-08-31",
-  "message": "Vyrobni a evidencni cislo jsou v protokolu popsana spolecne a hodnoty oddeluje lomitko."
+  "message": "Model Z-45 XC ma vlastni vysvetleni hodnot za lomitkem pro snizene zatizeni kose."
 }
