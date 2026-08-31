@@ -1,4 +1,4 @@
-const CACHE_NAME = 'liftcontrol-cz-v1-6-5-377';
+const CACHE_NAME = 'liftcontrol-cz-v1-6-5-378';
 const CORE_APP_SHELL = [
   './index.html',
   './revize-machine-db.js',
