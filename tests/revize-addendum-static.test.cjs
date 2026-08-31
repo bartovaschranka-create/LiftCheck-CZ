@@ -11,7 +11,7 @@ for(const text of [
   'Pravidelná zkouška',
   'Zahájení / ukončení revize',
   'Zahájení / ukončení kontroly',
-  'Zeppelin CZ s.r.o., Lipová 72, 251 01 Modletice'
+  'Zeppelin CZ s.r.o. - Lipová 72, 251 01 Modletice'
 ]) assert.ok(html.includes(text),`Missing required output text: ${text}`);
 
 for(const key of ['workingEnvelopes','revizeStartDate','revizeEndDate','kontrolaStartDate','kontrolaEndDate']){
