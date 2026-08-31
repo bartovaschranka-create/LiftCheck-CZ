@@ -1,8 +1,8 @@
 {
-  "version": "5.374",
-  "appVersion": "1.6 / 5.374",
-  "cacheName": "liftcontrol-cz-v1-6-5-374",
-  "url": "./index.html?v=5.374",
+  "version": "5.375",
+  "appVersion": "1.6 / 5.375",
+  "cacheName": "liftcontrol-cz-v1-6-5-375",
+  "url": "./index.html?v=5.375",
   "releasedAt": "2026-08-31",
-  "message": "Prvni strana revizniho protokolu zobrazuje druh revize v samostatnem hornim ramecku."
+  "message": "Druh revize je v hornim ramecku a lomitko snizene nosnosti je na konci prvniho radku."
 }
