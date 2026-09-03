@@ -1,8 +1,8 @@
 {
-  "version": "5.380",
-  "appVersion": "1.6 / 5.380",
-  "cacheName": "liftcontrol-cz-v1-6-5-380",
-  "url": "./index.html?v=5.380",
+  "version": "5.381",
+  "appVersion": "1.6 / 5.381",
+  "cacheName": "liftcontrol-cz-v1-6-5-381",
+  "url": "./index.html?v=5.381",
   "releasedAt": "2026-08-31",
   "message": "Druh revize je v hornim ramecku a lomitko snizene nosnosti je na konci prvniho radku."
 }
