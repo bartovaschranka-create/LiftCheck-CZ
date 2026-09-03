@@ -5,7 +5,7 @@ const moduleRoot = process.env.CODEX_NODE_MODULES;
 if(!moduleRoot) throw new Error('Set CODEX_NODE_MODULES to the bundled node_modules directory.');
 const {chromium} = require(path.join(moduleRoot, 'playwright'));
 const edge = process.env.EDGE_PATH || 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
-const baseUrl = process.env.LIFTCHECK_TEST_URL || 'http://127.0.0.1:4173/index.html?v=5.382';
+const baseUrl = process.env.LIFTCHECK_TEST_URL || 'http://127.0.0.1:4173/index.html?v=5.383';
 const branch = 'Zeppelin CZ s.r.o. – Znojemská 82, 586 01 Jihlava';
 const known = {id:'known-quarterly', vc:'KNOWN-001', typ:'JLG 450 AJ', rok:'2022', umisteni:branch, mh:'1234', chargerPresent:'ANO', socket230Present:'ANO', datum:'2026-08-01', savedAt:'2026-08-01T10:00:00.000Z'};
 
