@@ -3698,25 +3698,37 @@ function stripRecordPhotoDataForLocal(record){
   const copy = cloneForCloudSync(record || {});
   return stripPhotoDataForLocal(copy);
 }
-function loadImageFromFile(file){
-  if(window.createImageBitmap){
-    return createImageBitmap(file, {imageOrientation:'from-image'}).catch(() => new Promise((resolve,reject)=>{
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      const cleanup = () => URL.revokeObjectURL(url);
-      img.onload = () => { cleanup(); resolve(img); };
-      img.onerror = err => { cleanup(); reject(err); };
-      img.src = url;
-    }));
-  }
+function loadImageElement(src, cleanup=()=>{}){
   return new Promise((resolve,reject)=>{
-    const url = URL.createObjectURL(file);
     const img = new Image();
-    const cleanup = () => URL.revokeObjectURL(url);
     img.onload = () => { cleanup(); resolve(img); };
-    img.onerror = err => { cleanup(); reject(err); };
-    img.src = url;
+    img.onerror = error => { cleanup(); reject(error); };
+    img.src = src;
   });
+}
+function loadImageViaObjectUrl(file){
+  const url = URL.createObjectURL(file);
+  return loadImageElement(url, () => URL.revokeObjectURL(url));
+}
+function loadImageViaFileReader(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = () => loadImageElement(String(reader.result || '')).then(resolve,reject);
+    reader.onerror = () => reject(reader.error || new Error('Fotografii se nepodařilo načíst.'));
+    reader.readAsDataURL(file);
+  });
+}
+function loadImageFromFile(file){
+  const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+  // iOS PWA občas odmítne blob: URL vrácenou výběrem z Fotek. Data URL je
+  // spolehlivější; object URL zůstává záloha kvůli menší spotřebě paměti.
+  if(ios) return loadImageViaFileReader(file).catch(() => loadImageViaObjectUrl(file));
+  if(window.createImageBitmap){
+    return createImageBitmap(file, {imageOrientation:'from-image'})
+      .catch(() => loadImageViaObjectUrl(file))
+      .catch(() => loadImageViaFileReader(file));
+  }
+  return loadImageViaObjectUrl(file).catch(() => loadImageViaFileReader(file));
 }
 function releaseLoadedImage(img){
   try{ if(img && typeof img.close === 'function') img.close(); }catch(_e){}
