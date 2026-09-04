@@ -1,8 +1,8 @@
 {
-  "version": "5.384",
-  "appVersion": "1.6 / 5.384",
-  "cacheName": "liftcontrol-cz-v1-6-5-384",
-  "url": "./index.html?v=5.384",
-  "releasedAt": "2026-08-31",
-  "message": "Navazující protokol po opravě nepřebírá staré podpisy ani původní závadu jako aktuální nález."
+  "version": "5.385",
+  "appVersion": "1.6 / 5.385",
+  "cacheName": "liftcontrol-cz-v1-6-5-385",
+  "url": "./index.html?v=5.385",
+  "releasedAt": "2026-09-04",
+  "message": "Spolehlivější načítání fotografií poruch z aplikace Fotky na iPhonu a iPadu."
 }
