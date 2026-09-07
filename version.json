@@ -1,8 +1,8 @@
 {
-  "version": "5.385",
-  "appVersion": "1.6 / 5.385",
-  "cacheName": "liftcontrol-cz-v1-6-5-385",
-  "url": "./index.html?v=5.385",
-  "releasedAt": "2026-09-04",
-  "message": "Spolehlivější načítání fotografií poruch z aplikace Fotky na iPhonu a iPadu."
+  "version": "5.386",
+  "appVersion": "1.6 / 5.386",
+  "cacheName": "liftcontrol-cz-v1-6-5-386",
+  "url": "./index.html?v=5.386",
+  "releasedAt": "2026-09-07",
+  "message": "Opravená smyčka automatické aktualizace, která způsobovala blikání obrazovky na počítačích i telefonech."
 }
