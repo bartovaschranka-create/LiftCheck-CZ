@@ -51,6 +51,7 @@ body.dark .paper *{color:inherit}
 .bulk-print-check input{width:16px;height:16px;accent-color:var(--primary);margin:0}
 body.dark .bulk-print-check{background:#0f172a;color:var(--text);border-color:var(--line)}
 @media(max-width:640px){.bulk-print-check{width:100%;justify-content:flex-start}.card-head .bulk-print-check{order:-1}}
+@media(max-width:640px){#section-archive .card-head{flex-wrap:wrap}#section-archive .card-head>div{min-width:0;overflow-wrap:anywhere}#section-archive .card-head .bulk-print-check{box-sizing:border-box}}
 .list{display:grid;gap:14px}.card{padding:16px 18px}.card-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.card-title{font-size:1.06rem;font-weight:700}.card-sub{font-size:.88rem;color:var(--muted);margin-top:4px}.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.badge{padding:6px 10px;border-radius:999px;font-size:.75rem;font-weight:600;border:1px solid transparent}.badge-ok{background:#ecfdf3;color:#166534;border-color:#bbf7d0}.badge-warn{background:#fff7ed;color:#9a3412;border-color:#fed7aa}.badge-info{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
 .meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}.meta{background:#f8fbff;border:1px solid var(--line);padding:12px;border-radius:14px}.meta-label{font-size:.75rem;color:var(--muted);margin-bottom:4px}.meta-value{font-weight:600;font-size:.92rem}
 .actions{margin-top:14px;display:flex;gap:8px;flex-wrap:wrap}
@@ -2397,7 +2398,7 @@ body.mobile-safe-mode .attention-count:hover{
     <button type="button" class="side-link" id="sideSettingsBtn">Nastavení</button>
   </nav>
   <div class="side-bottom">
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.386</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.387</div>
   </div>
 </aside>
 
@@ -3591,7 +3592,12 @@ function loadLocalData(){
   try { return JSON.parse(localStorage.getItem('ctvrtletni_protokoly_local') || '[]'); } catch(e) { return []; }
 }
 function saveLocalData(rows){
-  try { localStorage.setItem('ctvrtletni_protokoly_local', JSON.stringify(rows)); } catch(e) {}
+  try {
+    const json = JSON.stringify(rows);
+    localStorage.setItem('ctvrtletni_protokoly_local', json);
+    if(localStorage.getItem('ctvrtletni_protokoly_local') !== json) throw new Error('Overeni lokalniho ulozeni protokolu selhalo.');
+    return localSaveResult(true);
+  } catch(e) { return localSaveResult(false, e); }
 }
 const LOCAL_DELETED_PROTOCOLS_KEY = 'liftcontrol_deleted_protocol_ids';
 function loadDeletedProtocolIds(){
@@ -4255,8 +4261,11 @@ async function saveProtocol(record){
   record.issuePhotos = record.issuePhotos || {};
   markProtocolSyncState(record, false, null);
   markProtocolPhotoSyncState(record, pendingProtocolPhotoCount(record) > 0, pendingProtocolPhotoCount(record) ? new Error('Fotografie cekaji na nahrani.') : null);
+  data = upsertLocalRow(loadLocalData, rows => {
+    const localResult = saveLocalData(rows);
+    if(!localResult.ok) throw new Error('Protokol se nepodarilo ulozit do tohoto zarizeni. Formular zustava otevreny; uvolnete misto a zkuste ulozeni znovu. ' + errorText(localResult.error));
+  }, record);
   unmarkProtocolDeleted(record.id);
-  data = upsertLocalRow(loadLocalData, saveLocalData, record);
   render();
   const syncPromise = syncProtocolToCloud(record);
   let result;
@@ -4942,7 +4951,7 @@ async function runAppCheck(){
   renderAppCheckResults(results, true);
   appCheckAddResult(results, navigator.onLine ? 'ok' : 'error', 'Internet', navigator.onLine ? 'Zarizeni hlasi online rezim.' : 'Prohlizec hlasi offline rezim.');
   const versionText = document.querySelector('.side-version')?.textContent || '';
-  appCheckAddResult(results, versionText.includes('5.386') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
+  appCheckAddResult(results, versionText.includes('5.387') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
   appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
@@ -5022,14 +5031,14 @@ function scheduleEmptyAppRecovery(reason='startup'){
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.386');
+        url.searchParams.set('v','5.387');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
       }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_336') !== '1'){
         sessionStorage.setItem('liftcontrol_cache_recovery_5_336','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.386');
+        url.searchParams.set('v','5.387');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -6030,6 +6039,7 @@ function openWizard(editId=null, prefill={}){
   // Nová i upravovaná kontrola vždy začíná primárním identifikátorem stroje.
   let initialStepIndex = Math.max(0, introSteps.findIndex(step => step.k === 'vc'));
   const hasPrefill = prefill && Object.keys(prefill).length > 0;
+  if(!editId && hasPrefill && Number.isFinite(prefill._draftStepIndex)) initialStepIndex = Math.max(0, Math.floor(prefill._draftStepIndex));
   if(!editId && !hasPrefill){
     const draft = loadQuarterlyDraft();
     if(draft){
@@ -9316,6 +9326,9 @@ async function saveFaultRecord(record){
   record.updatedAt = new Date().toISOString();
   markFaultSyncState(record, false, null);
   const persisted = await persistFaultPhotosForLocal(record);
+  if(persisted.errors.length){
+    return {local:false, cloud:false, photoSaveFailed:true, error:persisted.errors[0], record, photoErrors:persisted.errors};
+  }
   Object.assign(record, persisted.record);
   const firstLocalSave = upsertLocalFaultRowSafe(record);
   if(!firstLocalSave.localResult || !firstLocalSave.localResult.ok){
@@ -9886,6 +9899,10 @@ async function saveFaultFromForm(){
       if(!record.repairedAt) record.repairedAt = new Date().toISOString();
     }
     const saveResult = await saveFaultRecord(record);
+    if(saveResult.photoSaveFailed){
+      alert('Fotografie se nepodarilo ulozit do tohoto zarizeni. Hlaseni i vybrane fotografie zustavaji ve formulari. Zkuste ulozeni znovu, nebo neulozenou fotografii vedome odeberte.\n\n' + errorText(saveResult.error));
+      return;
+    }
     if(!saveResult.local){
       alert('Hlaseni se nepodarilo ulozit ani do tohoto zarizeni. Pravdepodobne je uloziste telefonu zaplnene nebo jsou fotografie prilis velke.\n\n' + errorText(saveResult.error));
       return;
@@ -14928,7 +14945,7 @@ document.getElementById('appCheckCacheBtn')?.addEventListener('click', async () 
   if(!confirm('Vyčistit pouze cache aplikace? Uložená data ve Firebase ani lokální záznamy se nemažou.')) return;
   await resetAppShellCacheOnly('app-check-cache');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.386');
+  url.searchParams.set('v','5.387');
   url.searchParams.set('appCheckCache', String(Date.now()));
   location.replace(url.toString());
 });
@@ -14937,7 +14954,7 @@ document.getElementById('closeAppCheckTopBtn')?.addEventListener('click', () => 
 async function forceRefreshApplication(){
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.386');
+  url.searchParams.set('v','5.387');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 }
@@ -15519,7 +15536,7 @@ setTimeout(() => {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  const APP_CURRENT_VERSION = '5.386';
+  const APP_CURRENT_VERSION = '5.387';
   let appUpdateRegistration = null;
   let appUpdateWorker = null;
   let appReloadingForUpdate = false;
@@ -15679,7 +15696,7 @@ if ('serviceWorker' in navigator) {
       const attempted = sessionStorage.getItem(APP_UPDATE_ATTEMPT_KEY) || '';
       if(attempted && compareAppVersions(APP_CURRENT_VERSION, attempted) >= 0) sessionStorage.removeItem(APP_UPDATE_ATTEMPT_KEY);
     }catch(e){}
-    navigator.serviceWorker.register(new URL('./sw.js?v=5.386', location.href), {scope:'./', updateViaCache:'none'})
+    navigator.serviceWorker.register(new URL('./sw.js?v=5.387', location.href), {scope:'./', updateViaCache:'none'})
       .then(registration => {
         installUpdateWatcher(registration);
         registration.update().catch(err => console.warn('Service worker update check failed', err));

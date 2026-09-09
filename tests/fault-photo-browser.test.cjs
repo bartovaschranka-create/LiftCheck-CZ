@@ -86,6 +86,12 @@ const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR
   await page.getByText(/Připraveno 1\/4 fotek/).waitFor({timeout:15000});
   await page.getByRole('button', {name:'Uložit hlášení', exact:true}).click();
   await page.locator('.fault-card').filter({hasText:'TEST-IDB-ONLINE-381'}).first().waitFor({timeout:30000});
+  await page.waitForFunction(() => {
+    const rows = JSON.parse(localStorage.getItem('liftcheck_faults_local') || '[]');
+    const row = rows.find(item => item.serial === 'TEST-IDB-ONLINE-381');
+    const photo = row?.photos?.[0];
+    return typeof photo?.url === 'string' && photo.url.startsWith('https://storage.test/') && !photo.pendingUpload;
+  }, null, {timeout:30000});
   const onlineState = await page.evaluate(async () => {
     const rows = JSON.parse(localStorage.getItem('liftcheck_faults_local') || '[]');
     const row = rows.find(item => item.serial === 'TEST-IDB-ONLINE-381');
