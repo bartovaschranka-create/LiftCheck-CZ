@@ -1,8 +1,8 @@
 {
-  "version": "5.387",
-  "appVersion": "1.6 / 5.387",
-  "cacheName": "liftcontrol-cz-v1-6-5-387",
-  "url": "./index.html?v=5.387",
-  "releasedAt": "2026-09-09",
-  "message": "Opraveny mobilni seznam kontrol, obnoveni kroku rozpracovane kontroly a ochrana formulare a fotografii pri chybe lokalniho ulozeni."
+  "version": "5.388",
+  "appVersion": "1.6 / 5.388",
+  "cacheName": "liftcontrol-cz-v1-6-5-388",
+  "url": "./index.html?v=5.388",
+  "releasedAt": "2026-09-10",
+  "message": "Oprava ukladani ctvrtletnich protokolu pri plnem lokalnim ulozisti: overene ulozeni do Firebase vcetne fotografii a podpisu."
 }

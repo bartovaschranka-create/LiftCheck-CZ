@@ -2398,7 +2398,7 @@ body.mobile-safe-mode .attention-count:hover{
     <button type="button" class="side-link" id="sideSettingsBtn">Nastavení</button>
   </nav>
   <div class="side-bottom">
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.387</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.388</div>
   </div>
 </aside>
 
@@ -3915,7 +3915,21 @@ async function deleteFirestoreRest(collectionName, id, label='Smazani testovacih
   }
   return true;
 }
-async function setAndVerifyFirestoreRest(collectionName, id, record, label, setMs=30000, getMs=15000){
+function canonicalFirestoreRestFields(fields){
+  const value = field => {
+    if('nullValue' in field) return null;
+    if('stringValue' in field) return field.stringValue;
+    if('booleanValue' in field) return field.booleanValue;
+    if('integerValue' in field) return Number(field.integerValue);
+    if('doubleValue' in field) return Number(field.doubleValue);
+    if('arrayValue' in field) return (field.arrayValue.values || []).map(value);
+    if('mapValue' in field) return map(field.mapValue.fields || {});
+    throw new Error('Neznamy format dat pri overeni ulozeneho protokolu.');
+  };
+  const map = items => Object.fromEntries(Object.keys(items).sort().map(key => [key, value(items[key])]));
+  return JSON.stringify(map(fields));
+}
+async function setAndVerifyFirestoreRest(collectionName, id, record, label, setMs=30000, getMs=15000, verifyContent=false){
   if(!window.fetch) throw new Error('Prohlizec nepodporuje REST ulozeni do Firebase.');
   const url = firestoreRestDocUrl(collectionName, id);
   const body = JSON.stringify({fields:firestoreRestFields(record)});
@@ -3932,6 +3946,12 @@ async function setAndVerifyFirestoreRest(collectionName, id, record, label, setM
   if(!readResponse.ok){
     const detail = await readResponse.text().catch(() => '');
     throw new Error('Overeni REST ulozeni selhalo: HTTP ' + readResponse.status + (detail ? ' ' + detail.slice(0,260) : ''));
+  }
+  if(verifyContent){
+    const saved = await withTimeout(readResponse.json(), getMs, 'Overeni obsahu protokolu');
+    if(!saved.fields || canonicalFirestoreRestFields(saved.fields) !== canonicalFirestoreRestFields(firestoreRestFields(record))){
+      throw new Error('Obsah protokolu ve Firebase neodpovida odeslanym datum. Formular zustava otevreny pro opakovani ulozeni.');
+    }
   }
   setTimeout(() => window.checkAppUpdateAfterWrite?.(), 250);
   return {exists:true, rest:true};
@@ -4256,15 +4276,51 @@ function finishProtocolBackgroundSync(record, promise){
     updateMainOverview?.();
   });
 }
+async function saveProtocolWithoutLocalCopy(record, localError){
+  // Nothing is durable locally: keep the caller's form and photo data untouched
+  // until every photo and the complete server document have been confirmed.
+  const controls = record === rec && els.wizard?.classList.contains('show')
+    ? Array.from(els.wizard.querySelectorAll('button,input,select,textarea')).map(el => ({el, disabled:el.disabled})) : [];
+  controls.forEach(({el}) => { el.disabled = true; });
+  try{
+    if(!(firebaseAvailable && db)) throw new Error('Firebase neni dostupny.');
+    const cloudRecord = cloneForCloudSync(record);
+    if(pendingProtocolPhotoCount(cloudRecord)){
+      const uploaded = await uploadPendingProtocolPhotos(cloudRecord);
+      if(uploaded.errors.length || pendingProtocolPhotoCount(cloudRecord)){
+        throw uploaded.errors[0] || new Error('Nektere fotografie se nepodarilo odeslat.');
+      }
+    }
+    const photoEntries = [...Object.values(cloudRecord.photos || {}), ...Object.values(cloudRecord.issuePhotos || {}).flatMap(value => Array.isArray(value) ? value : [value])];
+    if(photoEntries.some(photo => photo && !photo.url && (photo.path || photo.pendingUpload || photo.dataUrl))){
+      throw new Error('Nektera fotografie nema potvrzeny odkaz ve Firebase. Pred ulozenim ji znovu pridejte.');
+    }
+    markProtocolSyncState(cloudRecord, true, null);
+    markProtocolPhotoSyncState(cloudRecord, false, null);
+    await setAndVerifyFirestoreRest(COLLECTION_NAME, cloudRecord.id, protocolCloudCopy(cloudRecord), 'Ulozeni protokolu pri plnem lokalnim ulozisti', 90000, 30000, true);
+    Object.assign(record, cloudRecord);
+    data = [record, ...(data || []).filter(row => String(row.id) !== String(record.id))];
+    // Uploaded URLs are much smaller than Base64 photos, so persistence may now fit.
+    const localResult = saveLocalData([record, ...loadLocalData().filter(row => String(row.id) !== String(record.id))]);
+    unmarkProtocolDeleted(record.id);
+    render();
+    updateMainOverview?.();
+    return {local:localResult.ok, cloud:true, record, pendingPhotos:0, photoErrors:[], error:localResult.ok ? null : localError};
+  }catch(err){
+    throw new Error('Lokalni uloziste aplikace je plne nebo nedostupne a uplne ulozeni do Firebase se nepodarilo potvrdit. Formular a fotografie zustavaji otevrene. Neobnovujte stranku ani nemazte data aplikace; zkontrolujte pripojeni a zkuste Ulozit protokol znovu. Detail: ' + errorText(err));
+  }finally{
+    controls.forEach(({el,disabled}) => { el.disabled = disabled; });
+  }
+}
 async function saveProtocol(record){
   record.photos = record.photos || {};
   record.issuePhotos = record.issuePhotos || {};
   markProtocolSyncState(record, false, null);
   markProtocolPhotoSyncState(record, pendingProtocolPhotoCount(record) > 0, pendingProtocolPhotoCount(record) ? new Error('Fotografie cekaji na nahrani.') : null);
-  data = upsertLocalRow(loadLocalData, rows => {
-    const localResult = saveLocalData(rows);
-    if(!localResult.ok) throw new Error('Protokol se nepodarilo ulozit do tohoto zarizeni. Formular zustava otevreny; uvolnete misto a zkuste ulozeni znovu. ' + errorText(localResult.error));
-  }, record);
+  let localResult;
+  const localRows = upsertLocalRow(loadLocalData, rows => { localResult = saveLocalData(rows); }, record);
+  if(!localResult.ok) return await saveProtocolWithoutLocalCopy(record, localResult.error);
+  data = localRows;
   unmarkProtocolDeleted(record.id);
   render();
   const syncPromise = syncProtocolToCloud(record);
@@ -4951,7 +5007,7 @@ async function runAppCheck(){
   renderAppCheckResults(results, true);
   appCheckAddResult(results, navigator.onLine ? 'ok' : 'error', 'Internet', navigator.onLine ? 'Zarizeni hlasi online rezim.' : 'Prohlizec hlasi offline rezim.');
   const versionText = document.querySelector('.side-version')?.textContent || '';
-  appCheckAddResult(results, versionText.includes('5.387') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
+  appCheckAddResult(results, versionText.includes('5.388') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
   appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
@@ -5031,14 +5087,14 @@ function scheduleEmptyAppRecovery(reason='startup'){
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.387');
+        url.searchParams.set('v','5.388');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
       }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_336') !== '1'){
         sessionStorage.setItem('liftcontrol_cache_recovery_5_336','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.387');
+        url.searchParams.set('v','5.388');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -6151,6 +6207,7 @@ async function saveQuarterlyEditedProtocolFromWizard(){
 }
 
 async function closeWizardWithPrompt(){
+  if(protocolSaveInProgress) return;
   if(!els.wizard || !els.wizard.classList.contains('show')) return;
   const editingExisting = !!(rec && rec.id && data.some(x => x.id === rec.id));
   if(editingExisting){
@@ -14945,7 +15002,7 @@ document.getElementById('appCheckCacheBtn')?.addEventListener('click', async () 
   if(!confirm('Vyčistit pouze cache aplikace? Uložená data ve Firebase ani lokální záznamy se nemažou.')) return;
   await resetAppShellCacheOnly('app-check-cache');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.387');
+  url.searchParams.set('v','5.388');
   url.searchParams.set('appCheckCache', String(Date.now()));
   location.replace(url.toString());
 });
@@ -14954,7 +15011,7 @@ document.getElementById('closeAppCheckTopBtn')?.addEventListener('click', () => 
 async function forceRefreshApplication(){
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.387');
+  url.searchParams.set('v','5.388');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 }
@@ -15536,7 +15593,7 @@ setTimeout(() => {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  const APP_CURRENT_VERSION = '5.387';
+  const APP_CURRENT_VERSION = '5.388';
   let appUpdateRegistration = null;
   let appUpdateWorker = null;
   let appReloadingForUpdate = false;
@@ -15696,7 +15753,7 @@ if ('serviceWorker' in navigator) {
       const attempted = sessionStorage.getItem(APP_UPDATE_ATTEMPT_KEY) || '';
       if(attempted && compareAppVersions(APP_CURRENT_VERSION, attempted) >= 0) sessionStorage.removeItem(APP_UPDATE_ATTEMPT_KEY);
     }catch(e){}
-    navigator.serviceWorker.register(new URL('./sw.js?v=5.387', location.href), {scope:'./', updateViaCache:'none'})
+    navigator.serviceWorker.register(new URL('./sw.js?v=5.388', location.href), {scope:'./', updateViaCache:'none'})
       .then(registration => {
         installUpdateWatcher(registration);
         registration.update().catch(err => console.warn('Service worker update check failed', err));
