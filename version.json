@@ -1,8 +1,8 @@
 {
-  "version": "5.389",
-  "appVersion": "1.6 / 5.389",
-  "cacheName": "liftcontrol-cz-v1-6-5-389",
-  "url": "./index.html?v=5.389",
-  "releasedAt": "2026-09-10",
-  "message": "Oprava opakovaneho pridavani fotografii u dilu a oprav; zachovani ostatnich udaju revize pri dilci aktualizaci."
+  "version": "5.390",
+  "appVersion": "1.6 / 5.390",
+  "cacheName": "liftcontrol-cz-v1-6-5-390",
+  "url": "./index.html?v=5.390",
+  "releasedAt": "2026-09-11",
+  "message": "Oprava mobilni synchronizace a obnovy seznamu kontrol pri plnem ulozisti."
 }

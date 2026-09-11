@@ -2398,7 +2398,7 @@ body.mobile-safe-mode .attention-count:hover{
     <button type="button" class="side-link" id="sideSettingsBtn">Nastavení</button>
   </nav>
   <div class="side-bottom">
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.389</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.390</div>
   </div>
 </aside>
 
@@ -3901,6 +3901,67 @@ function firestoreRestFields(record){
   });
   return fields;
 }
+function usesRestCloudRefresh(){ return !!(DEVICE_PROFILE.ios || DEVICE_PROFILE.android); }
+function firestoreRestDecode(value){
+  if('nullValue' in value) return null;
+  if('booleanValue' in value) return value.booleanValue;
+  if('integerValue' in value) return Number(value.integerValue);
+  if('doubleValue' in value) return Number(value.doubleValue);
+  if('timestampValue' in value) return value.timestampValue;
+  if('arrayValue' in value) return (value.arrayValue.values || []).map(firestoreRestDecode);
+  if('mapValue' in value) return Object.fromEntries(Object.entries(value.mapValue.fields || {}).map(([key,v]) => [key,firestoreRestDecode(v)]));
+  return value.stringValue ?? value.referenceValue ?? value.bytesValue ?? value.geoPointValue;
+}
+async function readFirestoreRestJson(url){
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  try{
+    const response = await fetch(url, {cache:'no-store', signal:controller.signal});
+    if(!response.ok) throw new Error('Nacteni Firebase selhalo: HTTP ' + response.status);
+    return await response.json();
+  }finally{ clearTimeout(timer); }
+}
+function firestoreRestSnapshot(document){
+  const fields = Object.fromEntries(Object.entries(document.fields || {}).map(([key,value]) => [key,firestoreRestDecode(value)]));
+  const documentPath = document.name.split('/documents/')[1];
+  const parts = documentPath.split('/'), id = parts.pop(), collection = parts.join('/');
+  return {id, exists:true, data:() => fields, ref:{path:documentPath, id, delete:()=>deleteFirestoreDocument(collection,id)}};
+}
+async function readFirestoreCollection(collectionName, orderField='', limit=0){
+  if(!usesRestCloudRefresh()){
+    let query = db.collection(collectionName);
+    if(orderField) query = query.orderBy(orderField,'desc');
+    if(limit) query = query.limit(limit);
+    return await query.get({source:'server'});
+  }
+  const url = new URL(firestoreRestDocUrl(collectionName, '__list__'));
+  url.pathname = url.pathname.replace(/\/__list__$/, '');
+  url.searchParams.set('pageSize', String(limit || 100));
+  if(orderField) url.searchParams.set('orderBy', orderField + ' desc');
+  const docs = [], seenTokens = new Set();
+  do{
+    const page = await readFirestoreRestJson(url.href);
+    docs.push(...(page.documents || []).map(firestoreRestSnapshot));
+    if(!page.nextPageToken || (limit && docs.length >= limit)) break;
+    if(seenTokens.has(page.nextPageToken)) throw new Error('Firebase opakuje stranku dat. Nacteni neni uplne.');
+    seenTokens.add(page.nextPageToken);
+    url.searchParams.set('pageToken',page.nextPageToken);
+  }while(true);
+  const rows = limit ? docs.slice(0,limit) : docs;
+  return {docs:rows, empty:!rows.length, size:rows.length, forEach:fn=>rows.forEach(fn)};
+}
+async function readFirestoreDocument(docRef){
+  if(!usesRestCloudRefresh()) return await docRef.get({source:'server'});
+  const path = docRef.path.split('/'), id=path.pop();
+  const url=firestoreRestDocUrl(path.join('/'),id);
+  try{ return firestoreRestSnapshot(await readFirestoreRestJson(url)); }
+  catch(err){ if(String(err.message).endsWith('HTTP 404')) return {exists:false,id,data:()=>undefined}; throw err; }
+}
+async function deleteFirestoreDocument(collectionName,id){
+  if(usesRestCloudRefresh()) return await deleteFirestoreRest(collectionName,id,'Smazani zaznamu');
+  return await db.collection(collectionName).doc(id).delete();
+}
+
 function firestoreRestDocUrl(collectionName, id){
   const base = 'https://firestore.googleapis.com/v1/projects/' + encodeURIComponent(firebaseConfig.projectId) + '/databases/(default)/documents/';
   const path = String(collectionName).split('/').map(encodeURIComponent).join('/') + '/' + encodeURIComponent(String(id));
@@ -3971,7 +4032,7 @@ async function setAndVerifyFirestore(collectionName, id, record, label, setMs=30
     return await setAndVerifyFirestoreRest(collectionName, id, record, label, setMs, getMs);
   }catch(restErr){
     console.warn('Firestore REST save failed:', restErr);
-    if(isIOSFirestoreTransportDevice()){
+    if(usesRestCloudRefresh()){
       throw restErr;
     }
   }
@@ -3979,7 +4040,7 @@ async function setAndVerifyFirestore(collectionName, id, record, label, setMs=30
   const writeAndVerify = async (suffix='') => {
     await ensureFirestoreOnline();
     await withTimeout(docRef.set(cloneForCloudSync(record)), setMs, label + ' do Firestore' + suffix);
-    const savedDoc = await withTimeout(docRef.get(), getMs, 'Overeni: ' + label + ' ve Firebase' + suffix);
+    const savedDoc = await withTimeout(readFirestoreDocument(docRef), getMs, 'Overeni: ' + label + ' ve Firebase' + suffix);
     if(!savedDoc.exists) throw new Error(label + ' nebyl po ulozeni nalezen ve Firebase.');
     setTimeout(() => window.checkAppUpdateAfterWrite?.(), 250);
     return savedDoc;
@@ -4012,14 +4073,14 @@ async function patchAndVerifyFirestore(collectionName, id, patch, label, setMs=3
     return await setAndVerifyFirestoreRest(collectionName, id, patch, label, setMs, getMs, false, true);
   }catch(restErr){
     console.warn('Firestore REST patch failed:', restErr);
-    if(isIOSFirestoreTransportDevice()){
+    if(usesRestCloudRefresh()){
       throw restErr;
     }
   }
   const docRef = db.collection(collectionName).doc(String(id));
   await ensureFirestoreOnline();
   await withTimeout(docRef.set(cloneForCloudSync(patch), {merge:true}), setMs, label + ' do Firestore');
-  const savedDoc = await withTimeout(docRef.get(), getMs, 'Overeni: ' + label + ' ve Firebase');
+  const savedDoc = await withTimeout(readFirestoreDocument(docRef), getMs, 'Overeni: ' + label + ' ve Firebase');
   if(!savedDoc.exists) throw new Error(label + ' nebyl po ulozeni nalezen ve Firebase.');
   return savedDoc;
 }
@@ -4401,7 +4462,7 @@ async function deleteProtocol(id){
   if(typeof updateMainOverview === 'function') updateMainOverview();
   if(firebaseAvailable && db){
     try {
-      await withTimeout(db.collection(COLLECTION_NAME).doc(id).delete(), 12000, 'Smazání protokolu ve Firebase');
+      await withTimeout(deleteFirestoreDocument(COLLECTION_NAME,id), 12000, 'Smazání protokolu ve Firebase');
       return cloudSaveResult(true);
     } catch(err) {
       console.error('Firebase delete protocol error:', err);
@@ -4419,7 +4480,7 @@ async function deleteAllProtocols(){
   if(typeof updateMainOverview === 'function') updateMainOverview();
   if(firebaseAvailable && db){
     try {
-      const snap = await withTimeout(db.collection(COLLECTION_NAME).get(), 12000, 'Načtení protokolů pro smazání');
+      const snap = await withTimeout(readFirestoreCollection(COLLECTION_NAME), 12000, 'Načtení protokolů pro smazání');
       await withTimeout(Promise.all(snap.docs.map(d => d.ref.delete())), 20000, 'Smazání všech protokolů ve Firebase');
       return cloudSaveResult(true);
     } catch(err) {
@@ -4432,19 +4493,19 @@ async function deleteAllProtocols(){
 
 async function getBackupRows(collectionName, localLoader){
   if(firebaseAvailable && db){
-    const snap = await db.collection(collectionName).get();
+    const snap = await readFirestoreCollection(collectionName);
     return snap.docs.map(d => ({id:d.id, ...d.data()}));
   }
   return localLoader();
 }
 function backupCollectionsDef(){
   return [
-    {key:'protokoly', collection:COLLECTION_NAME, label:'Čtvrtletní kontroly', loadLocal:loadLocalData, saveLocal:saveLocalData, setMemory:(rows)=>{data=rows;}},
-    {key:'planPrace', collection:SCHEDULE_COLLECTION_NAME, label:'Plán práce', loadLocal:loadLocalSchedule, saveLocal:saveLocalSchedule, setMemory:(rows)=>{scheduleData=rows;}},
-    {key:'nahradniDily', collection:PARTS_COLLECTION_NAME, label:'Náhradní díly', loadLocal:loadLocalParts, saveLocal:saveLocalParts, setMemory:(rows)=>{partsData=rows;}},
-    {key:'hlaseniPoruch', collection:FAULTS_COLLECTION_NAME, label:'Hlášení poruch', loadLocal:loadLocalFaults, saveLocal:saveLocalFaults, setMemory:(rows)=>{faultsData=rows;}},
-    {key:'historieZmen', collection:AUDIT_COLLECTION_NAME, label:'Historie změn', loadLocal:loadLocalAudit, saveLocal:saveLocalAudit, setMemory:(rows)=>{auditData=rows;}},
-    {key:'revizeZZ', collection:REVIZE_ZZ_COLLECTION_NAME, label:'Revize ZZ', loadLocal:loadLocalRevize, saveLocal:saveLocalRevize, setMemory:(rows)=>{revizeData=rows;}},
+    {key:'protokoly', collection:COLLECTION_NAME, label:'Čtvrtletní kontroly', loadLocal:loadLocalData, saveLocal:saveLocalData, getMemory:()=>data, setMemory:(rows)=>{data=rows;}},
+    {key:'planPrace', collection:SCHEDULE_COLLECTION_NAME, label:'Plán práce', loadLocal:loadLocalSchedule, saveLocal:saveLocalSchedule, getMemory:()=>scheduleData, setMemory:(rows)=>{scheduleData=rows;}},
+    {key:'nahradniDily', collection:PARTS_COLLECTION_NAME, label:'Náhradní díly', loadLocal:loadLocalParts, saveLocal:saveLocalParts, getMemory:()=>partsData, setMemory:(rows)=>{partsData=rows;}},
+    {key:'hlaseniPoruch', collection:FAULTS_COLLECTION_NAME, label:'Hlášení poruch', loadLocal:loadLocalFaults, saveLocal:saveLocalFaults, getMemory:()=>faultsData, setMemory:(rows)=>{faultsData=rows;}},
+    {key:'historieZmen', collection:AUDIT_COLLECTION_NAME, label:'Historie změn', loadLocal:loadLocalAudit, saveLocal:saveLocalAudit, getMemory:()=>auditData, setMemory:(rows)=>{auditData=rows;}},
+    {key:'revizeZZ', collection:REVIZE_ZZ_COLLECTION_NAME, label:'Revize ZZ', loadLocal:loadLocalRevize, saveLocal:saveLocalRevize, getMemory:()=>revizeData, setMemory:(rows)=>{revizeData=rows;}},
     {key:'zapisyOprav', collection:REPAIRS_COLLECTION_NAME, label:'Zápisy o opravě', loadLocal:loadLocalRepairs, saveLocal:saveLocalRepairs, setMemory:(rows)=>{saveLocalRepairs(rows);}}
   ];
 }
@@ -4488,7 +4549,7 @@ async function renderStorageOverview(){
       let dataRows = def.loadLocal();
       if(firebaseAvailable && db){
         try{
-          const snap = await withTimeout(db.collection(def.collection).get(), 12000, 'Načtení přehledu úložiště');
+          const snap = await withTimeout(readFirestoreCollection(def.collection), 12000, 'Načtení přehledu úložiště');
           dataRows = snap.docs.map(d => ({id:d.id, ...d.data()}));
           source = 'Firebase';
         }catch(e){
@@ -4612,7 +4673,7 @@ async function importRowsIntoCollection(def, rows, legacyProtocolBackup=false){
   let imported = 0;
   let skipped = 0;
   if(firebaseAvailable && db){
-    const snap = await db.collection(def.collection).get();
+    const snap = await readFirestoreCollection(def.collection);
     const existing = new Set(snap.docs.map(d => d.id));
     for(const row of rows){
       if(!row) continue;
@@ -4695,6 +4756,8 @@ function restoreEmbeddedBackupIfEmpty(){
   if(!backup || !backup.collections) return [];
   const restored = [];
   backupCollectionsDef().forEach(def => {
+    // A full local store must not let a delayed embedded backup replace live data.
+    if(def.getMemory?.()?.length) return;
     const current = def.loadLocal();
     if(current.length) {
       def.setMemory(current);
@@ -4774,20 +4837,9 @@ function mergeAndNormalizeRevizeRows(cloudRows){
   return normalized;
 }
 async function getCollectionRowsFromServer(collectionName){
-  if(!(firebaseAvailable && db && collectionName)) return [];
-  try{
-    const snap = await withTimeout(db.collection(collectionName).get({source:'server'}), 18000, 'Načtení uložených dat ze serveru');
-    return snap.docs.map(d => ({...d.data(), id:d.id}));
-  }catch(err){
-    console.warn('Server refresh failed for ' + collectionName, err);
-    try{
-      const snap = await withTimeout(db.collection(collectionName).get(), 18000, 'Načtení uložených dat');
-      return snap.docs.map(d => ({...d.data(), id:d.id}));
-    }catch(fallbackErr){
-      console.warn('Fallback refresh failed for ' + collectionName, fallbackErr);
-      return [];
-    }
-  }
+  if(!(firebaseAvailable && db && collectionName)) throw new Error('Firebase neni dostupny.');
+  const snap=await readFirestoreCollection(collectionName);
+  return snap.docs.map(d=>({...d.data(),id:d.id}));
 }
 let cloudRefreshInProgress = false;
 let cloudRefreshLastAt = 0;
@@ -4819,71 +4871,52 @@ function scheduleWorkPlanRender(reason='ui'){
     try{ if(isSectionActive('section-plan')) renderWorkPlan(); }catch(err){ console.warn('Work plan render failed (' + reason + '):', err); }
   }), delay);
 }
-async function refreshAllCloudDataFromServer(reason='manual', force=false){
-  if(!(firebaseAvailable && db)) return;
-  const now = Date.now();
-  if(cloudRefreshInProgress) return;
-  if(!force && cloudRefreshLastAt && now - cloudRefreshLastAt < 45000) return;
+let cloudRefreshPromise = null;
+function refreshAllCloudDataFromServer(reason='manual', force=false){
+  if(!(firebaseAvailable && db) || navigator.onLine === false) return Promise.resolve();
+  if(cloudRefreshPromise) return cloudRefreshPromise;
+  if(!force && cloudRefreshLastAt && Date.now()-cloudRefreshLastAt < 45000) return Promise.resolve();
   cloudRefreshInProgress = true;
-  try{
-    let protocols, schedule, parts, faults, revize, repairs, audit;
-    if(DEVICE_PROFILE.ios){
-      revize = await getCollectionRowsFromServer(REVIZE_ZZ_COLLECTION_NAME);
-      {
-        const earlyRevize = mergeAndNormalizeRevizeRows(revize);
-        syncRevizeLoadFixesToCloud(earlyRevize.changedRows).catch(err => console.warn('Revize ZZ load correction failed', err));
+  cloudRefreshPromise = (async () => {
+    const errors=[];
+    const jobs=[
+      [COLLECTION_NAME, async rows => {
+        data=mergeCloudWithLocal(filterDeletedProtocols(rows), filterDeletedProtocols(mergeRowsById(data,loadLocalData())),saveLocalData);
+        clearQuarterlySuggestionCache();
+        if(isSectionActive('section-archive')) render();
+      }],
+      [REVIZE_ZZ_COLLECTION_NAME, async rows => {
+        const normalized=mergeAndNormalizeRevizeRows(rows);
+        syncRevizeLoadFixesToCloud(normalized.changedRows).catch(err=>console.warn('Revize normalization sync failed',err));
         if(isSectionActive('section-revize')) renderRevize();
-        scheduleOverviewUpdate('ios-revize-priority-' + reason);
-      }
+      }],
+      [SCHEDULE_COLLECTION_NAME, async rows => {scheduleData=mergeCloudWithLocal(rows,mergeRowsById(scheduleData,loadLocalSchedule()),saveLocalSchedule);scheduleWorkPlanRender(reason);}],
+      [FAULTS_COLLECTION_NAME, async rows => {faultsData=mergeCloudWithLocal(rows,mergeRowsById(faultsData,loadLocalFaults()),saveLocalFaults);faultsData=await hydrateFaultRowsInMemory(faultsData);if(isSectionActive('section-faults')) renderFaults();}],
+      [PARTS_COLLECTION_NAME, async rows => {partsData=mergeCloudWithLocal(rows,mergeRowsById(partsData,loadLocalParts()),saveLocalParts);if(isSectionActive('section-parts')) renderParts();}],
+      [REPAIRS_COLLECTION_NAME, async rows => {mergeRepairCloudWithLocal(rows,loadLocalRepairs());}],
+      [AUDIT_COLLECTION_NAME, async rows => {auditData=mergeCloudWithLocal(rows,mergeRowsById(auditData,loadLocalAudit()),saveLocalAudit);if(document.getElementById('auditModal')?.classList.contains('show')) renderAuditHistory();}]
+    ];
+    for(const [collection,apply] of jobs){
+      try{
+        const rows=await getCollectionRowsFromServer(collection);
+        await apply(rows);
+        scheduleOverviewUpdate('cloud-refresh-'+reason);
+      }catch(err){errors.push(err);console.warn('Cloud refresh keeps previous records: '+collection,err);}
       await yieldToUi(40);
-      protocols = await getCollectionRowsFromServer(COLLECTION_NAME);
-      await yieldToUi(40);
-      schedule = await getCollectionRowsFromServer(SCHEDULE_COLLECTION_NAME);
-      await yieldToUi(40);
-      faults = await getCollectionRowsFromServer(FAULTS_COLLECTION_NAME);
-      await yieldToUi(40);
-      parts = await getCollectionRowsFromServer(PARTS_COLLECTION_NAME);
-      await yieldToUi(40);
-      repairs = await getCollectionRowsFromServer(REPAIRS_COLLECTION_NAME);
-      await yieldToUi(40);
-      audit = await getCollectionRowsFromServer(AUDIT_COLLECTION_NAME);
-    }else{
-      [protocols, schedule, parts, faults, revize, repairs, audit] = await Promise.all([
-        getCollectionRowsFromServer(COLLECTION_NAME),
-        getCollectionRowsFromServer(SCHEDULE_COLLECTION_NAME),
-        getCollectionRowsFromServer(PARTS_COLLECTION_NAME),
-        getCollectionRowsFromServer(FAULTS_COLLECTION_NAME),
-        getCollectionRowsFromServer(REVIZE_ZZ_COLLECTION_NAME),
-        getCollectionRowsFromServer(REPAIRS_COLLECTION_NAME),
-        getCollectionRowsFromServer(AUDIT_COLLECTION_NAME)
-      ]);
     }
-    data = mergeCloudWithLocal(filterDeletedProtocols(protocols), filterDeletedProtocols(loadLocalData()), saveLocalData);
-    scheduleData = mergeCloudWithLocal(schedule, loadLocalSchedule(), saveLocalSchedule);
-    partsData = mergeCloudWithLocal(parts, loadLocalParts(), saveLocalParts);
-    faultsData = mergeCloudWithLocal(faults, loadLocalFaults(), saveLocalFaults);
-    faultsData = await hydrateFaultRowsInMemory(faultsData);
-    if(!DEVICE_PROFILE.ios){ const normalizedRevize = mergeAndNormalizeRevizeRows(revize); syncRevizeLoadFixesToCloud(normalizedRevize.changedRows).catch(err => console.warn('Revize ZZ load correction failed', err)); }
-    mergeRepairCloudWithLocal(repairs, loadLocalRepairs());
-    auditData = mergeCloudWithLocal(audit, loadLocalAudit(), saveLocalAudit);
-    if(isSectionActive('section-archive')) render();
-    if(isSectionActive('section-plan')) renderWorkPlan?.();
-    if(isSectionActive('section-parts')) renderParts?.();
-    if(isSectionActive('section-faults')) renderFaults?.();
-    if(isSectionActive('section-revize')) renderRevize?.();
-    if(document.getElementById('auditModal')?.classList.contains('show')) renderAuditHistory?.();
-    scheduleOverviewUpdate('cloud-refresh-' + reason);
-    cloudRefreshLastAt = Date.now();
-  }finally{
-    cloudRefreshInProgress = false;
-  }
+    if(errors.length) throw errors[0];
+    cloudRefreshLastAt=Date.now();
+    schedulePendingSyncBatch('cloud-refresh-'+reason);
+  })().finally(()=>{cloudRefreshInProgress=false;cloudRefreshPromise=null;});
+  return cloudRefreshPromise;
 }
+
 function hasAnySyncedAppData(){
   return !!((data && data.length) || (scheduleData && scheduleData.length) || (partsData && partsData.length) || (faultsData && faultsData.length) || (revizeData && revizeData.length) || (loadLocalRepairs && loadLocalRepairs().length));
 }
 async function ensureFirestoreOnline(){
   if(!(firebaseAvailable && db && db.enableNetwork)) return;
-  if(isIOSFirestoreTransportDevice()) return;
+  if(usesRestCloudRefresh()) return;
   const timeoutMs = 6000;
   try{ await withTimeout(db.enableNetwork(), timeoutMs, 'Zapnutí Firebase synchronizace'); }
   catch(err){ console.warn('Firebase enableNetwork failed:', err); }
@@ -5015,7 +5048,7 @@ async function runAppCheck(){
   renderAppCheckResults(results, true);
   appCheckAddResult(results, navigator.onLine ? 'ok' : 'error', 'Internet', navigator.onLine ? 'Zarizeni hlasi online rezim.' : 'Prohlizec hlasi offline rezim.');
   const versionText = document.querySelector('.side-version')?.textContent || '';
-  appCheckAddResult(results, versionText.includes('5.389') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
+  appCheckAddResult(results, versionText.includes('5.390') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
   appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
@@ -5065,9 +5098,9 @@ function scheduleCloudRefreshRetries(reason='startup'){
   cloudRetryTimers = delays.map(delay => setTimeout(async () => {
     try{
       await ensureFirestoreOnline();
-      // Na PC/Androidu aktivni onSnapshot sam obnovi spojeni. Pokud uz mame
-      // data, dalsi plne cteni sedmi kolekci je jen duplicitni zatez.
-      if(!DEVICE_PROFILE.ios && hasAnySyncedAppData()){
+      // Desktop has active listeners. Mobile REST reads must refresh even
+      // when stale local records already exist.
+      if(!usesRestCloudRefresh() && hasAnySyncedAppData()){
         schedulePendingSyncBatch('retry-' + reason);
         return;
       }
@@ -5095,14 +5128,14 @@ function scheduleEmptyAppRecovery(reason='startup'){
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.389');
+        url.searchParams.set('v','5.390');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
       }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_336') !== '1'){
         sessionStorage.setItem('liftcontrol_cache_recovery_5_336','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.389');
+        url.searchParams.set('v','5.390');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -6921,7 +6954,7 @@ function renderAuditHistory(){
 function openAuditModal(){ renderAuditHistory(); openModal(document.getElementById('auditModal')); }
 async function refreshAuditHistory(){
   if(firebaseAvailable && db){
-    try{ const snap = await db.collection(AUDIT_COLLECTION_NAME).orderBy('createdAt','desc').limit(80).get(); auditData = snap.docs.map(d => ({id:d.id, ...d.data()})); }catch(e){ console.warn(e); }
+    try{ const snap = await readFirestoreCollection(AUDIT_COLLECTION_NAME,'createdAt',80); auditData = snap.docs.map(d => ({id:d.id, ...d.data()})); }catch(e){ console.warn(e); }
   } else auditData = loadLocalAudit();
   renderAuditHistory();
 }
@@ -6961,7 +6994,7 @@ async function restoreDeleteRecord(entity, id){
   if(entity === 'protocol') markProtocolDeleted(id);
   setRestoreRows(cfg, cfg.load().filter(x => String(x.id) !== String(id)));
   if(firebaseAvailable && db){
-    await withTimeout(db.collection(cfg.collection).doc(id).delete(), 12000, 'Vrácení vytvořeného záznamu ve Firebase');
+    await withTimeout(deleteFirestoreDocument(cfg.collection,id), 12000, 'Vrácení vytvořeného záznamu ve Firebase');
   }
   return true;
 }
@@ -6975,7 +7008,7 @@ function renderAfterRestore(){
 }
 async function auditRowsForRestore(){
   if(firebaseAvailable && db){
-    const snap = await withTimeout(db.collection(AUDIT_COLLECTION_NAME).orderBy('createdAt','desc').limit(500).get(), 12000, 'Načtení historie změn');
+    const snap = await withTimeout(readFirestoreCollection(AUDIT_COLLECTION_NAME,'createdAt',500), 12000, 'Načtení historie změn');
     return snap.docs.map(d => ({id:d.id, ...d.data()}));
   }
   return loadLocalAudit();
@@ -8615,7 +8648,7 @@ async function deleteWorkPlan(id){
   scheduleWorkPlanRender('plan-delete-local');
   scheduleOverviewUpdate('plan-delete-local');
   if(firebaseAvailable && db){
-    await withTimeout(db.collection(SCHEDULE_COLLECTION_NAME).doc(id).delete(), 12000, 'Smazání plánu práce ve Firebase');
+    await withTimeout(deleteFirestoreDocument(SCHEDULE_COLLECTION_NAME,id), 12000, 'Smazání plánu práce ve Firebase');
   }
   await logAuditAction('delete','plan',record,who);
 }
@@ -8624,7 +8657,7 @@ async function deleteAllWorkPlans(){
   if(!confirm('Opravdu smazat celý kalendář plánu práce?')) return;
   if(!requireDeletePassword('Pro smazání celého kalendáře zadej heslo:')) return;
   if(firebaseAvailable && db){
-    const snap = await db.collection(SCHEDULE_COLLECTION_NAME).get();
+    const snap = await readFirestoreCollection(SCHEDULE_COLLECTION_NAME);
     await Promise.all(snap.docs.map(d => d.ref.delete()));
   } else {
     localStorage.removeItem('liftcheck_plan_prace_local');
@@ -8639,7 +8672,7 @@ async function deleteAllPartRecords(){
   if(!confirm('Opravdu smazat celou historii požadavků na náhradní díly?')) return;
   if(!requireDeletePassword('Pro smazání historie náhradních dílů zadej heslo:')) return;
   if(firebaseAvailable && db){
-    const snap = await db.collection(PARTS_COLLECTION_NAME).get();
+    const snap = await readFirestoreCollection(PARTS_COLLECTION_NAME);
     await Promise.all(snap.docs.map(d => d.ref.delete()));
   } else {
     localStorage.removeItem('liftcheck_parts_local');
@@ -9444,7 +9477,7 @@ async function retryPendingFaultSync(){
     try{
       const docRef = db.collection(FAULTS_COLLECTION_NAME).doc(record.id);
       if(!faultSyncPending(record) && faultNeedsLegacySyncRetry(record)){
-        const existingDoc = await withTimeout(docRef.get(), 8000, 'Overeni starsiho lokalniho hlaseni poruchy');
+        const existingDoc = await withTimeout(readFirestoreDocument(docRef), 8000, 'Overeni starsiho lokalniho hlaseni poruchy');
         if(existingDoc.exists){
           markFaultSyncState(record, true, null);
           upsertLocalFaultRow(record);
@@ -9480,7 +9513,7 @@ async function deleteFaultRecord(id){
   renderFaults();
   updateMainOverview();
   if(firebaseAvailable && db){
-    await withTimeout(db.collection(FAULTS_COLLECTION_NAME).doc(id).delete(), 12000, 'Smazání hlášení poruchy ve Firebase');
+    await withTimeout(deleteFirestoreDocument(FAULTS_COLLECTION_NAME,id), 12000, 'Smazání hlášení poruchy ve Firebase');
   }
   await deleteFaultPhotosForRecord(id).catch(err => console.warn('Lokalni fotografie smazaneho hlaseni se nepodarilo odstranit:', err));
   await logAuditAction('delete','fault',record,who);
@@ -9489,7 +9522,7 @@ async function deleteAllFaultRecords(){
   if(!confirm('Opravdu smazat celou historii hlášení poruch?')) return;
   if(!requireDeletePassword('Pro smazání historie hlášení poruch zadej heslo:')) return;
   if(firebaseAvailable && db){
-    const snap = await db.collection(FAULTS_COLLECTION_NAME).get();
+    const snap = await readFirestoreCollection(FAULTS_COLLECTION_NAME);
     await Promise.all(snap.docs.map(d => d.ref.delete()));
   } else {
     localStorage.removeItem('liftcheck_faults_local');
@@ -10759,7 +10792,7 @@ async function deleteRepairRecord(id){
   }
   if(firebaseAvailable && db){
     try{
-      await withTimeout(db.collection(REPAIRS_COLLECTION_NAME).doc(id).delete(), 12000, 'Smazání zápisu o opravě ve Firebase');
+      await withTimeout(deleteFirestoreDocument(REPAIRS_COLLECTION_NAME,id), 12000, 'Smazání zápisu o opravě ve Firebase');
     }catch(err){
       console.error('Firebase delete repair error:', err);
       alert('Zápis je smazaný v tomto zařízení, ale nepodařilo se ho smazat ve Firebase: ' + errorText(err));
@@ -11282,7 +11315,7 @@ async function retryPendingPartSync(){
     try{
       const docRef = db.collection(PARTS_COLLECTION_NAME).doc(record.id);
       if(!partSyncPending(record) && partNeedsLegacySyncRetry(record)){
-        const existingDoc = await withTimeout(docRef.get(), 8000, 'Overeni starsiho lokalniho pozadavku na ND');
+        const existingDoc = await withTimeout(readFirestoreDocument(docRef), 8000, 'Overeni starsiho lokalniho pozadavku na ND');
         if(existingDoc.exists){
           markPartSyncState(record, true, null);
           upsertLocalRow(loadLocalParts, saveLocalParts, record);
@@ -11314,7 +11347,7 @@ async function deletePartRecord(id){
   renderParts();
   updateMainOverview();
   if(firebaseAvailable && db){
-    await withTimeout(db.collection(PARTS_COLLECTION_NAME).doc(id).delete(), 12000, 'Smazání náhradního dílu ve Firebase');
+    await withTimeout(deleteFirestoreDocument(PARTS_COLLECTION_NAME,id), 12000, 'Smazání náhradního dílu ve Firebase');
   }
   await logAuditAction('delete','part',record,who);
 }
@@ -13816,7 +13849,7 @@ async function deleteRevize(id){
   updateMainOverview?.();
   let cloudDeleteError = null;
   if(firebaseAvailable&&db){
-    try{ await withTimeout(db.collection(REVIZE_ZZ_COLLECTION_NAME).doc(id).delete(), 12000, 'Smazání revize ZZ ve Firebase'); }
+    try{ await withTimeout(deleteFirestoreDocument(REVIZE_ZZ_COLLECTION_NAME,id), 12000, 'Smazání revize ZZ ve Firebase'); }
     catch(e){ cloudDeleteError=e; console.warn('Revize ZZ Firebase delete failed', e); }
   }
   await logAuditAction('delete','revize_zz',r,who,'Smazána revize ZZ · '+(r.protokol||''));
@@ -15011,7 +15044,7 @@ document.getElementById('appCheckCacheBtn')?.addEventListener('click', async () 
   if(!confirm('Vyčistit pouze cache aplikace? Uložená data ve Firebase ani lokální záznamy se nemažou.')) return;
   await resetAppShellCacheOnly('app-check-cache');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.389');
+  url.searchParams.set('v','5.390');
   url.searchParams.set('appCheckCache', String(Date.now()));
   location.replace(url.toString());
 });
@@ -15020,7 +15053,7 @@ document.getElementById('closeAppCheckTopBtn')?.addEventListener('click', () => 
 async function forceRefreshApplication(){
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.389');
+  url.searchParams.set('v','5.390');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 }
@@ -15485,9 +15518,8 @@ let lastForegroundRefreshAt = 0;
 window.addEventListener('online', () => {
   updateAppConnectionStatus();
   ensureFirestoreOnline().catch(err => console.warn('Firebase network restore failed:', err));
-  // Android/PC obnovi onSnapshot samo. Plny refresh je potreba jen na iOS
-  // nebo kdyz v zarizeni opravdu nejsou zadna data.
-  if(DEVICE_PROFILE.ios || !hasAnySyncedAppData()){
+  // Mobile devices refresh independently of the SDK watch stream.
+  if(usesRestCloudRefresh() || !hasAnySyncedAppData()){
     deferUiWork(() => refreshAllCloudDataFromServer('online').catch(err => console.warn('Cloud data refresh failed:', err)), DEVICE_PROFILE.safeMode ? 1200 : 250);
   }
   scheduleCloudRefreshRetries('online');
@@ -15501,7 +15533,7 @@ document.addEventListener('visibilitychange', () => {
   const now = Date.now();
   if(!lastForegroundRefreshAt || now - lastForegroundRefreshAt > (DEVICE_PROFILE.safeMode ? 90000 : 45000)){
     lastForegroundRefreshAt = now;
-    if(DEVICE_PROFILE.ios || !hasAnySyncedAppData()){
+    if(usesRestCloudRefresh() || !hasAnySyncedAppData()){
       deferUiWork(() => refreshAllCloudDataFromServer('foreground').catch(err => console.warn('Cloud data foreground refresh failed:', err)), DEVICE_PROFILE.safeMode ? 1500 : 250);
     }
     scheduleCloudRefreshRetries('foreground');
@@ -15519,7 +15551,7 @@ if(firebaseAvailable && db){
   startLocalFaultsMode();
   startLocalRepairsMode();
   auditData = loadLocalAudit();
-  if(!DEVICE_PROFILE.ios){
+  if(!usesRestCloudRefresh()){
   db.collection(COLLECTION_NAME).onSnapshot(
     snap => { const cloud=filterDeletedProtocols(snap.docs.map(d => ({...d.data(), id:d.id}))); data = mergeCloudWithLocal(cloud, filterDeletedProtocols(loadLocalData()), saveLocalData); clearQuarterlySuggestionCache(); if(isSectionActive('section-archive')) deferUiWork(render, DEVICE_PROFILE.safeMode ? 180 : 0); scheduleOverviewUpdate('protocol-snapshot'); schedulePendingSyncBatch('protocol-snapshot'); },
     err => {
@@ -15580,9 +15612,14 @@ if(firebaseAvailable && db){
   auditData = loadLocalAudit();
 }
 restoreRevizeDurableBackup().catch(err => console.warn('Revize durable startup restore failed:', err));
-if(DEVICE_PROFILE.ios){
-  setTimeout(() => refreshAllCloudDataFromServer('ios-priority-startup', true).catch(err => console.warn('iOS priority cloud refresh failed:', err)), 300);
+if(usesRestCloudRefresh()){
+  setTimeout(() => refreshAllCloudDataFromServer('mobile-startup', true).catch(err => console.warn('Mobile startup refresh failed:', err)), 300);
 }
+setInterval(() => {
+  if(usesRestCloudRefresh() && !document.hidden && navigator.onLine !== false){
+    refreshAllCloudDataFromServer('mobile-periodic').catch(err=>console.warn('Mobile refresh failed; keeping records',err));
+  }
+},60000);
 setTimeout(() => {
   ensureFirestoreOnline().catch(err => console.warn('Firebase startup network check failed:', err));
   // PC a Android uz dostavaji prvni data pres onSnapshot posluchace vyse.
@@ -15590,7 +15627,7 @@ setTimeout(() => {
   // hlavni vlakno, prekreslovalo stejne seznamy a na slabsich zarizenich pusobilo
   // jako zamrzla aplikace. iOS pouziva rizenou serverovou obnovu samostatne.
   // Nouzovou obnovu spustime jen tehdy, kdyz posluchace nedodaly zadna data.
-  if(!DEVICE_PROFILE.ios && !hasAnySyncedAppData()){
+  if(!usesRestCloudRefresh() && !hasAnySyncedAppData()){
     deferUiWork(() => {
       if(!hasAnySyncedAppData()) refreshAllCloudDataFromServer('startup-empty').catch(err => console.warn('Cloud data refresh failed:', err));
     }, DEVICE_PROFILE.safeMode ? 7000 : 3500);
@@ -15602,7 +15639,7 @@ setTimeout(() => {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  const APP_CURRENT_VERSION = '5.389';
+  const APP_CURRENT_VERSION = '5.390';
   let appUpdateRegistration = null;
   let appUpdateWorker = null;
   let appReloadingForUpdate = false;
@@ -15762,7 +15799,7 @@ if ('serviceWorker' in navigator) {
       const attempted = sessionStorage.getItem(APP_UPDATE_ATTEMPT_KEY) || '';
       if(attempted && compareAppVersions(APP_CURRENT_VERSION, attempted) >= 0) sessionStorage.removeItem(APP_UPDATE_ATTEMPT_KEY);
     }catch(e){}
-    navigator.serviceWorker.register(new URL('./sw.js?v=5.389', location.href), {scope:'./', updateViaCache:'none'})
+    navigator.serviceWorker.register(new URL('./sw.js?v=5.390', location.href), {scope:'./', updateViaCache:'none'})
       .then(registration => {
         installUpdateWatcher(registration);
         registration.update().catch(err => console.warn('Service worker update check failed', err));
@@ -15782,22 +15819,3 @@ if ('serviceWorker' in navigator) {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
