@@ -1,8 +1,8 @@
 {
-  "version": "5.388",
-  "appVersion": "1.6 / 5.388",
-  "cacheName": "liftcontrol-cz-v1-6-5-388",
-  "url": "./index.html?v=5.388",
+  "version": "5.389",
+  "appVersion": "1.6 / 5.389",
+  "cacheName": "liftcontrol-cz-v1-6-5-389",
+  "url": "./index.html?v=5.389",
   "releasedAt": "2026-09-10",
-  "message": "Oprava ukladani ctvrtletnich protokolu pri plnem lokalnim ulozisti: overene ulozeni do Firebase vcetne fotografii a podpisu."
+  "message": "Oprava opakovaneho pridavani fotografii u dilu a oprav; zachovani ostatnich udaju revize pri dilci aktualizaci."
 }

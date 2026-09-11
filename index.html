@@ -2398,7 +2398,7 @@ body.mobile-safe-mode .attention-count:hover{
     <button type="button" class="side-link" id="sideSettingsBtn">Nastavení</button>
   </nav>
   <div class="side-bottom">
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.388</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.389</div>
   </div>
 </aside>
 
@@ -3929,9 +3929,17 @@ function canonicalFirestoreRestFields(fields){
   const map = items => Object.fromEntries(Object.keys(items).sort().map(key => [key, value(items[key])]));
   return JSON.stringify(map(fields));
 }
-async function setAndVerifyFirestoreRest(collectionName, id, record, label, setMs=30000, getMs=15000, verifyContent=false){
+async function setAndVerifyFirestoreRest(collectionName, id, record, label, setMs=30000, getMs=15000, verifyContent=false, merge=false){
   if(!window.fetch) throw new Error('Prohlizec nepodporuje REST ulozeni do Firebase.');
-  const url = firestoreRestDocUrl(collectionName, id);
+  const target = new URL(firestoreRestDocUrl(collectionName, id));
+  if(merge){
+    for(const field of Object.keys(record)){
+      const fieldPath = '`' + field.replace(/\\/g, '\\\\').replace(/`/g, '\\`') + '`';
+      target.searchParams.append('updateMask.fieldPaths', fieldPath);
+    }
+    if(!Object.keys(record).length) throw new Error('Chybi pole pro castecne ulozeni.');
+  }
+  const url = target.href;
   const body = JSON.stringify({fields:firestoreRestFields(record)});
   const writeResponse = await withTimeout(fetch(url, {
     method:'PATCH',
@@ -3942,7 +3950,7 @@ async function setAndVerifyFirestoreRest(collectionName, id, record, label, setM
     const detail = await writeResponse.text().catch(() => '');
     throw new Error(label + ' REST selhalo: HTTP ' + writeResponse.status + (detail ? ' ' + detail.slice(0,260) : ''));
   }
-  const readResponse = await withTimeout(fetch(url, {method:'GET'}), getMs, 'Overeni: ' + label + ' ve Firebase REST');
+  const readResponse = await withTimeout(fetch(firestoreRestDocUrl(collectionName, id), {method:'GET'}), getMs, 'Overeni: ' + label + ' ve Firebase REST');
   if(!readResponse.ok){
     const detail = await readResponse.text().catch(() => '');
     throw new Error('Overeni REST ulozeni selhalo: HTTP ' + readResponse.status + (detail ? ' ' + detail.slice(0,260) : ''));
@@ -4001,7 +4009,7 @@ async function patchAndVerifyFirestore(collectionName, id, patch, label, setMs=3
   if(!(firebaseAvailable && db)) throw new Error('Firebase neni dostupny.');
   if(!collectionName || !id) throw new Error(label + ': chybi kolekce nebo ID zaznamu.');
   try{
-    return await setAndVerifyFirestoreRest(collectionName, id, patch, label, setMs, getMs);
+    return await setAndVerifyFirestoreRest(collectionName, id, patch, label, setMs, getMs, false, true);
   }catch(restErr){
     console.warn('Firestore REST patch failed:', restErr);
     if(isIOSFirestoreTransportDevice()){
@@ -5007,7 +5015,7 @@ async function runAppCheck(){
   renderAppCheckResults(results, true);
   appCheckAddResult(results, navigator.onLine ? 'ok' : 'error', 'Internet', navigator.onLine ? 'Zarizeni hlasi online rezim.' : 'Prohlizec hlasi offline rezim.');
   const versionText = document.querySelector('.side-version')?.textContent || '';
-  appCheckAddResult(results, versionText.includes('5.388') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
+  appCheckAddResult(results, versionText.includes('5.389') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
   appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
@@ -5087,14 +5095,14 @@ function scheduleEmptyAppRecovery(reason='startup'){
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.388');
+        url.searchParams.set('v','5.389');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
       }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_336') !== '1'){
         sessionStorage.setItem('liftcontrol_cache_recovery_5_336','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.388');
+        url.searchParams.set('v','5.389');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -14713,11 +14721,12 @@ document.getElementById('repairSignatureCanvas')?.addEventListener('pointermove'
   });
 });
 document.getElementById('repairPhotoInput')?.addEventListener('change', async (e) => {
-  if(e.currentTarget.dataset.processing === '1') return;
-  const files = Array.from(e.target.files || []);
+  const input = e.currentTarget;
+  if(input.dataset.processing === '1') return;
+  const files = Array.from(input.files || []);
   if(!files.length) return;
-  e.currentTarget.dataset.processing = '1';
-  e.currentTarget.disabled = true;
+  input.dataset.processing = '1';
+  input.disabled = true;
   try{
     for(const file of files){
       try{ const out = await compressPhoto(file, MAX_PHOTO_BYTES); currentRepairPhotos.push({dataUrl:out.dataUrl, bytes:out.bytes, width:out.width, height:out.height}); await yieldToUi(60); }
@@ -14725,9 +14734,9 @@ document.getElementById('repairPhotoInput')?.addEventListener('change', async (e
     }
     renderRepairPhotoPreview();
   }finally{
-    e.target.value = '';
-    e.currentTarget.dataset.processing = '';
-    e.currentTarget.disabled = false;
+    input.value = '';
+    input.dataset.processing = '';
+    input.disabled = false;
   }
 });
 document.getElementById('homeMachineCardBtn')?.addEventListener('click', () => {
@@ -14944,25 +14953,25 @@ showSection('home');
 
 document.getElementById('addPartPhotoBtn')?.addEventListener('click', () => document.getElementById('partPhotoInput')?.click());
 document.getElementById('partPhotoInput')?.addEventListener('change', async (e) => {
-  if(e.currentTarget.dataset.processing === '1') return;
-  const file = e.target.files && e.target.files[0];
+  const input = e.currentTarget;
+  if(input.dataset.processing === '1') return;
+  const file = input.files && input.files[0];
   if(!file) return;
-  e.currentTarget.dataset.processing = '1';
-  e.currentTarget.disabled = true;
+  input.dataset.processing = '1';
+  input.disabled = true;
   try{
     const out = await compressPhoto(file, MAX_PHOTO_BYTES);
     await yieldToUi(30);
     currentPartPhotos = Array.isArray(currentPartPhotos) ? currentPartPhotos : [];
     currentPartPhotos.push({dataUrl:out.dataUrl, bytes:out.bytes, width:out.width, height:out.height});
     renderPartPhotoPreview();
-    e.target.value = '';
   }catch(err){
     console.error(err);
     alert('Fotku se nepodařilo zpracovat.');
   }finally{
-    e.currentTarget.dataset.processing = '';
-    e.currentTarget.disabled = false;
-    e.target.value = '';
+    input.dataset.processing = '';
+    input.disabled = false;
+    input.value = '';
   }
 });
 
@@ -15002,7 +15011,7 @@ document.getElementById('appCheckCacheBtn')?.addEventListener('click', async () 
   if(!confirm('Vyčistit pouze cache aplikace? Uložená data ve Firebase ani lokální záznamy se nemažou.')) return;
   await resetAppShellCacheOnly('app-check-cache');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.388');
+  url.searchParams.set('v','5.389');
   url.searchParams.set('appCheckCache', String(Date.now()));
   location.replace(url.toString());
 });
@@ -15011,7 +15020,7 @@ document.getElementById('closeAppCheckTopBtn')?.addEventListener('click', () => 
 async function forceRefreshApplication(){
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.388');
+  url.searchParams.set('v','5.389');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 }
@@ -15593,7 +15602,7 @@ setTimeout(() => {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  const APP_CURRENT_VERSION = '5.388';
+  const APP_CURRENT_VERSION = '5.389';
   let appUpdateRegistration = null;
   let appUpdateWorker = null;
   let appReloadingForUpdate = false;
@@ -15753,7 +15762,7 @@ if ('serviceWorker' in navigator) {
       const attempted = sessionStorage.getItem(APP_UPDATE_ATTEMPT_KEY) || '';
       if(attempted && compareAppVersions(APP_CURRENT_VERSION, attempted) >= 0) sessionStorage.removeItem(APP_UPDATE_ATTEMPT_KEY);
     }catch(e){}
-    navigator.serviceWorker.register(new URL('./sw.js?v=5.388', location.href), {scope:'./', updateViaCache:'none'})
+    navigator.serviceWorker.register(new URL('./sw.js?v=5.389', location.href), {scope:'./', updateViaCache:'none'})
       .then(registration => {
         installUpdateWatcher(registration);
         registration.update().catch(err => console.warn('Service worker update check failed', err));
