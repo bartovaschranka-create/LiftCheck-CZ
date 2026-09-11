@@ -5,7 +5,7 @@ let saved, requests=[];
 const context=vm.createContext({URL,console,window:{fetch:true},firebaseAvailable:true,db:{},setTimeout:()=>{},
   firestoreRestDocUrl:()=> 'https://example.invalid/doc?key=test',
   firestoreRestFields:record=>Object.fromEntries(Object.entries(record).map(([k,v])=>[k,{stringValue:JSON.stringify(v)}])),
-  withTimeout:p=>p,isIOSFirestoreTransportDevice:()=>true,
+  withTimeout:p=>p,usesRestCloudRefresh:()=>true,
   fetch:async(url,options)=>{
     const parsed=new URL(url);requests.push({method:options.method,url:parsed});
     if(options.method==='PATCH'){
