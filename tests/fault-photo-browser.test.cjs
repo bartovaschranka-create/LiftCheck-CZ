@@ -44,12 +44,14 @@ const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR
       request.onsuccess = () => resolve(request.result || null);
       request.onerror = () => reject(request.error);
     }) : null;
-    return {json:JSON.stringify(row || {}), row, stored};
+    return {json:JSON.stringify(row || {}), row, stored:stored?{blob:stored.blob instanceof Blob,bytes:stored.blob?.size,dataUrl:stored.dataUrl}:null};
   });
   assert.ok(offlineState.row, 'Offline report must be stored locally');
   assert.equal(offlineState.json.includes('data:image'), false, 'localStorage must contain no Base64 image');
   assert.ok(offlineState.row.photos[0].localPhotoKey, 'Metadata must point to IndexedDB');
-  assert.match(offlineState.stored.dataUrl, /^data:image\/jpeg;base64,/, 'IndexedDB must contain compressed image data');
+  assert.equal(offlineState.stored.blob,true,'IndexedDB must contain a Blob');
+  assert.ok(offlineState.stored.bytes>0);
+  assert.equal(offlineState.stored.dataUrl,undefined,'No duplicate Base64 payload');
 
   await page.reload({waitUntil:'domcontentloaded'});
   await page.getByRole('button', {name:'Hlášení poruch', exact:true}).click();
