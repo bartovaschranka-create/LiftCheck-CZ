@@ -1961,7 +1961,7 @@ body.dark .part-handler-note-display{background:rgba(59,130,246,.12);border-colo
 
 /* v1.6 / 5.159: Revize ZZ tisknout jako přesné dvě čitelné A4 strany bez křížků/fajfek. */
 .revize-paper{box-sizing:border-box;display:flex;flex-direction:column;gap:4px;min-height:297mm;position:relative}
-.revize-paper .revize-kind-badge{position:absolute;top:3.5mm;right:9mm;z-index:2;min-width:34mm;max-width:44mm;border:1px solid #111;padding:1mm 2.2mm;background:#fff;color:#111;text-align:center;font-size:8.4px;line-height:1.1;font-weight:600;text-transform:uppercase;white-space:nowrap}
+.revize-paper .revize-kind-badge{position:absolute;top:6mm;right:9mm;z-index:2;min-width:34mm;max-width:44mm;border:1px solid #111;padding:1mm 2.2mm;background:#fff;color:#111;text-align:center;font-size:8.4px;line-height:1.1;font-weight:600;text-transform:uppercase;white-space:nowrap}
 .revize-paper table{table-layout:fixed;margin:0 0 4px;break-inside:avoid;page-break-inside:avoid}
 .revize-paper tr{break-inside:avoid;page-break-inside:avoid}
 .revize-paper h1{line-height:1.15}
@@ -2398,7 +2398,7 @@ body.mobile-safe-mode .attention-count:hover{
     <button type="button" class="side-link" id="sideSettingsBtn">Nastavení</button>
   </nav>
   <div class="side-bottom">
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.391</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.392</div>
   </div>
 </aside>
 
@@ -5048,7 +5048,7 @@ async function runAppCheck(){
   renderAppCheckResults(results, true);
   appCheckAddResult(results, navigator.onLine ? 'ok' : 'error', 'Internet', navigator.onLine ? 'Zarizeni hlasi online rezim.' : 'Prohlizec hlasi offline rezim.');
   const versionText = document.querySelector('.side-version')?.textContent || '';
-  appCheckAddResult(results, versionText.includes('5.391') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
+  appCheckAddResult(results, versionText.includes('5.392') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
   appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
@@ -5128,14 +5128,14 @@ function scheduleEmptyAppRecovery(reason='startup'){
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.391');
+        url.searchParams.set('v','5.392');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
       }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_336') !== '1'){
         sessionStorage.setItem('liftcontrol_cache_recovery_5_336','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.391');
+        url.searchParams.set('v','5.392');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -8218,11 +8218,11 @@ html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,Helvet
 .print-toolbar button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;background:#2563eb;color:#fff;cursor:pointer}
 .print-toolbar .secondary{background:#e5e7eb;color:#111827}.print-toolbar small{color:#cbd5e1}
 #preview,#previewBody{width:210mm;margin:0 auto;padding:0;background:#fff}
-.revize-paper{width:210mm!important;height:296mm!important;min-height:296mm!important;max-height:296mm!important;margin:0 auto!important;padding:10mm 9mm 8mm!important;box-sizing:border-box!important;display:flex!important;flex-direction:column!important;gap:4px!important;overflow:hidden!important;position:relative!important;background:#fff!important;color:#111!important;font-family:Arial,Helvetica,sans-serif!important;box-shadow:none!important;transform:none!important;break-before:auto!important;page-break-before:auto!important;break-after:page!important;page-break-after:always!important;break-inside:auto!important;page-break-inside:auto!important}
+.revize-paper{width:210mm!important;height:296mm!important;min-height:296mm!important;max-height:296mm!important;margin:0 auto!important;padding:12mm 9mm 6mm!important;box-sizing:border-box!important;display:flex!important;flex-direction:column!important;gap:4px!important;overflow:hidden!important;position:relative!important;background:#fff!important;color:#111!important;font-family:Arial,Helvetica,sans-serif!important;box-shadow:none!important;transform:none!important;break-before:auto!important;page-break-before:auto!important;break-after:page!important;page-break-after:always!important;break-inside:auto!important;page-break-inside:auto!important}
 .revize-paper.page-break{break-before:auto!important;page-break-before:auto!important}
 .revize-paper:last-child{break-after:auto!important;page-break-after:auto!important}
 .revize-paper h1{font-size:15px;line-height:1.15;margin:0 0 4px;text-align:center;font-weight:600!important}
-.revize-paper .revize-kind-badge{position:absolute!important;top:3.5mm!important;right:9mm!important;z-index:2!important;min-width:34mm!important;max-width:44mm!important;border:1px solid #111!important;padding:1mm 2.2mm!important;background:#fff!important;color:#111!important;text-align:center!important;font-size:8.4px!important;line-height:1.1!important;font-weight:600!important;text-transform:uppercase!important;white-space:nowrap!important}
+.revize-paper .revize-kind-badge{position:absolute!important;top:6mm!important;right:9mm!important;z-index:2!important;min-width:34mm!important;max-width:44mm!important;border:1px solid #111!important;padding:1mm 2.2mm!important;background:#fff!important;color:#111!important;text-align:center!important;font-size:8.4px!important;line-height:1.1!important;font-weight:600!important;text-transform:uppercase!important;white-space:nowrap!important}
 .revize-paper .legal{font-size:9px;line-height:1.25;text-align:center;margin-bottom:5px}
 .revize-paper table{width:100%;border-collapse:collapse;table-layout:fixed;margin:0 0 4px;border:1.35px solid #111!important;break-inside:avoid;page-break-inside:avoid}
 .revize-paper tr{break-inside:avoid;page-break-inside:avoid}
@@ -8236,6 +8236,7 @@ html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,Helvet
 .revize-paper .kv td:nth-child(even){width:32%}
 .revize-paper .revize-id-value{font-weight:700!important}
 .revize-paper .section{font-weight:600!important;text-transform:uppercase;border:1.35px solid #111!important}
+.revize-paper .section .revize-unit-lower{text-transform:lowercase}
 .revize-paper .yn{width:32px;text-align:center;white-space:nowrap;overflow-wrap:normal;word-break:keep-all}
 .revize-paper .note{width:30%}
 .revize-paper .sign{height:58px}
@@ -12272,7 +12273,7 @@ const MACHINE_FIELD_LABELS = {
   reach:'Boční dosah',tilt:'Náklon podvozku',workHeight:'Pracovní výška',floorHeight:'Výška podlahy',
   outdoorLimited:'Venkovní omezení',outdoorWind:'Rychlost větru',outdoorWorkHeight:'Venkovní pracovní výška',
   outdoorFloorHeight:'Venkovní výška podlahy',outdoorReach:'Venkovní boční dosah',outdoorCapacity:'Venkovní / snížená nosnost',
-  outdoorCapacityPersons:'Počet osob při snížené nosnosti',outdoorSideForce:'Snížená boční síla',
+  outdoorCapacityPersons:'Počet osob – druhá varianta',outdoorSideForce:'Snížená boční síla',
   workingEnvelopes:'Pracovní obálka podle zatížení koše'
 };
 const MACHINE_SAFETY_MAX_AUTO_YEAR_GAP = 2;
@@ -12449,12 +12450,18 @@ function revizeWorkingEnvelopesForRecord(record){
   const model=revizeMachineModelKey(record?.model || record?.typ || '');
   const baseCapacity=record?.nosnost || record?.capacity;
   const secondaryCapacity=record?.venkovni_nosnost || record?.outdoorCapacity;
-  if((model === 'z-45/25xc' || model === 'z-45xc') && baseCapacity && secondaryCapacity){
+  if((model === 'z-45/25xc' || model === 'z-45xc') && baseCapacity && secondaryCapacity && !['outdoor','unknown'].includes(record?.limitVariantKind)){
     const values=[baseCapacity,secondaryCapacity].map(value=>Number(String(value).replace(',','.').match(/[0-9]+(?:\.[0-9]+)?/)?.[0] || 0));
-    if(values.includes(300) && values.includes(454)) return [
-      revizeWorkingEnvelopeRow('unrestricted',{capacity:'300',persons:'2',workHeight:record?.pracovni_vyska || record?.workHeight,floorHeight:record?.vyska_podlahy || record?.floorHeight,reach:record?.bocni_dosah || record?.reach}),
-      revizeWorkingEnvelopeRow('restricted',{capacity:'454',persons:record?.nosnost_osoby || record?.capacityPersons || '3'})
-    ];
+    if(values.includes(300) && values.includes(454)) return [300,454].map(capacity=>{
+      const secondary=values[1]===capacity;
+      return revizeWorkingEnvelopeRow(capacity===300?'unrestricted':'restricted',{
+        capacity:String(capacity),
+        persons:secondary?(record?.venkovni_nosnost_osoby ?? record?.outdoorCapacityPersons):(record?.nosnost_osoby ?? record?.capacityPersons),
+        workHeight:secondary?(record?.venkovni_pracovni_vyska ?? record?.outdoorWorkHeight):(record?.pracovni_vyska ?? record?.workHeight),
+        floorHeight:secondary?(record?.venkovni_vyska_podlahy ?? record?.outdoorFloorHeight):(record?.vyska_podlahy ?? record?.floorHeight),
+        reach:secondary?(record?.venkovni_bocni_dosah ?? record?.outdoorReach):(record?.bocni_dosah ?? record?.reach)
+      });
+    });
   }
   return revizeWorkingEnvelopesFromImportedRow({
     model:record?.model || record?.typ, capacity:record?.capacityRaw || record?.capacity || record?.nosnost,
@@ -13533,7 +13540,7 @@ function renderRevizeForm(r){ r.venkovni_vitr=revizeOutdoorWindValue(r.venkovni_
   document.getElementById('revizeFormBody').innerHTML = `<div class="revize-form-grid">
     <div class="revize-section-title">Protokol</div><div class="field"><label>Protokol č.</label><input id="rz_protokol" value="${rzVal('protokol')}"></div><div class="field"><label>Datum kontroly</label><input id="rz_datum_kontroly" type="date" value="${rzVal('datum_kontroly')}"></div><div class="field"><label>Platnost do</label><input id="rz_platnost" type="date" value="${rzVal('platnost')}"></div><div class="field"><label>Druh kontroly</label>${revizeDruhKontrolySelect(r.druh_kontroly)}</div><div class="field"><label>Motohodiny</label><input id="rz_motohodiny" type="number" inputmode="numeric" value="${rzVal('motohodiny')}"></div>
     <div class="revize-section-title">Provozovatel a zařízení</div><div class="field wide"><label>Provozovatel</label><input id="rz_provozovatel" value="${rzVal('provozovatel')}"></div><div class="field wide"><label>Umístění / pobočka</label><input id="rz_umisteni" value="${rzVal('umisteni')}"></div><div class="field"><label>Typ zařízení</label><select id="rz_typ_zarizeni">${deviceOptions}</select></div><div class="field"><label>Výrobce</label><input id="rz_vyrobce" value="${rzVal('vyrobce')}"></div><div class="field"><label>Model</label><input id="rz_model" value="${rzVal('model')}"></div><div class="field"><label>Výrobní číslo</label><input id="rz_vyrobni_cislo" value="${rzVal('vyrobni_cislo')}"></div><div class="field"><label>Evidenční číslo</label><input id="rz_evidencni_cislo" value="${rzVal('evidencni_cislo')}"></div><div class="field"><label>Rok výroby</label><input id="rz_rok_vyroby" value="${rzVal('rok_vyroby')}"></div><div class="field"><label>Použitá norma</label><input id="rz_norma" value="${rzVal('norma')}" placeholder="Automaticky podle roku výroby"></div><div class="field wide"><label>Revize zpracována dle norem</label><textarea id="rz_normy_revize" placeholder="Doplní se podle stroje / poslední revize">${rzVal('normy_revize') || escapeHtml(revizeDefaultNormy(r.norma))}</textarea></div><div class="field"><label>Skupina / typ</label><input id="rz_skupina" value="${rzVal('skupina')}"></div>
-    <div class="revize-section-title">Technické údaje</div>${revizeTechFieldKeys().map(k=>`<div class="field"><label>${escapeHtml(revizeFieldLabel(k))}</label><input id="rz_${k}" value="${escapeHtml(revizeInputValue(k,r[k]))}"${revizeInputAttrs(k)} ${['staticka_zatez','dynamicka_zatez'].includes(k)?'readonly title="Počítá se automaticky z nosnosti"':''}></div>`).join('')}<div class="field wide revize-outdoor-options"><label>Má stroj snížené hodnoty pro venkovní provoz?</label><select id="rz_venkovni_omezeni" ${revizeHasOutdoorLimits(r)?'':'data-rz-auto="1"'}><option value="NE" ${revizeHasOutdoorLimits(r)?'':'selected'}>NE – platí jedna sada hodnot</option><option value="ANO" ${revizeHasOutdoorLimits(r)?'selected':''}>ANO – doplnit sníženou nosnost, výšku nebo dosah</option></select><div id="rz_venkovni_detaily" class="revize-outdoor-grid ${revizeHasOutdoorLimits(r)?'':'hidden'}"><div class="field"><label>Max. rychlost větru (m/s)</label><input id="rz_venkovni_vitr" value="${escapeHtml(revizeInputValue('venkovni_vitr',r.venkovni_vitr||'12'))}"${revizeInputAttrs('venkovni_vitr')}></div><div class="field"><label>Snížená výška zdvihu (m)</label><input id="rz_venkovni_vyska_podlahy" value="${escapeHtml(revizeInputValue('venkovni_vyska_podlahy',r.venkovni_vyska_podlahy))}"${revizeInputAttrs('venkovni_vyska_podlahy')}></div><div class="field"><label>Snížená pracovní výška (m)</label><input id="rz_venkovni_pracovni_vyska" value="${escapeHtml(revizeInputValue('venkovni_pracovni_vyska',r.venkovni_pracovni_vyska))}"${revizeInputAttrs('venkovni_pracovni_vyska')}></div><div class="field"><label>Snížený boční dosah (m)</label><input id="rz_venkovni_bocni_dosah" value="${escapeHtml(revizeInputValue('venkovni_bocni_dosah',r.venkovni_bocni_dosah))}"${revizeInputAttrs('venkovni_bocni_dosah')}></div><div class="field"><label>Snížená nosnost (kg)</label><input id="rz_venkovni_nosnost" value="${escapeHtml(revizeInputValue('venkovni_nosnost',r.venkovni_nosnost))}"${revizeInputAttrs('venkovni_nosnost')}></div><div class="field"><label>Počet osob při snížené nosnosti</label><input id="rz_venkovni_nosnost_osoby" type="number" min="0" inputmode="numeric" value="${escapeHtml(r.venkovni_nosnost_osoby||'')}"></div><div class="field"><label>Snížená boční síla (N)</label><input id="rz_venkovni_bocni_sila" value="${escapeHtml(revizeInputValue('venkovni_bocni_sila',r.venkovni_bocni_sila||'200'))}"${revizeInputAttrs('venkovni_bocni_sila')}></div></div><div class="helper">Aplikace nejdřív použije poslední revizi stejného stroje nebo stejného modelu. Hodnoty můžeš kdykoliv změnit.</div></div>
+    <div class="revize-section-title">Technické údaje</div>${revizeTechFieldKeys().map(k=>`<div class="field"><label>${escapeHtml(revizeFieldLabel(k))}</label><input id="rz_${k}" value="${escapeHtml(revizeInputValue(k,r[k]))}"${revizeInputAttrs(k)} ${['staticka_zatez','dynamicka_zatez'].includes(k)?'readonly title="Počítá se automaticky z nosnosti"':''}></div>`).join('')}<div class="field wide revize-outdoor-options"><label>Má stroj druhou sadu provozních hodnot?</label><select id="rz_venkovni_omezeni" ${revizeHasOutdoorLimits(r)?'':'data-rz-auto="1"'}><option value="NE" ${revizeHasOutdoorLimits(r)?'':'selected'}>NE – platí jedna sada hodnot</option><option value="ANO" ${revizeHasOutdoorLimits(r)?'selected':''}>ANO – doplnit druhou nosnost, výšku nebo dosah</option></select><div id="rz_venkovni_detaily" class="revize-outdoor-grid ${revizeHasOutdoorLimits(r)?'':'hidden'}"><div class="field"><label>Význam druhé sady hodnot</label><select id="rz_limitVariantKind"><option value="" ${!r.limitVariantKind?'selected':''}>Automaticky podle zadaných údajů</option><option value="outdoor" ${r.limitVariantKind==='outdoor'?'selected':''}>Vnitřní / venkovní provoz</option><option value="load" ${r.limitVariantKind==='load'?'selected':''}>Rozdílné zatížení koše</option><option value="unknown" ${r.limitVariantKind==='unknown'?'selected':''}>Neurčeno – ověřit podle dokumentace</option></select></div><div class="field"><label>Max. rychlost větru (m/s)</label><input id="rz_venkovni_vitr" value="${escapeHtml(revizeInputValue('venkovni_vitr',r.venkovni_vitr||'12'))}"${revizeInputAttrs('venkovni_vitr')}></div><div class="field"><label>Snížená výška zdvihu (m)</label><input id="rz_venkovni_vyska_podlahy" value="${escapeHtml(revizeInputValue('venkovni_vyska_podlahy',r.venkovni_vyska_podlahy))}"${revizeInputAttrs('venkovni_vyska_podlahy')}></div><div class="field"><label>Pracovní výška – druhá varianta (m)</label><input id="rz_venkovni_pracovni_vyska" value="${escapeHtml(revizeInputValue('venkovni_pracovni_vyska',r.venkovni_pracovni_vyska))}"${revizeInputAttrs('venkovni_pracovni_vyska')}></div><div class="field"><label>Boční dosah – druhá varianta (m)</label><input id="rz_venkovni_bocni_dosah" value="${escapeHtml(revizeInputValue('venkovni_bocni_dosah',r.venkovni_bocni_dosah))}"${revizeInputAttrs('venkovni_bocni_dosah')}></div><div class="field"><label>Nosnost – druhá varianta (kg)</label><input id="rz_venkovni_nosnost" value="${escapeHtml(revizeInputValue('venkovni_nosnost',r.venkovni_nosnost))}"${revizeInputAttrs('venkovni_nosnost')}></div><div class="field"><label>Počet osob – druhá varianta</label><input id="rz_venkovni_nosnost_osoby" type="number" min="0" inputmode="numeric" value="${escapeHtml(r.venkovni_nosnost_osoby||'')}"></div><div class="field"><label>Boční síla – druhá varianta (N)</label><input id="rz_venkovni_bocni_sila" value="${escapeHtml(revizeInputValue('venkovni_bocni_sila',r.venkovni_bocni_sila||'200'))}"${revizeInputAttrs('venkovni_bocni_sila')}></div></div><div class="helper">Aplikace nejdřív použije poslední revizi stejného stroje nebo stejného modelu. Hodnoty můžeš kdykoliv změnit.</div></div>
     <div class="revize-section-title">Revizní technik a měřicí přístroje</div><div class="field"><label>Revizní technik</label><select id="rz_rt_jmeno">${techOptions}</select></div><div class="field"><label>ZZ osvědčení</label><input id="rz_rt_zz_osvedceni" value="${rzVal('rt_zz_osvedceni')}"></div><div class="field"><label>ZZ oprávnění</label><input id="rz_rt_zz_opravneni" value="${rzVal('rt_zz_opravneni')}"></div><div class="field"><label>EZ osvědčení</label><input id="rz_rt_ez_osvedceni" value="${rzVal('rt_ez_osvedceni')}"></div><div class="field"><label>Měřicí přístroj</label><input id="rz_pristroj" value="${rzVal('pristroj')}"></div><div class="field"><label>Ev. číslo</label><input id="rz_pristroj_ev" value="${rzVal('pristroj_ev')}"></div><div class="field"><label>Kalibrace platná do</label><input id="rz_kalibrace" value="${rzVal('kalibrace')}"></div>
     <div class="revize-section-title">Kontrolní body - Strana A</div><div class="full"><div class="revize-check-grid">${revizeCheckRows(revizeAllA(r),r,'A')}</div></div>
     <div class="revize-section-title">Elektro měření</div><div class="full">${revizeElectroTable(r)}</div>
@@ -13603,7 +13610,7 @@ renderRevizeForm=function(r){
     });
   }
   const oldOutdoorLabel=[...document.querySelectorAll('#revizeFormBody label')].find(label=>String(label.textContent||'').trim()==='Snížená výška zdvihu (m)');
-  if(oldOutdoorLabel) oldOutdoorLabel.textContent='Snížená výška podlahy koše (m)';
+  if(oldOutdoorLabel) oldOutdoorLabel.textContent='Výška podlahy koše – druhá varianta (m)';
   const kindLabel=document.getElementById('rz_druh_kontroly')?.closest('.field')?.querySelector('label');
   if(kindLabel) kindLabel.textContent='Druh zkoušky';
   const outdoorField=document.getElementById('rz_venkovni_omezeni')?.closest('.field');
@@ -14279,6 +14286,7 @@ collectRevizeDraft=function(){
   r.kontrolaStartDate=document.getElementById('rz_kontrolaStartDate')?.value || r.kontrolaStartDate || r.revizeStartDate;
   r.kontrolaEndDate=document.getElementById('rz_kontrolaEndDate')?.value || r.kontrolaEndDate || r.kontrolaStartDate;
   r.datum_kontroly=r.revizeStartDate;
+  r.limitVariantKind=document.getElementById('rz_limitVariantKind')?.value ?? r.limitVariantKind ?? '';
   r.workingEnvelopes=revizeReadWorkingEnvelopesFromForm();
   if(revizeLegacyZ45EnvelopeAsOutdoor(r,r.workingEnvelopes)){
     r.venkovni_omezeni='NE';
@@ -14395,13 +14403,7 @@ revizePaperHtml = function(r){
     const right = techPairs[i + 1] || ['', ''];
     techRows.push([left[0], left[1], right[0], right[1]]);
   }
-  const normalizedModel = String(record.model || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const isZ45XC = normalizedModel === 'Z45XC' || normalizedModel === 'Z4525XC';
-  const techSectionTitle = hasOutdoorLimits
-    ? (isZ45XC
-      ? 'Technické údaje · hodnoty za lomítkem platí pro snížené zatížení koše.'
-      : `Technické údaje · hodnoty za lomítkem platí pro venkovní prostředí při rychlosti větru do ${record.venkovni_vitr || '12,5 m/s'}`)
-    : 'Technické údaje';
+  const techSectionTitle = revizeLimitsPrintTitle(record,hasOutdoorLimits);
   const techCell = value => escapeHtml(value || '').replace(/\n/g,'<br>');
   const techSectionTitleHtml = escapeHtml(techSectionTitle).replace(/m\/s/gi,'<span class="revize-unit-lower">m/s</span>');
   const techTable = `<table><tr><td class="section" colspan="4">${techSectionTitleHtml}</td></tr>${techRows.map(x=>`<tr><td><b>${escapeHtml(x[0])}</b></td><td>${techCell(x[1])}</td><td><b>${escapeHtml(x[2])}</b></td><td>${techCell(x[3])}</td></tr>`).join('')}</table>`;
@@ -14533,6 +14535,21 @@ function revizeSetPrintPair(page,labels,newLabel,value){
   labelCell.textContent=newLabel;
   labelCell.nextElementSibling.textContent=value || '';
 }
+function revizeLimitVariantKind(record){
+  if(['outdoor','load','unknown'].includes(record?.limitVariantKind)) return record.limitVariantKind;
+  const model=String(record?.model || '').toUpperCase().replace(/GENIE|JLG|[^A-Z0-9]/g,'');
+  const number=value=>Number(String(value || '').replace(',','.').match(/[0-9]+(?:\.[0-9]+)?/)?.[0]);
+  const capacities=[number(record?.nosnost),number(record?.venkovni_nosnost)].sort((a,b)=>a-b).join('/');
+  if((['Z45XC','Z4525XC'].includes(model) && capacities==='300/454') || (model==='660SJ' && capacities==='250/340') || (model==='860SJ' && capacities==='230/340') || (model==='1250AJP' && capacities==='230/450')) return 'load';
+  return revizeResolvedDeviceType(record)==='scissor' ? 'outdoor' : 'unknown';
+}
+function revizeLimitsPrintTitle(record,hasLimits){
+  if(!hasLimits) return 'Technické údaje';
+  const kind=revizeLimitVariantKind(record);
+  if(kind==='outdoor') return 'Technické údaje · dvojice: uvnitř / venku (vítr do '+revizeOutdoorWindValue(record.venkovni_vitr)+' m/s). Závorky upřesňují nosnost.';
+  if(kind==='load') return 'Technické údaje · dvojice odpovídají zatížení koše '+(record.nosnost || '?')+' / '+(record.venkovni_nosnost || '?')+'. Nejde o rozlišení uvnitř / venku.';
+  return 'Technické údaje · varianta 1 / 2: podmínky použití ověřit podle štítku a pracovního diagramu. Závorky upřesňují nosnost.';
+}
 function revizeEnvelopeLineHtml(envelope){
   const capacity=revizeFormatTechValue('nosnost',envelope.capacity);
   const persons=envelope.persons ? `${escapeHtml(envelope.persons)} os.` : 'počet osob ověřit';
@@ -14544,6 +14561,7 @@ function revizeEnvelopeLineHtml(envelope){
   return `<div><b>${escapeHtml(envelope.label)}:</b> ${escapeHtml(capacity)}; ${persons}${details ? '; '+details : ''}</div>`;
 }
 function revizeLegacyZ45EnvelopeAsOutdoor(record,envelopes){
+  if(['outdoor','unknown'].includes(record?.limitVariantKind)) return false;
   const model=revizeMachineModelKey(record?.model || '');
   if(model !== 'z-45/25xc' && model !== 'z-45xc') return false;
   const capacities=envelopes.map(row=>Number(String(row.capacity).replace(',','.')));
@@ -14552,6 +14570,7 @@ function revizeLegacyZ45EnvelopeAsOutdoor(record,envelopes){
 }
 const revizePaperHtmlAddendum5377Base=revizePaperHtml;
 revizePaperHtml=function(r){
+  r=JSON.parse(JSON.stringify(r || {}));
   const template=document.createElement('template');
   template.innerHTML=String(revizePaperHtmlAddendum5377Base(r) || '');
   const pages=template.content.querySelectorAll('.revize-paper');
@@ -15048,7 +15067,7 @@ document.getElementById('appCheckCacheBtn')?.addEventListener('click', async () 
   if(!confirm('Vyčistit pouze cache aplikace? Uložená data ve Firebase ani lokální záznamy se nemažou.')) return;
   await resetAppShellCacheOnly('app-check-cache');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.391');
+  url.searchParams.set('v','5.392');
   url.searchParams.set('appCheckCache', String(Date.now()));
   location.replace(url.toString());
 });
@@ -15057,7 +15076,7 @@ document.getElementById('closeAppCheckTopBtn')?.addEventListener('click', () => 
 async function forceRefreshApplication(){
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.391');
+  url.searchParams.set('v','5.392');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 }
@@ -15644,7 +15663,7 @@ setTimeout(() => {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  const APP_CURRENT_VERSION = '5.391';
+  const APP_CURRENT_VERSION = '5.392';
   let appUpdateRegistration = null;
   let appUpdateWorker = null;
   let appReloadingForUpdate = false;
@@ -15804,7 +15823,7 @@ if ('serviceWorker' in navigator) {
       const attempted = sessionStorage.getItem(APP_UPDATE_ATTEMPT_KEY) || '';
       if(attempted && compareAppVersions(APP_CURRENT_VERSION, attempted) >= 0) sessionStorage.removeItem(APP_UPDATE_ATTEMPT_KEY);
     }catch(e){}
-    navigator.serviceWorker.register(new URL('./sw.js?v=5.391', location.href), {scope:'./', updateViaCache:'none'})
+    navigator.serviceWorker.register(new URL('./sw.js?v=5.392', location.href), {scope:'./', updateViaCache:'none'})
       .then(registration => {
         installUpdateWatcher(registration);
         registration.update().catch(err => console.warn('Service worker update check failed', err));

@@ -6,7 +6,7 @@ const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 
 for(const text of [
   'Pracovní obálka podle zatížení koše',
-  'Snížená výška podlahy koše (m)',
+  'Výška podlahy koše – druhá varianta (m)',
   'Ověřovací zkouška',
   'Pravidelná zkouška',
   'Zahájení / ukončení revize',
