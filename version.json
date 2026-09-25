@@ -1,8 +1,8 @@
 {
-  "version": "5.392",
-  "appVersion": "1.6 / 5.392",
-  "cacheName": "liftcontrol-cz-v1-6-5-392",
-  "url": "./index.html?v=5.392",
-  "releasedAt": "2026-09-19",
-  "message": "Rozliseni provoznich variant revizi, oprava vazby pracovnich dosahu a tiskovych okraju."
+  "version": "5.393",
+  "appVersion": "1.6 / 5.393",
+  "cacheName": "liftcontrol-cz-v1-6-5-393",
+  "url": "./index.html?v=5.393",
+  "releasedAt": "2026-09-25",
+  "message": "Ochrana synchronizace revizí a oprav, mobilních formulářů a tiskových údajů."
 }
