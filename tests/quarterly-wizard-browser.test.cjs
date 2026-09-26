@@ -17,7 +17,7 @@ async function createPage(browser, viewport, userAgent){
   });
   await context.addInitScript(row => {
     localStorage.setItem('ctvrtletni_protokoly_local', JSON.stringify([row]));
-    localStorage.removeItem('liftcontrol_quarterly_protocol_draft_v2');
+
   }, known);
   const page = await context.newPage();
   const errors = [];
@@ -103,6 +103,25 @@ async function boxesDoNotOverlap(page, selectors){
   box = await unknown.page.locator('#wizard .modal-content').boundingBox();
   assert.ok(box && box.y >= 0 && box.y + box.height <= 1025, 'iPad modal must fit');
   await unknown.context.close();
+
+  const android = await createPage(browser,{width:393,height:852},'Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 Chrome/128.0.0.0 Mobile Safari/537.36');
+  await openWizard(android.page);
+  for(const [field,text] of [['umisteni','Jihlava'],['technik','Jan']]){
+    await android.page.evaluate(key=>{stepIndex=getStepsForRecord(rec).findIndex(s=>s.k===key);showStep();},field);
+    const input=android.page.locator('#mainInput');await input.click();
+    await input.dispatchEvent('compositionstart');await input.fill(text);await input.dispatchEvent('compositionend');
+    await android.page.locator('#suggestHost .suggest-item').first().waitFor();
+    await android.page.locator('#suggestHost .suggest-item').first().click();
+    assert.equal(await android.page.locator('#wizard.show').count(),1,'Suggestion must keep the wizard open');
+    assert.ok(await input.inputValue());
+    await android.page.evaluate(()=>saveQuarterlyDraft('android-test'));
+  }
+  assert.equal(android.errors.length,0,android.errors.join(' | '));
+  const savedDraft=await android.page.evaluate(()=>JSON.parse(localStorage.getItem('liftcontrol_quarterly_protocol_draft_v2')));
+  assert.ok(savedDraft,'Android draft survives locally');
+  await android.page.reload();
+  assert.ok(await android.page.evaluate(()=>localStorage.getItem('liftcontrol_quarterly_protocol_draft_v2')),'Draft survives reload');
+  await android.context.close();
 
   const desktop = await createPage(browser, {width:1440,height:900});
   await openWizard(desktop.page);
