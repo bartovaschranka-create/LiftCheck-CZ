@@ -1,8 +1,8 @@
 {
-  "version": "5.393",
-  "appVersion": "1.6 / 5.393",
-  "cacheName": "liftcontrol-cz-v1-6-5-393",
-  "url": "./index.html?v=5.393",
-  "releasedAt": "2026-09-25",
-  "message": "Ochrana synchronizace revizí a oprav, mobilních formulářů a tiskových údajů."
+  "version": "5.394",
+  "appVersion": "1.6 / 5.394",
+  "cacheName": "liftcontrol-cz-v1-6-5-394",
+  "url": "./index.html?v=5.394",
+  "releasedAt": "2026-10-01",
+  "message": "Přehledné pracovní parametry revizí, upravitelný výrobce a norma, jednoznačný výstup PDF."
 }
