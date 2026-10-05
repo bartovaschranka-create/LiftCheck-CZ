@@ -2352,6 +2352,7 @@ body.mobile-safe-mode .attention-count:hover{
   body.fault-report-printing #faultReportPreviewModal .photo-grid img{height:95mm;break-inside:avoid}
   @page{size:A4 portrait;margin:0}
 }
+.revize-verified-badge{display:inline-block;color:#166534;background:#dcfce7;padding:2px 5px;border-radius:4px;font-weight:700}
 </style>
 </head>
 <body>
@@ -2398,7 +2399,7 @@ body.mobile-safe-mode .attention-count:hover{
     <button type="button" class="side-link" id="sideSettingsBtn">Nastavení</button>
   </nav>
   <div class="side-bottom">
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.394</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.395</div>
   </div>
 </aside>
 
@@ -3203,6 +3204,7 @@ body.mobile-safe-mode .attention-count:hover{
 <script src="./assets/vendor/firebase-firestore-compat-10.12.5.js"></script>
 <script src="./assets/vendor/firebase-storage-compat-10.12.5.js"></script>
 <script src="./revize-machine-db.js"></script>
+<script src="./revize-verified-specs.js"></script>
 <script src="./manufacturer-directory.js"></script>
 <script src="./revision-data-corrections.js"></script>
 <script src="./liftcontrol-backup-data.js"></script>
@@ -5104,7 +5106,7 @@ async function runAppCheck(){
   renderAppCheckResults(results, true);
   appCheckAddResult(results, navigator.onLine ? 'ok' : 'error', 'Internet', navigator.onLine ? 'Zarizeni hlasi online rezim.' : 'Prohlizec hlasi offline rezim.');
   const versionText = document.querySelector('.side-version')?.textContent || '';
-  appCheckAddResult(results, versionText.includes('5.394') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
+  appCheckAddResult(results, versionText.includes('5.395') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
   appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
@@ -5184,14 +5186,14 @@ function scheduleEmptyAppRecovery(reason='startup'){
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.394');
+        url.searchParams.set('v','5.395');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
       }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_336') !== '1'){
         sessionStorage.setItem('liftcontrol_cache_recovery_5_336','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.394');
+        url.searchParams.set('v','5.395');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -12495,6 +12497,9 @@ function revizeWorkingEnvelopeRow(mode,values={}){
   };
 }
 function revizeWorkingEnvelopesFromImportedRow(row){
+  if(['unrestrictedCapacity','unrestrictedReach','restrictedCapacity','restrictedCapacityPersons','restrictedReach'].some(key=>Object.prototype.hasOwnProperty.call(row || {},key))){
+    return ['unrestricted','restricted'].map(mode=>revizeWorkingEnvelopeRow(mode,{capacity:row[mode+'Capacity'],persons:row[mode+'CapacityPersons'],reach:row[mode+'Reach'] ?? (mode==='unrestricted'?row.reach:''),workHeight:row[mode+'WorkHeight'] ?? (mode==='unrestricted'?row.workHeight:''),floorHeight:row[mode+'FloorHeight'] ?? (mode==='unrestricted'?row.floorHeight:'')}));
+  }
   const raw=String(row?.capacity || '').replace(/\s+/g,' ').trim();
   const model=revizeMachineModelKey(row?.model || row?.type || '');
   const pairs=revizeCapacityPersonPairs(raw);
@@ -12564,6 +12569,7 @@ function revizeWorkingEnvelopesForRecord(record){
   });
 }
 function revizeMapExcelMachineRow(r){
+  r=revizeVerifiedImportedDefaults(r);
   const capacity = revizeImportedCapacityDetails(r);
   const workingEnvelopes = revizeWorkingEnvelopesFromImportedRow(r);
   return {
@@ -12774,6 +12780,27 @@ revizeSameModelDefaults = function(info){
   });
   return out;
 };
+function revizeVerifiedFormSpec(){
+ return revizeVerifiedSpecFor({model:document.getElementById('rz_model')?.value || window.currentRevizeDraft?.model,vyrobni_cislo:document.getElementById('rz_vyrobni_cislo')?.value || window.currentRevizeDraft?.vyrobni_cislo});
+}
+function revizeVerifiedSuggestion(field,value){
+ const spec=revizeVerifiedFormSpec();
+ return spec && Object.prototype.hasOwnProperty.call(spec.fields,field) && revizeInputValue(field,spec.fields[field])===revizeInputValue(field,value) ? spec : null;
+}
+function applyRevizeVerifiedDefaults(set){
+ if(editingRevizeId)return;
+ const spec=revizeVerifiedFormSpec();if(!spec)return;
+ for(const [field,value] of Object.entries(spec.fields))set('rz_'+field,value);
+ for(const field of spec.unknown || []){
+  const input=document.getElementById('rz_'+field);
+  if(input && input.dataset.rzAuto!=='0'){input.value='';input.dataset.rzAuto='1';}
+ }
+ if(spec.mode)set('rz_limitVariantKind',spec.mode);
+ const draft=window.currentRevizeDraft;
+ if(draft){delete draft.workingEnvelopes;for(const field of Object.keys(spec.fields))draft[field]=document.getElementById('rz_'+field)?.value ?? draft[field];}
+ syncRevizeLoadInputsFromCapacity();
+}
+
 function revizeSuggestValues(field){ if(isRevizeLoadField(field)) return []; const rows=revizeMachineRows(); const values=[]; const add=v=>{ if(v!==undefined && v!==null && String(v).trim()){ const out=REVIZE_TECH_FIELDS.includes(field)?revizeInputValue(field,v):String(v).trim(); if(out) values.push(out); } };
   if(field==='vyrobce' || field==='norma'){ rows.forEach(row=>add(row[field==='vyrobce'?'maker':'norma'])); if(field==='vyrobce')manufacturerDirectory().forEach(row=>add(row.displayLabel)); return [...new Set(values)]; }
   const currentSerial = document.getElementById('rz_vyrobni_cislo')?.value || window.currentRevizeDraft?.vyrobni_cislo || '';
@@ -12809,6 +12836,13 @@ function revizeSuggestValues(field){ if(isRevizeLoadField(field)) return []; con
   if(field === 'nabijec'){ add('ANO'); add('BEZ NABÍJEČE'); }
   return [...new Set(values)].slice(0,60);
 }
+const revizeSuggestValuesUnverified=revizeSuggestValues;
+revizeSuggestValues=function(field){
+ const historical=revizeSuggestValuesUnverified(field),spec=revizeVerifiedFormSpec();
+ if(!spec || !Object.prototype.hasOwnProperty.call(spec.fields,field))return historical;
+ const value=revizeInputValue(field,spec.fields[field]);
+ return [value,...historical.filter(item=>revizeInputValue(field,item)!==value)];
+};
 function revizePlaceSuggestValues(){
   const currentSerial = document.getElementById('rz_vyrobni_cislo')?.value || window.currentRevizeDraft?.vyrobni_cislo || '';
   const exact = revizeLatestMachine(currentSerial);
@@ -13051,6 +13085,7 @@ function revizeMachineResolutionWarnings(meta){
   });
 }
 function applyRevizeDefaultsFromSerial(serial){
+  if(editingRevizeId)return;
   serial = String(serial || '').trim();
   if(!serial) return;
   const now = Date.now();
@@ -13060,10 +13095,12 @@ function applyRevizeDefaultsFromSerial(serial){
   try{
     revizeRenderMachineResolutionWarnings([]);
     window.revizeCurrentMachineResolution=null;
-    const info=revizeLatestMachine(serial);
+    const existing=revizeLatestMachine(serial);
+    const model=document.getElementById('rz_model')?.value || window.currentRevizeDraft?.model;
+    const info=existing || (revizeVerifiedSpecFor({model,serial}) ? {model,serial} : null);
     if(!info) return;
     window.revizeApplyingDefaults = true;
-    const set=(id,val,force=false)=>{ const el=document.getElementById(id); if(!el || val===undefined || val===null || !String(val).trim()) return; const cur=String(el.value||'').trim(); if(force || !cur || el.dataset.rzAuto==='1'){ const key=id.replace(/^rz_/,''); el.value=revizeInputValue(key,val); el.dataset.rzAuto='1'; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); } };
+    const set=(id,val,force=false)=>{ const el=document.getElementById(id); if(!el || val===undefined || val===null || !String(val).trim()) return; const cur=String(el.value||'').trim(); if(force || (el.dataset.rzAuto!=='0' && (!cur || el.dataset.rzAuto==='1'))){ const key=id.replace(/^rz_/,''); el.value=revizeInputValue(key,val); el.dataset.rzAuto='1'; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); } };
     const inferredType=isRevizeOmmeTrailer(info)?'trailer':(info.deviceType||inferRevizeDeviceType([info.type,info.model].filter(Boolean).join(' '))||'scissor');
     const deckDefault = String(info.deck || '').trim() || (inferredType === 'scissor' ? 'ANO' : 'NE');
     const loadSensingDefault = String(info.loadSensing || '').trim() || (isRevizeOmmeTrailer({...info, typ_zarizeni:inferredType}) ? 'NE' : 'ANO');
@@ -13101,6 +13138,7 @@ function applyRevizeDefaultsFromSerial(serial){
     }
     window.revizeCurrentMachineResolution={serial:info.serial || serial,model:info.model || info.type || '',year:info.year || '',fields:resolutionMeta};
     revizeRenderMachineResolutionWarnings(revizeMachineResolutionWarnings(resolutionMeta));
+    applyRevizeVerifiedDefaults(set);
     syncNormaFromRokVyroby(false);
   }catch(e){
     console.error('Revize defaults from serial failed', e);
@@ -13193,10 +13231,12 @@ function attachRevizeSuggestInput(input, getItems, onPick){
   let openTimer=null;
   const close=()=>{ clearTimeout(openTimer); openTimer=null; box.classList.remove('show'); box.innerHTML=''; };
   let cachedItems=[];
-  let cachedAt=0;
+  let cachedAt=0, cachedContext='';
   const getCachedItems=()=>{
     const now=Date.now();
-    if(!cachedAt || now-cachedAt>5000){
+    const context=[document.getElementById('rz_model')?.value,document.getElementById('rz_vyrobni_cislo')?.value].join('|');
+    if(!cachedAt || now-cachedAt>5000 || context!==cachedContext){
+      cachedContext=context;
       cachedItems=uniqueNonEmpty(getItems ? getItems() : []);
       cachedAt=now;
     }
@@ -13206,9 +13246,11 @@ function attachRevizeSuggestInput(input, getItems, onPick){
     const q=String(input.value||'').trim();
     if(input.id==='rz_vyrobni_cislo' && q.length < 2){ close(); return; }
     const all=getCachedItems();
-    const items=(q ? (input.id==='rz_vyrobni_cislo' ? filterSerialSuggestions(all,q) : filterSuggestions(all,q)) : all).slice(0,8);
+    const verified=all.filter(v=>revizeVerifiedSuggestion(input.id.replace(/^rz_/,''),v));
+    const filtered=q ? (input.id==='rz_vyrobni_cislo' ? filterSerialSuggestions(all,q) : filterSuggestions(all,q)) : all;
+    const items=[...verified,...filtered.filter(v=>!verified.includes(v))].slice(0,8);
     if(!items.length){ close(); return; }
-    box.innerHTML=items.map(v=>`<div class="smart-suggest-item" role="option" tabindex="-1" data-value="${escapeHtml(v)}">${escapeHtml(input.id==='rz_umisteni' ? v : suggestionDisplayText(v))}</div>`).join('');
+    box.innerHTML=items.map(v=>`<div class="smart-suggest-item" role="option" tabindex="-1" data-value="${escapeHtml(v)}">${escapeHtml(input.id==='rz_umisteni' ? v : suggestionDisplayText(v))}${revizeVerifiedSuggestion(input.id.replace(/^rz_/,''),v)?'<small class="revize-verified-badge" title="'+escapeHtml(revizeVerifiedSuggestion(input.id.replace(/^rz_/,''),v).source)+'"> ✓ Ověřeno výrobcem</small>':''}</div>`).join('');
     box.classList.add('show');
     let pickedAt = 0;
     const pick=(item, ev)=>{
@@ -13247,7 +13289,7 @@ function attachRevizeSuggestInput(input, getItems, onPick){
   input.addEventListener('blur', ()=>{ clearTimeout(openTimer); setTimeout(close, 260); });
 }
 function attachRevizeSuggests(){
-  const fields=['vyrobni_cislo','evidencni_cislo','vyrobce','model','rok_vyroby','norma','normy_revize','skupina','umisteni','provozovatel','hmotnost','nosnost','pracovni_vyska','vyska_podlahy','rozmer_plosiny','bocni_dosah','naklon','pohon','napajeni'];
+  const fields=['nosnost_osoby','bocni_sila','venkovni_pracovni_vyska','venkovni_vyska_podlahy','venkovni_bocni_dosah','venkovni_nosnost','venkovni_nosnost_osoby','venkovni_bocni_sila','venkovni_vitr','vyrobni_cislo','evidencni_cislo','vyrobce','model','rok_vyroby','norma','normy_revize','skupina','umisteni','provozovatel','hmotnost','nosnost','pracovni_vyska','vyska_podlahy','rozmer_plosiny','bocni_dosah','naklon','pohon','napajeni'];
   const isiOS = isIOSDevice();
   fields.forEach(k=>{
     const input=document.getElementById('rz_'+k);
@@ -13618,6 +13660,7 @@ function revizeOutdoorWindValue(value){
 const REVIZE_WORK_KEYS=['vyska_podlahy','pracovni_vyska','bocni_dosah','nosnost','nosnost_osoby','bocni_sila'];
 function revizeMapWorkingParameters(record){
   const r={...record};
+  if(String(r.venkovni_vitr || '').replace(/\s*m\/s$/,'').trim()==='12')r.venkovni_vitr='12,5';
   const modes={outdoor:'indoorOutdoor',load:'loadEnvelope',unknown:'',custom:''};
   if(Object.prototype.hasOwnProperty.call(modes,r.limitVariantKind))r.limitVariantKind=modes[r.limitVariantKind];
   if(r.manufacturerFacility && r.makerPlateAuthoritative===false)r.vyrobce=r.manufacturerFacility.displayLabel || r.vyrobce;
@@ -13641,7 +13684,7 @@ function revizeTechnicalFieldsHtml(r){
     `<div class="field"><label>Důvod snížených hodnot</label><select id="rz_limitVariantKind"><option value="">Vyberte typ omezení</option><option value="loadEnvelope" ${r.limitVariantKind==='loadEnvelope'?'selected':''}>Omezení pracovní obálky podle zatížení pracovního koše</option><option value="indoorOutdoor" ${r.limitVariantKind==='indoorOutdoor'?'selected':''}>Rozdílné hodnoty pro vnitřní / venkovní provoz</option></select></div>`+
     REVIZE_WORK_KEYS.map(k=>field('venkovni_'+k,revizeWorkFieldLabel(k))).join('')+
     revizeTechFieldKeys().filter(k=>!REVIZE_WORK_KEYS.includes(k)).map(k=>field(k)).join('')+
-    `<input id="rz_venkovni_omezeni" type="hidden" value="${revizeHasReducedParameters(r)?'ANO':'NE'}"><input id="rz_venkovni_vitr" type="hidden" value="${escapeHtml(r.venkovni_vitr || '')}">`;
+    `<input id="rz_venkovni_omezeni" type="hidden" value="${revizeHasReducedParameters(r)?'ANO':'NE'}"><div class="field"><label>Maximální rychlost větru [m/s]</label><input id="rz_venkovni_vitr" value="${escapeHtml(revizeOutdoorWindValue(r.venkovni_vitr))}" inputmode="decimal"></div>`;
 }
 
 function renderRevizeForm(r){ r.venkovni_vitr=revizeOutdoorWindValue(r.venkovni_vitr); const type = r.typ_zarizeni || 'scissor'; const deviceOptions = Object.entries(REVIZE_DEVICE_TYPES).map(([k,v])=>`<option value="${k}" ${type===k?'selected':''}>${escapeHtml(v.label)}</option>`).join(''); const techOptions = ['','Jan Bartoš','Petr Čáp','Lukáš Machačka','Vít Procházka','Ondřej Lakva'].map(x=>`<option value="${escapeHtml(x)}" ${r.rt_jmeno===x?'selected':''}>${escapeHtml(x||'Vyber technika')}</option>`).join('');
@@ -14179,7 +14222,7 @@ function arrangeRevizeDeviceFirst(){
   makeBlock('Provozovatel a protokol', [field('provozovatel'),field('umisteni'),field('protokol'),field('datum_kontroly'),field('platnost'),field('druh_kontroly')]);
   makeBlock('ZÁKLADNÍ HODNOTY', REVIZE_WORK_KEYS.map(field));
   makeBlock('SNÍŽENÉ / OMEZENÉ HODNOTY', [...REVIZE_WORK_KEYS.map(k=>field('venkovni_'+k)),field('limitVariantKind')]);
-  makeBlock('Další technické údaje', [field('hmotnost'),field('motohodiny'),...revizeTechFieldKeys().filter(k=>!REVIZE_WORK_KEYS.includes(k) && k!=='hmotnost' && !isRevizeLoadField(k)).map(field)]);
+  makeBlock('Další technické údaje', [field('hmotnost'),field('motohodiny'),field('venkovni_vitr'),...revizeTechFieldKeys().filter(k=>!REVIZE_WORK_KEYS.includes(k) && k!=='hmotnost' && !isRevizeLoadField(k)).map(field)]);
   makeBlock('Technik a měřicí přístroje', [field('rt_jmeno'),field('rt_zz_osvedceni'),field('rt_zz_opravneni'),field('rt_ez_osvedceni'),field('pristroj'),field('pristroj_ev'),field('kalibrace')]);
   makeExistingBlock('Kontrolní body - Strana A', sideA);
   makeExistingBlock('Elektro měření', electro);
@@ -14691,7 +14734,7 @@ revizePaperHtml=function(r){
   if(techKind?.nextElementSibling){ techKind.textContent='Druh zkoušky'; techKind.nextElementSibling.textContent=revizeTestKindLabel(r?.druh_kontroly); }
   if(pageA && revizeHasReducedParameters(r)){
     const kind=revizeLimitVariantKind(r);
-    const text=kind==='load' ? 'Při zvýšeném zatížení pracovního koše dochází k omezení pracovní obálky; omezené hodnoty jsou uvedeny u příslušných technických údajů.' : kind==='outdoor' ? 'Snížené hodnoty uvedené v závorce platí pro venkovní provoz při maximální rychlosti větru 12 m/s.' : 'Význam druhé sady hodnot ověřte podle dokumentace stroje.';
+    const text=kind==='load' ? 'Při zvýšeném zatížení pracovního koše dochází k omezení pracovní obálky; omezené hodnoty jsou uvedeny u příslušných technických údajů.' : kind==='outdoor' ? 'Snížené hodnoty uvedené v závorce platí pro venkovní provoz při maximální rychlosti větru 12,5 m/s.' : 'Význam druhé sady hodnot ověřte podle dokumentace stroje.';
     const note=document.createElement('div');note.className='revize-variant-note';note.style.cssText='font-size:8.4px;line-height:1.15';note.textContent=text;
     const table=[...pageA.querySelectorAll('table')].find(t=>t.textContent.includes('Technické údaje'));table?.after(note);
   }
@@ -14703,6 +14746,7 @@ function manufacturerDirectory(){
 }
 function revisionWarnings(r){
   const warnings=[];
+  if(revizeVerifiedModelKey(r.model)==='860SJ' && String(r.venkovni_nosnost || '').includes('340') && !String(r.venkovni_bocni_dosah || '').trim())warnings.push('Omezený dosah ověř podle pracovního diagramu konkrétního stroje.');
   if((revizeData || []).some(other=>other.id!==r.id && other.protokol===r.protokol && r.protokol))warnings.push('Číslo protokolu používá i jiná revize.');
   const number=v=>Number(String(v || '').replace(',','.').match(/\d+(?:\.\d+)?/)?.[0]);
   if(r.pracovni_vyska && r.vyska_podlahy && Math.abs(number(r.pracovni_vyska)-number(r.vyska_podlahy)-2)>0.15)warnings.push('Rozdíl pracovní výšky a výšky podlahy není přibližně 2 m.');
@@ -14719,7 +14763,7 @@ renderRevizeForm=function(r){
   const maker=document.getElementById('rz_vyrobce');
   if(!maker)return;
   const warning=document.createElement('div');warning.id='rz_dataWarnings';warning.setAttribute('role','status');warning.className='helper';maker.after(warning);
-  const updateWarnings=()=>{const copy={...r};for(const key of ['protokol','pracovni_vyska','vyska_podlahy','nosnost','venkovni_nosnost','venkovni_pracovni_vyska','venkovni_vyska_podlahy','venkovni_bocni_dosah','limitVariantKind']){const input=document.getElementById('rz_'+key);if(input)copy[key]=input.value;}warning.textContent=revisionWarnings(copy).join(' ');};
+  const updateWarnings=()=>{const copy={...r};for(const key of ['model','protokol','pracovni_vyska','vyska_podlahy','nosnost','venkovni_nosnost','venkovni_pracovni_vyska','venkovni_vyska_podlahy','venkovni_bocni_dosah','limitVariantKind']){const input=document.getElementById('rz_'+key);if(input)copy[key]=input.value;}warning.textContent=revisionWarnings(copy).join(' ');};
   const wrap=document.getElementById('revizeFormWrap');if(wrap){if(wrap._reviewWarning)wrap.removeEventListener('input',wrap._reviewWarning);wrap._reviewWarning=updateWarnings;wrap.addEventListener('input',updateWarnings);}updateWarnings();
 };
 const collectRevizeDraftReviewedBase=collectRevizeDraft;
@@ -15202,7 +15246,7 @@ document.getElementById('appCheckCacheBtn')?.addEventListener('click', async () 
   if(!confirm('Vyčistit pouze cache aplikace? Uložená data ve Firebase ani lokální záznamy se nemažou.')) return;
   await resetAppShellCacheOnly('app-check-cache');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.394');
+  url.searchParams.set('v','5.395');
   url.searchParams.set('appCheckCache', String(Date.now()));
   location.replace(url.toString());
 });
@@ -15211,7 +15255,7 @@ document.getElementById('closeAppCheckTopBtn')?.addEventListener('click', () => 
 async function forceRefreshApplication(){
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.394');
+  url.searchParams.set('v','5.395');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 }
@@ -15798,7 +15842,7 @@ setTimeout(() => {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  const APP_CURRENT_VERSION = '5.394';
+  const APP_CURRENT_VERSION = '5.395';
   let appUpdateRegistration = null;
   let appUpdateWorker = null;
   let appReloadingForUpdate = false;
@@ -15958,7 +16002,7 @@ if ('serviceWorker' in navigator) {
       const attempted = sessionStorage.getItem(APP_UPDATE_ATTEMPT_KEY) || '';
       if(attempted && compareAppVersions(APP_CURRENT_VERSION, attempted) >= 0) sessionStorage.removeItem(APP_UPDATE_ATTEMPT_KEY);
     }catch(e){}
-    navigator.serviceWorker.register(new URL('./sw.js?v=5.394', location.href), {scope:'./', updateViaCache:'none'})
+    navigator.serviceWorker.register(new URL('./sw.js?v=5.395', location.href), {scope:'./', updateViaCache:'none'})
       .then(registration => {
         installUpdateWatcher(registration);
         registration.update().catch(err => console.warn('Service worker update check failed', err));

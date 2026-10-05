@@ -1,0 +1,41 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {chromium}=require(path.join(process.env.CODEX_NODE_MODULES,'playwright'));
+const root=path.resolve(__dirname,'..');
+(async()=>{const browser=await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'});try{
+ const context=await browser.newContext({serviceWorkers:'block'});await context.route('**/*',route=>{const u=new URL(route.request().url()),p=path.resolve(root,'.'+u.pathname);return u.origin==='http://127.0.0.1:4179'&&p.startsWith(root+path.sep)&&fs.existsSync(p)?route.fulfill({path:p}):route.abort();});
+ const page=await context.newPage();await page.goto('http://127.0.0.1:4179/index.html');
+ const result=await page.evaluate(()=>{
+ firebaseAvailable=false;
+ const cases=[['GS-2032','GS32D-12499'],['GS-2032','GS32P-157532'],['GS-2046','GS46D-25184'],['GS-2046','GS46P-144068'],['Z-45/25J','Z4525M-8160'],['Z-45 XC','Z4525XCM-1846'],['JLG 660SJ','X'],['1250AJP','X'],['1200SJP','X'],['860SJ','X'],['460SJ','X'],['800AJ','X']];
+ const fields=cases.map(([model,serial])=>revizeVerifiedSpecFor({model,serial})?.fields);
+ const outOfScope=[['GS-2032','GS32D-10100'],['GS-2032','GS32D-25101'],['GS-2632','GS32D-12499'],['450AJ','X'],['520AJ','X'],['Toucan 12E','X']].map(([model,serial])=>!!revizeVerifiedSpecFor({model,serial}));
+ const structured=revizeWorkingEnvelopesFromImportedRow({model:'1250AJP',unrestrictedCapacity:'231',unrestrictedReach:'18',restrictedCapacity:'451',restrictedCapacityPersons:'4',restrictedReach:'15'});
+ const imported=revizeWorkingEnvelopesFromImportedRow(revizeVerifiedImportedDefaults({model:'660SJ'}));
+ const old={...revizeDefaultRecord(),id:'old',model:'GS-2032',vyrobni_cislo:'GS32D-12499',pracovni_vyska:'10,10',vyska_podlahy:'8,10',nosnost:'230',nosnost_osoby:'1',venkovni_vitr:'12'};const original=JSON.stringify(old);revizeData=[old];openRevizeForm('old');applyRevizeDefaultsFromSerial(old.vyrobni_cislo);
+ const oldValues={height:document.getElementById('rz_vyska_podlahy').value,capacity:document.getElementById('rz_nosnost').value,wind:document.getElementById('rz_venkovni_vitr').value,rawUnchanged:original===JSON.stringify(old)};
+ closeRevizeForm();openRevizeForm();document.getElementById('rz_vyrobni_cislo').value='GS32D-12499';window.lastRevizeSerialDefaultAt=0;applyRevizeDefaultsFromSerial('GS32D-12499');
+ const values=Object.fromEntries(['pracovni_vyska','vyska_podlahy','nosnost','venkovni_pracovni_vyska','venkovni_vyska_podlahy','venkovni_nosnost'].map(k=>[k,document.getElementById('rz_'+k).value]));
+ document.querySelectorAll('.rz-hidden-step').forEach(el=>el.classList.remove('rz-hidden-step'));
+ return {fields,outOfScope,structured,imported,oldValues,values};
+ });
+ assert.deepEqual(result.fields[0],{pracovni_vyska:'8,13',vyska_podlahy:'6,13',nosnost:'363',nosnost_osoby:'2',bocni_sila:'400',venkovni_pracovni_vyska:'6,88',venkovni_vyska_podlahy:'4,88',venkovni_nosnost:'363',venkovni_nosnost_osoby:'1',venkovni_bocni_sila:'200',venkovni_vitr:'12,5'});
+ assert.equal(result.fields[1].vyska_podlahy,'5,92');assert.equal(result.fields[1].venkovni_vyska_podlahy,undefined);
+ assert.equal(result.fields[2].venkovni_vyska_podlahy,'4,98');assert.equal(result.fields[2].nosnost,'544');assert.equal(result.fields[3].pracovni_vyska,'8,10');assert.equal(result.fields[3].vyska_podlahy,'6,10');
+ assert.equal(result.fields[4].pracovni_vyska,'16,05');assert.equal(result.fields[4].bocni_dosah,'7,52');
+ assert.equal(result.fields[5].nosnost,'300');assert.equal(result.fields[5].venkovni_nosnost,'454');assert.equal(result.fields[5].bocni_dosah,'7,55');assert.equal(result.fields[5].venkovni_bocni_dosah,undefined);
+ assert.equal(result.fields[6].bocni_dosah,'17,40');assert.equal(result.fields[6].venkovni_bocni_dosah,'14,61');assert.equal(result.fields[6].nosnost_osoby,undefined);
+ assert.equal(result.fields[7].bocni_dosah,'19,3');assert.equal(result.fields[7].venkovni_bocni_dosah,'16,2');
+ assert.equal(result.fields[8].venkovni_vyska_podlahy,'35,1');assert.equal(result.fields[8].venkovni_bocni_dosah,'19,8');assert.equal(result.fields[8].pracovni_vyska,undefined);
+ assert.equal(result.fields[9].venkovni_nosnost,'340');assert.equal(result.fields[9].venkovni_bocni_dosah,undefined);assert.equal(result.fields[10].bocni_dosah,'12,07');assert.equal(result.fields[11].pracovni_vyska,'26,38');
+ assert.ok(result.outOfScope.every(x=>!x));assert.equal(result.structured[1].reach,'15');assert.equal(result.structured[1].persons,'4');assert.equal(result.imported[1].reach,'14,61');
+ assert.deepEqual(result.oldValues,{height:'8,10',capacity:'230',wind:'12,5',rawUnchanged:true});assert.equal(result.values.vyska_podlahy,'6,13');assert.equal(result.values.venkovni_vyska_podlahy,'4,88');assert.equal(result.values.nosnost,'363');
+ const input=page.locator('#rz_vyska_podlahy');await input.fill('8,10');await input.click();const suggestion=input.locator('..').locator('.smart-suggest-item').first();await suggestion.waitFor();assert.match(await suggestion.textContent(),/✓ Ověřeno výrobcem/);await suggestion.click();assert.equal(await input.inputValue(),'6,13');
+ const output=await page.evaluate(()=>{const record=collectRevizeDraft();return {record,html:revizePaperHtml(record),warning:revisionWarnings({model:'860SJ',venkovni_nosnost:'340'})};});assert.doesNotMatch(JSON.stringify(output.record),/Ověřeno výrobcem/);assert.doesNotMatch(output.html,/Ověřeno výrobcem/);assert.match(output.html,/12,5 m\/s/);assert.ok(output.warning.some(w=>w==='Omezený dosah ověř podle pracovního diagramu konkrétního stroje.'));
+ const restricted=await page.evaluate(()=>{
+  closeRevizeForm();openRevizeForm();document.getElementById('rz_model').value='860SJ';document.getElementById('rz_vyrobni_cislo').value='VERIFIED-860-TEST';window.lastRevizeSerialDefaultAt=0;applyRevizeDefaultsFromSerial('VERIFIED-860-TEST');
+  const reach=document.getElementById('rz_venkovni_bocni_dosah').value,capacity=document.getElementById('rz_venkovni_nosnost').value;
+  const base=document.getElementById('rz_bocni_dosah');base.value='';base.dispatchEvent(new Event('input',{bubbles:true}));window.lastRevizeSerialDefaultAt=0;applyRevizeDefaultsFromSerial('VERIFIED-860-TEST');
+  return {reach,capacity,manual:base.value};
+ });assert.deepEqual(restricted,{reach:'',capacity:'340',manual:''});
+ console.log('verified-specs: all supplied models, serial boundaries, structured priority, old-record preservation, new defaults, clean badge selection and PDF wind passed');
+}finally{await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1;});
