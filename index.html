@@ -2398,7 +2398,7 @@ body.mobile-safe-mode .attention-count:hover{
     <button type="button" class="side-link" id="sideSettingsBtn">Nastavení</button>
   </nav>
   <div class="side-bottom">
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.393</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.394</div>
   </div>
 </aside>
 
@@ -5104,7 +5104,7 @@ async function runAppCheck(){
   renderAppCheckResults(results, true);
   appCheckAddResult(results, navigator.onLine ? 'ok' : 'error', 'Internet', navigator.onLine ? 'Zarizeni hlasi online rezim.' : 'Prohlizec hlasi offline rezim.');
   const versionText = document.querySelector('.side-version')?.textContent || '';
-  appCheckAddResult(results, versionText.includes('5.393') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
+  appCheckAddResult(results, versionText.includes('5.394') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
   appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
@@ -5184,14 +5184,14 @@ function scheduleEmptyAppRecovery(reason='startup'){
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.393');
+        url.searchParams.set('v','5.394');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
       }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_336') !== '1'){
         sessionStorage.setItem('liftcontrol_cache_recovery_5_336','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.393');
+        url.searchParams.set('v','5.394');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -11888,7 +11888,7 @@ function revizeSyncElectricalDependencies(r){
 }
 function syncNormaFromRokVyroby(force=false){
   const rok=document.getElementById('rz_rok_vyroby'); const norma=document.getElementById('rz_norma'); if(!rok || !norma) return;
-  const suggested=normaPodleRokuVyroby(rok.value); if(suggested && (force || !String(norma.value||'').trim() || norma.dataset.auto==='1')){ norma.value=suggested; norma.dataset.auto='1'; }
+  const suggested=normaPodleRokuVyroby(rok.value); if(suggested && !window.currentRevizeDraft?.normaManual && norma.dataset.auto!=='0' && (!String(norma.value||'').trim() || norma.dataset.auto==='1')){ norma.value=suggested; norma.dataset.auto='1'; }
   const normy=document.getElementById('rz_normy_revize');
   const formRecord = {
     rok_vyroby: rok.value,
@@ -12143,7 +12143,7 @@ function ensureRevizeMeterText(value){
 }
 function revizeDefaultMeter(){ try{ return ensureRevizeMeterText(localStorage.getItem('revize_last_meter') || ''); }catch(e){ return REVIZE_DEFAULT_METER; } }
 function revizeMeterInfo(text){ const s=String(text||''); const ev=[...s.matchAll(/v\.?\s*č\.?\s*[:.]?\s*([A-Za-z0-9/.-]+)/gi)].map(m=>m[1]); const kal=[...s.matchAll(/kal\.?\s*do\s*([0-9]{1,2}\.[0-9]{1,2}\.[0-9]{2,4})/gi)].map(m=>m[1]); return {ev:ev.join(', '), kalibrace:kal.join(', ')}; }
-function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,revizeStartDate:d,revizeEndDate:d,kontrolaStartDate:d,kontrolaEndDate:d,platnost:addMonthsToDate(d,12),motohodiny:'',druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o. - Lipová 72, 251 01 Modletice',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',nosnost_osoby:'',bocni_sila:'400',workingEnvelopes:[],venkovni_omezeni:'NE',venkovni_vitr:'12,5',venkovni_pracovni_vyska:'',venkovni_vyska_podlahy:'',venkovni_bocni_dosah:'',venkovni_nosnost:'',venkovni_nosnost_osoby:'',venkovni_bocni_sila:'200',naklon_x:'',naklon_y:'',stoupavost_stupne:'',stoupavost_procento:'',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',predal_datum:d,prevzal_datum:d,norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.384'}; }
+function revizeDefaultRecord(){ const d=todayLocal(); const meter=revizeDefaultMeter(); const mi=revizeMeterInfo(meter); return {id:uid(),protokol:revizeNextNumber(),datum_kontroly:d,revizeStartDate:d,revizeEndDate:d,kontrolaStartDate:d,kontrolaEndDate:d,platnost:addMonthsToDate(d,12),motohodiny:'',druh_kontroly:'Pravidelná',provozovatel:'Zeppelin CZ s.r.o. - Lipová 72, 251 01 Modletice',umisteni:'',typ_zarizeni:'scissor',skupina:'A/3',typ:'Nůžková plošina',nosnost_osoby:'',bocni_sila:'400',workingEnvelopes:[],venkovni_omezeni:'NE',venkovni_vitr:'12,5',venkovni_pracovni_vyska:'',venkovni_vyska_podlahy:'',venkovni_bocni_dosah:'',venkovni_nosnost:'',venkovni_nosnost_osoby:'',venkovni_bocni_sila:'',naklon_x:'',naklon_y:'',stoupavost_stupne:'',stoupavost_procento:'',rt_jmeno:'Jan Bartoš',rt_zz_osvedceni:'0918/6/22/R,Z-ZZ-c',rt_zz_opravneni:'ev.č. 38/22/ZZ-M,O,R,Z-b,b1',rt_ez:'',rt_ez_osvedceni:'ev.č.EL: 0171/1/22/R-EZ-E2A',pristroj:meter,pristroj_ev:mi.ev,kalibrace:mi.kalibrace,checks:{},notes:{},electro:{},zavady:'',termin_odstraneni:'',predal:'Jan Bartoš',prevzal:'Petr Čáp',predal_datum:d,prevzal_datum:d,norma:'',normy_revize:revizeDefaultNormy(),createdAt:new Date().toISOString(),appVersion:'1.6 / 5.384'}; }
 function revizeAnswerValue(value){ return String(value||'').trim().toUpperCase()==='NE' ? 'NE' : 'ANO'; }
 function revizeResult(r){
   r = r || {};
@@ -12775,6 +12775,7 @@ revizeSameModelDefaults = function(info){
   return out;
 };
 function revizeSuggestValues(field){ if(isRevizeLoadField(field)) return []; const rows=revizeMachineRows(); const values=[]; const add=v=>{ if(v!==undefined && v!==null && String(v).trim()){ const out=REVIZE_TECH_FIELDS.includes(field)?revizeInputValue(field,v):String(v).trim(); if(out) values.push(out); } };
+  if(field==='vyrobce' || field==='norma'){ rows.forEach(row=>add(row[field==='vyrobce'?'maker':'norma'])); if(field==='vyrobce')manufacturerDirectory().forEach(row=>add(row.displayLabel)); return [...new Set(values)]; }
   const currentSerial = document.getElementById('rz_vyrobni_cislo')?.value || window.currentRevizeDraft?.vyrobni_cislo || '';
   const exact = revizeLatestMachine(currentSerial);
   const exactKey = revizeFieldSourceKey(field);
@@ -13270,7 +13271,7 @@ function setupRevizeWizard(){ markRevizeManualInputs(); attachRevizeSuggests(); 
   const moveStep=dir=>{ revizeStepIndex+=dir; const total=Math.max(1,titles.length); revizeStepIndex=Math.max(0,Math.min(revizeStepIndex,total-1)); while(skipStep(revizeStepIndex)){ revizeStepIndex+=dir; revizeStepIndex=Math.max(0,Math.min(revizeStepIndex,total-1)); if(revizeStepIndex===0 || revizeStepIndex===total-1) break; } };
   function paint(){ const total=Math.max(1,titles.length); revizeStepIndex=Math.max(0,Math.min(revizeStepIndex,total-1)); kids.forEach(el=>el.classList.toggle('rz-hidden-step', Number(el.dataset.rzStep)!==revizeStepIndex)); const label=titles[revizeStepIndex]?.textContent||'Revize ZZ'; bar.innerHTML=`<div><strong>${escapeHtml(label)}</strong><br><span>Postupné zadávání revize ZZ</span></div><span>Krok ${revizeStepIndex+1}/${total}</span>`; const prev=document.getElementById('prevRevizeStepBtn'), next=document.getElementById('nextRevizeStepBtn'), save=document.getElementById('saveRevizeBtn'), prog=document.getElementById('revizeStepProgress'); if(prev) prev.disabled=revizeStepIndex===0; if(next) next.classList.toggle('hidden', revizeStepIndex>=total-1); if(save) save.classList.toggle('hidden', revizeStepIndex<total-1); if(prog) prog.textContent=`${revizeStepIndex+1}/${total}`; }
   function focusCurrentStep(){ const nodes=kids.filter(el=>Number(el.dataset.rzStep)===revizeStepIndex); const target=nodes.map(el=>el.matches?.('input,select,textarea')?el:el.querySelector?.('input,select,textarea')).find(Boolean); setTimeout(()=>target?.focus(),0); }
-  const rokVyroby=document.getElementById('rz_rok_vyroby'), norma=document.getElementById('rz_norma'); rokVyroby?.addEventListener('change',()=>syncNormaFromRokVyroby(true)); rokVyroby?.addEventListener('input',()=>syncNormaFromRokVyroby(false)); norma?.addEventListener('input',()=>{ norma.dataset.auto='0'; }); syncNormaFromRokVyroby(false); const prevBtn=document.getElementById('prevRevizeStepBtn'), nextBtn=document.getElementById('nextRevizeStepBtn'); if(prevBtn) prevBtn.onclick=()=>{ safeCollectRevizeDraft('revize previous'); moveStep(-1); paint(); focusCurrentStep(); }; if(nextBtn) nextBtn.onclick=()=>{ const serialValue=document.getElementById('rz_vyrobni_cislo')?.value; const shouldApply=revizeStepIndex===0 && String(serialValue||'').trim(); if(shouldApply && !isIOSDevice()) applyRevizeDefaultsFromSerial(serialValue); safeCollectRevizeDraft('revize next'); moveStep(1); paint(); focusCurrentStep(); if(shouldApply && isIOSDevice()) setTimeout(()=>{ applyRevizeDefaultsFromSerial(serialValue); safeCollectRevizeDraft('revize iOS delayed defaults'); },180); }; paint();
+  const rokVyroby=document.getElementById('rz_rok_vyroby'), norma=document.getElementById('rz_norma'); rokVyroby?.addEventListener('change',()=>syncNormaFromRokVyroby(true)); rokVyroby?.addEventListener('input',()=>syncNormaFromRokVyroby(false)); norma?.addEventListener('input',()=>{ norma.dataset.auto='0'; if(window.currentRevizeDraft)window.currentRevizeDraft.normaManual=true; }); syncNormaFromRokVyroby(false); const prevBtn=document.getElementById('prevRevizeStepBtn'), nextBtn=document.getElementById('nextRevizeStepBtn'); if(prevBtn) prevBtn.onclick=()=>{ safeCollectRevizeDraft('revize previous'); moveStep(-1); paint(); focusCurrentStep(); }; if(nextBtn) nextBtn.onclick=()=>{ const serialValue=document.getElementById('rz_vyrobni_cislo')?.value; const shouldApply=revizeStepIndex===0 && String(serialValue||'').trim(); if(shouldApply && !isIOSDevice()) applyRevizeDefaultsFromSerial(serialValue); safeCollectRevizeDraft('revize next'); moveStep(1); paint(); focusCurrentStep(); if(shouldApply && isIOSDevice()) setTimeout(()=>{ applyRevizeDefaultsFromSerial(serialValue); safeCollectRevizeDraft('revize iOS delayed defaults'); },180); }; paint();
 }
 async function syncQuarterlyAfterRevize(r){
   const serial=normalizeSerial(r.vyrobni_cislo);
@@ -13614,11 +13615,40 @@ function revizeOutdoorWindValue(value){
   const normalized = revizeNormalizeTechInput('venkovni_vitr', value);
   return !normalized || normalized === '12' ? '12,5' : normalized;
 }
+const REVIZE_WORK_KEYS=['vyska_podlahy','pracovni_vyska','bocni_dosah','nosnost','nosnost_osoby','bocni_sila'];
+function revizeMapWorkingParameters(record){
+  const r={...record};
+  const modes={outdoor:'indoorOutdoor',load:'loadEnvelope',unknown:'',custom:''};
+  if(Object.prototype.hasOwnProperty.call(modes,r.limitVariantKind))r.limitVariantKind=modes[r.limitVariantKind];
+  if(r.manufacturerFacility && r.makerPlateAuthoritative===false)r.vyrobce=r.manufacturerFacility.displayLabel || r.vyrobce;
+  const envelopes=Array.isArray(r.workingEnvelopes)?r.workingEnvelopes:[];
+  if(envelopes.length){
+    const number=v=>Number(String(v || '').replace(',','.').match(/\d+(?:\.\d+)?/)?.[0]);
+    const first=envelopes.find(e=>number(e.capacity)===number(r.nosnost)) || envelopes.find(e=>e.mode==='unrestricted') || envelopes[0];
+    const second=envelopes.find(e=>e!==first);
+    for(const [prefix,e] of [['',first],['venkovni_',second]])if(e){
+      for(const [key,old] of Object.entries({vyska_podlahy:'floorHeight',pracovni_vyska:'workHeight',bocni_dosah:'reach',nosnost:'capacity',nosnost_osoby:'persons',bocni_sila:'sideForce'}))if(!String(r[prefix+key]??'').trim() && e[old]!=null)r[prefix+key]=e[old];
+    }
+    if(!r.limitVariantKind && second)r.limitVariantKind='loadEnvelope';
+  }
+  return r;
+}
+function revizeHasReducedParameters(r){return REVIZE_WORK_KEYS.some(k=>String(r?.['venkovni_'+k]??'').trim());}
+function revizeWorkFieldLabel(k){return ({vyska_podlahy:'Výška zdvihu podlahy pracovního koše [m]',pracovni_vyska:'Pracovní výška [m]',bocni_dosah:'Vodorovný dosah [m]',nosnost:'Zatížení pracovního koše [kg]',nosnost_osoby:'Počet osob',bocni_sila:'Boční síla [N]'})[k];}
+function revizeTechnicalFieldsHtml(r){
+  const field=(key,label)=>`<div class="field"><label>${escapeHtml(label || revizeFieldLabel(key))}</label><input id="rz_${key}" value="${escapeHtml(revizeInputValue(key,r[key]))}"${revizeInputAttrs(key)}${isRevizeLoadField(key)?' readonly':''}></div>`;
+  return '<div class="revize-section-title">Technické údaje</div>'+REVIZE_WORK_KEYS.map(k=>field(k,revizeWorkFieldLabel(k))).join('')+
+    `<div class="field"><label>Důvod snížených hodnot</label><select id="rz_limitVariantKind"><option value="">Vyberte typ omezení</option><option value="loadEnvelope" ${r.limitVariantKind==='loadEnvelope'?'selected':''}>Omezení pracovní obálky podle zatížení pracovního koše</option><option value="indoorOutdoor" ${r.limitVariantKind==='indoorOutdoor'?'selected':''}>Rozdílné hodnoty pro vnitřní / venkovní provoz</option></select></div>`+
+    REVIZE_WORK_KEYS.map(k=>field('venkovni_'+k,revizeWorkFieldLabel(k))).join('')+
+    revizeTechFieldKeys().filter(k=>!REVIZE_WORK_KEYS.includes(k)).map(k=>field(k)).join('')+
+    `<input id="rz_venkovni_omezeni" type="hidden" value="${revizeHasReducedParameters(r)?'ANO':'NE'}"><input id="rz_venkovni_vitr" type="hidden" value="${escapeHtml(r.venkovni_vitr || '')}">`;
+}
+
 function renderRevizeForm(r){ r.venkovni_vitr=revizeOutdoorWindValue(r.venkovni_vitr); const type = r.typ_zarizeni || 'scissor'; const deviceOptions = Object.entries(REVIZE_DEVICE_TYPES).map(([k,v])=>`<option value="${k}" ${type===k?'selected':''}>${escapeHtml(v.label)}</option>`).join(''); const techOptions = ['','Jan Bartoš','Petr Čáp','Lukáš Machačka','Vít Procházka','Ondřej Lakva'].map(x=>`<option value="${escapeHtml(x)}" ${r.rt_jmeno===x?'selected':''}>${escapeHtml(x||'Vyber technika')}</option>`).join('');
   document.getElementById('revizeFormBody').innerHTML = `<div class="revize-form-grid">
     <div class="revize-section-title">Protokol</div><div class="field"><label>Protokol č.</label><input id="rz_protokol" value="${rzVal('protokol')}"></div><div class="field"><label>Datum kontroly</label><input id="rz_datum_kontroly" type="date" value="${rzVal('datum_kontroly')}"></div><div class="field"><label>Platnost do</label><input id="rz_platnost" type="date" value="${rzVal('platnost')}"></div><div class="field"><label>Druh kontroly</label>${revizeDruhKontrolySelect(r.druh_kontroly)}</div><div class="field"><label>Motohodiny</label><input id="rz_motohodiny" type="number" inputmode="numeric" value="${rzVal('motohodiny')}"></div>
     <div class="revize-section-title">Provozovatel a zařízení</div><div class="field wide"><label>Provozovatel</label><input id="rz_provozovatel" value="${rzVal('provozovatel')}"></div><div class="field wide"><label>Umístění / pobočka</label><input id="rz_umisteni" value="${rzVal('umisteni')}"></div><div class="field"><label>Typ zařízení</label><select id="rz_typ_zarizeni">${deviceOptions}</select></div><div class="field"><label>Výrobce</label><input id="rz_vyrobce" value="${rzVal('vyrobce')}"></div><div class="field"><label>Model</label><input id="rz_model" value="${rzVal('model')}"></div><div class="field"><label>Výrobní číslo</label><input id="rz_vyrobni_cislo" value="${rzVal('vyrobni_cislo')}"></div><div class="field"><label>Evidenční číslo</label><input id="rz_evidencni_cislo" value="${rzVal('evidencni_cislo')}"></div><div class="field"><label>Rok výroby</label><input id="rz_rok_vyroby" value="${rzVal('rok_vyroby')}"></div><div class="field"><label>Použitá norma</label><input id="rz_norma" value="${rzVal('norma')}" placeholder="Automaticky podle roku výroby"></div><div class="field wide"><label>Revize zpracována dle norem</label><textarea id="rz_normy_revize" placeholder="Doplní se podle stroje / poslední revize">${rzVal('normy_revize') || escapeHtml(revizeDefaultNormy(r.norma))}</textarea></div><div class="field"><label>Skupina / typ</label><input id="rz_skupina" value="${rzVal('skupina')}"></div>
-    <div class="revize-section-title">Technické údaje</div>${revizeTechFieldKeys().map(k=>`<div class="field"><label>${escapeHtml(revizeFieldLabel(k))}</label><input id="rz_${k}" value="${escapeHtml(revizeInputValue(k,r[k]))}"${revizeInputAttrs(k)} ${['staticka_zatez','dynamicka_zatez'].includes(k)?'readonly title="Počítá se automaticky z nosnosti"':''}></div>`).join('')}<div class="field wide revize-outdoor-options"><label>Má stroj druhou sadu provozních hodnot?</label><select id="rz_venkovni_omezeni" ${revizeHasOutdoorLimits(r)?'':'data-rz-auto="1"'}><option value="NE" ${revizeHasOutdoorLimits(r)?'':'selected'}>NE – platí jedna sada hodnot</option><option value="ANO" ${revizeHasOutdoorLimits(r)?'selected':''}>ANO – doplnit druhou nosnost, výšku nebo dosah</option></select><div id="rz_venkovni_detaily" class="revize-outdoor-grid ${revizeHasOutdoorLimits(r)?'':'hidden'}"><div class="field"><label>Význam druhé sady hodnot</label><select id="rz_limitVariantKind"><option value="" ${!r.limitVariantKind?'selected':''}>Automaticky podle zadaných údajů</option><option value="indoorOutdoor" ${['outdoor','indoorOutdoor'].includes(r.limitVariantKind)?'selected':''}>Vnitřní / venkovní provoz</option><option value="loadEnvelope" ${['load','loadEnvelope'].includes(r.limitVariantKind)?'selected':''}>Rozdílné zatížení koše</option><option value="custom" ${['unknown','custom'].includes(r.limitVariantKind)?'selected':''}>Neurčeno – ověřit podle dokumentace</option></select></div><div class="field"><label>Max. rychlost větru (m/s)</label><input id="rz_venkovni_vitr" value="${escapeHtml(revizeInputValue('venkovni_vitr',r.venkovni_vitr||'12'))}"${revizeInputAttrs('venkovni_vitr')}></div><div class="field"><label>Snížená výška zdvihu (m)</label><input id="rz_venkovni_vyska_podlahy" value="${escapeHtml(revizeInputValue('venkovni_vyska_podlahy',r.venkovni_vyska_podlahy))}"${revizeInputAttrs('venkovni_vyska_podlahy')}></div><div class="field"><label>Pracovní výška – druhá varianta (m)</label><input id="rz_venkovni_pracovni_vyska" value="${escapeHtml(revizeInputValue('venkovni_pracovni_vyska',r.venkovni_pracovni_vyska))}"${revizeInputAttrs('venkovni_pracovni_vyska')}></div><div class="field"><label>Boční dosah – druhá varianta (m)</label><input id="rz_venkovni_bocni_dosah" value="${escapeHtml(revizeInputValue('venkovni_bocni_dosah',r.venkovni_bocni_dosah))}"${revizeInputAttrs('venkovni_bocni_dosah')}></div><div class="field"><label>Nosnost – druhá varianta (kg)</label><input id="rz_venkovni_nosnost" value="${escapeHtml(revizeInputValue('venkovni_nosnost',r.venkovni_nosnost))}"${revizeInputAttrs('venkovni_nosnost')}></div><div class="field"><label>Počet osob – druhá varianta</label><input id="rz_venkovni_nosnost_osoby" type="number" min="0" inputmode="numeric" value="${escapeHtml(r.venkovni_nosnost_osoby||'')}"></div><div class="field"><label>Boční síla – druhá varianta (N)</label><input id="rz_venkovni_bocni_sila" value="${escapeHtml(revizeInputValue('venkovni_bocni_sila',r.venkovni_bocni_sila||'200'))}"${revizeInputAttrs('venkovni_bocni_sila')}></div></div><div class="helper">Aplikace nejdřív použije poslední revizi stejného stroje nebo stejného modelu. Hodnoty můžeš kdykoliv změnit.</div></div>
+    ${revizeTechnicalFieldsHtml(r)}
     <div class="revize-section-title">Revizní technik a měřicí přístroje</div><div class="field"><label>Revizní technik</label><select id="rz_rt_jmeno">${techOptions}</select></div><div class="field"><label>ZZ osvědčení</label><input id="rz_rt_zz_osvedceni" value="${rzVal('rt_zz_osvedceni')}"></div><div class="field"><label>ZZ oprávnění</label><input id="rz_rt_zz_opravneni" value="${rzVal('rt_zz_opravneni')}"></div><div class="field"><label>EZ osvědčení</label><input id="rz_rt_ez_osvedceni" value="${rzVal('rt_ez_osvedceni')}"></div><div class="field"><label>Měřicí přístroj</label><input id="rz_pristroj" value="${rzVal('pristroj')}"></div><div class="field"><label>Ev. číslo</label><input id="rz_pristroj_ev" value="${rzVal('pristroj_ev')}"></div><div class="field"><label>Kalibrace platná do</label><input id="rz_kalibrace" value="${rzVal('kalibrace')}"></div>
     <div class="revize-section-title">Kontrolní body - Strana A</div><div class="full"><div class="revize-check-grid">${revizeCheckRows(revizeAllA(r),r,'A')}</div></div>
     <div class="revize-section-title">Elektro měření</div><div class="full">${revizeElectroTable(r)}</div>
@@ -13691,15 +13721,6 @@ renderRevizeForm=function(r){
   if(oldOutdoorLabel) oldOutdoorLabel.textContent='Výška podlahy koše – druhá varianta (m)';
   const kindLabel=document.getElementById('rz_druh_kontroly')?.closest('.field')?.querySelector('label');
   if(kindLabel) kindLabel.textContent='Druh zkoušky';
-  const outdoorField=document.getElementById('rz_venkovni_omezeni')?.closest('.field');
-  if(outdoorField && !document.getElementById('rz_working_envelopes')){
-    const wrap=document.createElement('div');
-    wrap.id='rz_working_envelopes';
-    wrap.className='revize-working-envelopes hidden';
-    wrap.innerHTML='<strong>Pracovní obálka podle zatížení koše</strong><div class="helper">Nezávislé na režimu vnitřní / venkovní. Každý řádek je jeden konzistentní celek podle údajů výrobce.</div><div data-rz-envelope-cards></div>';
-    outdoorField.appendChild(wrap);
-  }
-  revizeSetWorkingEnvelopesInForm(revizeWorkingEnvelopesForRecord(r),{force:true,auto:false});
   markRevizeManualInputs();
 };
 function revizeFieldLabel(k){ const unit=revizeNumericUnit(k); const label=({hmotnost:'Hmotnost',nosnost:'Nosnost',nosnost_osoby:'Počet osob v koši',bocni_sila:'Boční síla',snimani_nosnosti:'Snímání nosnosti koše',pracovni_vyska:'Pracovní výška',vyska_podlahy:'Výška podlahy',bocni_dosah:'Boční dosah',naklon:'Náklon podvozku',naklon_x:'Podélný náklon',naklon_y:'Boční náklon',stoupavost_stupne:'Stoupavost ve stupních',stoupavost_procento:'Stoupavost v procentech',staticka_zatez:'Statická zátěž 125 %',dynamicka_zatez:'Dynamická zátěž 110 %',pohon:'Pohon',napajeni:'Napájení',stabilizatory:'Stabilizátory',deck:'Výsuvný deck',nabijec:'Nabíječ',zasuvka_kos:'Zásuvka v koši',rcd:'RCD'})[k]||k; return unit ? `${label} (${unit})` : label; }
@@ -13757,6 +13778,7 @@ async function saveRevizeFromForm(){
   if(revizeSaveInProgress) return;
   const r=safeCollectRevizeDraft('revize save');
   if(!r) return;
+  if(revizeHasReducedParameters(r) && !['loadEnvelope','indoorOutdoor'].includes(r.limitVariantKind)){alert('Vyber typ omezení pro zadané snížené hodnoty.');return;}
   if(!r.protokol || !r.datum_kontroly || !r.vyrobni_cislo){ alert('Vyplň minimálně protokol č., datum kontroly a výrobní číslo.'); return; }
   r.draft = false;
   r.draftSavedAt = '';
@@ -14154,15 +14176,10 @@ function arrangeRevizeDeviceFirst(){
   };
   makeBlock('Výrobní číslo', [field('vyrobni_cislo')]);
   makeBlock('Zařízení - potvrzení údajů', [field('typ_zarizeni'),field('vyrobce'),field('model'),field('evidencni_cislo'),field('rok_vyroby'),field('norma'),field('normy_revize'),field('skupina')]);
-  makeBlock('Provozovatel a protokol', [field('provozovatel'),field('umisteni'),field('protokol'),field('datum_kontroly'),field('platnost'),field('druh_kontroly'),field('motohodiny')]);
-  const pairedTechKeys = new Set(['naklon_x','naklon_y','stoupavost_stupne','stoupavost_procento']);
-  const technicalKeys = revizeTechFieldKeys().filter(k=>!pairedTechKeys.has(k));
-  const technicalFields = technicalKeys.map(field);
-  const outdoorPosition = Math.max(0, technicalKeys.indexOf('bocni_sila') + 1);
-  technicalFields.splice(outdoorPosition, 0, field('venkovni_omezeni'));
-  makeBlock('Technické údaje - potvrzení', technicalFields);
-  makeBlock('Náklon podvozku', [field('naklon_x'),field('naklon_y')], 'revize-pair-block');
-  makeBlock('Stoupavost', [field('stoupavost_stupne'),field('stoupavost_procento')], 'revize-pair-block');
+  makeBlock('Provozovatel a protokol', [field('provozovatel'),field('umisteni'),field('protokol'),field('datum_kontroly'),field('platnost'),field('druh_kontroly')]);
+  makeBlock('ZÁKLADNÍ HODNOTY', REVIZE_WORK_KEYS.map(field));
+  makeBlock('SNÍŽENÉ / OMEZENÉ HODNOTY', [...REVIZE_WORK_KEYS.map(k=>field('venkovni_'+k)),field('limitVariantKind')]);
+  makeBlock('Další technické údaje', [field('hmotnost'),field('motohodiny'),...revizeTechFieldKeys().filter(k=>!REVIZE_WORK_KEYS.includes(k) && k!=='hmotnost' && !isRevizeLoadField(k)).map(field)]);
   makeBlock('Technik a měřicí přístroje', [field('rt_jmeno'),field('rt_zz_osvedceni'),field('rt_zz_opravneni'),field('rt_ez_osvedceni'),field('pristroj'),field('pristroj_ev'),field('kalibrace')]);
   makeExistingBlock('Kontrolní body - Strana A', sideA);
   makeExistingBlock('Elektro měření', electro);
@@ -14228,7 +14245,7 @@ function setupRevizeWizard(){
   const rokVyroby=document.getElementById('rz_rok_vyroby'), norma=document.getElementById('rz_norma');
   rokVyroby?.addEventListener('change',()=>syncNormaFromRokVyroby(true));
   rokVyroby?.addEventListener('input',()=>syncNormaFromRokVyroby(false));
-  norma?.addEventListener('input',()=>{ norma.dataset.auto='0'; });
+  norma?.addEventListener('input',()=>{ norma.dataset.auto='0'; if(window.currentRevizeDraft)window.currentRevizeDraft.normaManual=true; });
   syncNormaFromRokVyroby(false);
   const prevBtn=document.getElementById('prevRevizeStepBtn'), nextBtn=document.getElementById('nextRevizeStepBtn');
   let revizeStepMoveInProgress=false;
@@ -14318,7 +14335,7 @@ collectRevizeDraft = function(){
   revizeNormalizeTiltAxes(r);
   r.umisteni = normalizeBranchAddress(r.umisteni, r.provozovatel);
   const suggestedNorma = normaPodleRokuVyroby(r.rok_vyroby);
-  if(suggestedNorma && (!String(r.norma||'').trim() || revizeNormyLooksAuto(r.normy_revize))) r.norma = suggestedNorma;
+  if(suggestedNorma && !r.normaManual && !String(r.norma||'').trim()) r.norma = suggestedNorma;
   revizeSyncElectricalDependencies(r);
   if(!String(r.normy_revize||'').trim() || revizeNormyLooksAuto(r.normy_revize)) r.normy_revize = revizeNormyForRecord(r);
   r.pristroj = ensureRevizeMeterText(r.pristroj);
@@ -14372,13 +14389,8 @@ collectRevizeDraft=function(){
   r.kontrolaEndDate=document.getElementById('rz_kontrolaEndDate')?.value || r.kontrolaEndDate || r.kontrolaStartDate;
   r.datum_kontroly=r.revizeStartDate;
   r.limitVariantKind=document.getElementById('rz_limitVariantKind')?.value ?? r.limitVariantKind ?? '';
-  r.workingEnvelopes=revizeReadWorkingEnvelopesFromForm();
-  if(revizeLegacyZ45EnvelopeAsOutdoor(r,r.workingEnvelopes)){
-    r.venkovni_omezeni='NE';
-    r.venkovni_nosnost='';
-    r.venkovni_nosnost_osoby='';
-    r.venkovni_bocni_sila='';
-  }
+  delete r.workingEnvelopes;
+  r.venkovni_omezeni=revizeHasReducedParameters(r)?'ANO':'NE';
   window.currentRevizeDraft=r;
   return r;
 };
@@ -14433,21 +14445,23 @@ revizePaperHtml = function(r){
   record.venkovni_vitr = revizeOutdoorWindValue(record.venkovni_vitr);
   revizeNormalizeTiltAxes(record);
   const suggestedNorma = normaPodleRokuVyroby(record.rok_vyroby);
-  if(suggestedNorma) record.norma = suggestedNorma;
+  if(suggestedNorma && !record.normaManual && !String(record.norma||'').trim()) record.norma = suggestedNorma;
   revizeSyncElectricalDependencies(record);
   record.normy_revize = revizeNormyForRecord(record);
   normalizeRevizeElectroForConfig(record);
   const normalizedTilt = normalizeRevizeTiltValue(record.naklon, record);
   if(normalizedTilt) record.naklon = normalizedTilt;
   Object.keys(REVIZE_NUMERIC_UNITS).forEach(k=>{ record[k]=revizeFormatTechValue(k, record[k]); });
-  const hasOutdoorLimits = revizeHasOutdoorLimits(record);
+  const hasOutdoorLimits = revizeHasReducedParameters(record);
   const variant=revizeLimitVariantKind(record);
-  const labels=variant==='outdoor' ? ['uvnitř','venku'] : variant==='load' ? ['při '+revizeFormatTechValue('nosnost',record.nosnost),'při '+revizeFormatTechValue('nosnost',record.venkovni_nosnost)] : ['varianta 1 – ověřit','varianta 2 – ověřit'];
-  const indoorOutdoor = (first,second) => !hasOutdoorLimits || !second ? (first || '') : `${first || '?'} (${labels[0]}) / ${second} (${labels[1]})`;
-  const capacityIndoor = revizeCapacityDisplay(record.nosnost, record.nosnost_osoby, record.bocni_sila);
-  const capacityOutdoor = hasOutdoorLimits ? revizeCapacityDisplay(record.venkovni_nosnost, record.venkovni_nosnost_osoby, record.venkovni_bocni_sila) : '';
-  const capacityLabels=variant==='load' ? (parseFloat(record.nosnost)<parseFloat(record.venkovni_nosnost) ? ['neomezená pracovní obálka','omezená pracovní obálka'] : ['omezená pracovní obálka','neomezená pracovní obálka']) : labels;
-  const capacityDisplay = capacityOutdoor ? `${capacityIndoor} (${capacityLabels[0]}) /\n${capacityOutdoor} (${capacityLabels[1]})` : capacityIndoor;
+  const indoorOutdoor = (first,second) => {
+    if(!hasOutdoorLimits || !String(second??'').trim())return first || '';
+    if(variant==='outdoor')return `${first || '—'} (${second})`;
+    if(variant==='load')return `${first || '—'} při ${record.nosnost || '?'} / ${second} při ${record.venkovni_nosnost || '?'}`;
+    return `${first || '—'} / ${second} (význam omezení ověřit)`;
+  };
+  const firstCapacity=revizeFormatTechValue('nosnost',record.nosnost), secondCapacity=revizeFormatTechValue('nosnost',record.venkovni_nosnost);
+  const capacityDisplay=!secondCapacity ? firstCapacity : variant==='outdoor' ? `${firstCapacity || '—'} (${secondCapacity})` : `${firstCapacity || '—'} / ${secondCapacity}`;
   let html = revizePaperHtmlOriginal5166(record)
     .replace(/<p><b>ZÁVĚREČNÉ VYHODNOCENÍ:<\/b>([\s\S]*?)<\/p>/, '<div class="revize-final-note"><b>ZÁVĚREČNÉ VYHODNOCENÍ:</b>$1</div>')
     .replace(/<p>Rozdělovník: (?:1x provozovatel|2x objednatel) \/ 1x revizní technik<\/p>/, '<div class="revize-distribution">Rozdělovník: 2x objednatel / 1x revizní technik</div>');
@@ -14455,18 +14469,19 @@ revizePaperHtml = function(r){
   html = html.replace(/<tr><td class="sign">Datum:<br>Podpis:<\/td><td class="sign">Datum:<br>Podpis:<\/td><\/tr>/, `<tr><td class="sign">Datum: ${escapeHtml(revizeSignatureDate(record,'predal_datum'))}<br>Podpis:</td><td class="sign">Datum: ${escapeHtml(revizeSignatureDate(record,'prevzal_datum'))}<br>Podpis:</td></tr>`);
   html = html.replace(/<table><tr><td><b>Zjištěné závady \/ opatření<\/b><br>[\s\S]*?<\/td><td><b>Vyhodnocení revize<\/b><br>([\s\S]*?)<\/td><\/tr><\/table>/, '<table><tr><td><b>Vyhodnocení revize</b><br>$1</td></tr></table>');
   let techRows = [
-    ['Hmotnost',record.hmotnost,'Nosnost',capacityDisplay],
-    ['Motohodiny',record.motohodiny ? String(record.motohodiny).replace(/\\s*h$/i,'') + ' h' : '','Druh revize',record.druh_kontroly],
-    ['Prac. výška',indoorOutdoor(record.pracovni_vyska,record.venkovni_pracovni_vyska),'Výška podlahy',indoorOutdoor(record.vyska_podlahy,record.venkovni_vyska_podlahy)],
-    ['Boční dosah',indoorOutdoor(record.bocni_dosah,record.venkovni_bocni_dosah),'Náklon podvozku',record.naklon],
-    isRevize150LoadTest(record) ? ['Zkouška přetížením 150 %',record.staticka_zatez,'',''] : ['Statická zkouška 125 %',record.staticka_zatez,'Pohon',record.pohon],
-    isRevize150LoadTest(record) ? ['Pohon',record.pohon,'Napájení / el. výbava',record.napajeni] : ['Dynamická zkouška 110 %',record.dynamicka_zatez,'Napájení / el. výbava',record.napajeni],
+    ['Výška zdvihu podlahy pracovního koše',indoorOutdoor(record.vyska_podlahy,record.venkovni_vyska_podlahy),'Pracovní výška',indoorOutdoor(record.pracovni_vyska,record.venkovni_pracovni_vyska)],
+    ['Vodorovný dosah',indoorOutdoor(record.bocni_dosah,record.venkovni_bocni_dosah),'Zatížení pracovního koše',capacityDisplay],
+    ['Počet osob',indoorOutdoor(record.nosnost_osoby,record.venkovni_nosnost_osoby),'Boční síla',indoorOutdoor(record.bocni_sila,record.venkovni_bocni_sila)],
+    ['Hmotnost',record.hmotnost,'Motohodiny',record.motohodiny ? String(record.motohodiny).replace(/\s*h$/i,'')+' h' : ''],
+    ['Pohon',record.pohon,'Napájení / el. výbava',record.napajeni],
+    ['Náklon podvozku',record.naklon,'Druh revize',record.druh_kontroly],
     ['Stabilizátory',record.stabilizatory,'Výsuvný deck',record.deck],
-    ['Nabíječ',record.nabijec,'Zásuvka v koši / RCD',[record.zasuvka_kos,record.rcd].filter(Boolean).join(' / ')]
+    ['Nabíječ',record.nabijec,'Zásuvka v koši / RCD',[record.zasuvka_kos,record.rcd].filter(Boolean).join(' / ')],
+    isRevize150LoadTest(record) ? ['Zkouška přetížením 150 %',record.staticka_zatez,'',''] : ['Statická zkouška 125 %',record.staticka_zatez,'Dynamická zkouška 110 %',record.dynamicka_zatez]
   ];
   if(revizeResolvedDeviceType(record) === 'trailer'){
     const loadSensing = revizeBasketLoadSensingValue(record.snimani_nosnosti, record);
-    if(loadSensing) techRows.splice(4, 0, ['Snímání nosnosti koše', loadSensing, '', '']);
+    if(loadSensing) techRows.splice(6, 0, ['Snímání nosnosti koše', loadSensing, '', '']);
   }
   const showDeck = revizeExplicitYes(record.deck);
   const showCharger = revizeChargerValue(record.nabijec) === 'ANO';
@@ -14494,7 +14509,7 @@ revizePaperHtml = function(r){
   const techSectionTitle = revizeLimitsPrintTitle(record,hasOutdoorLimits);
   const techCell = value => escapeHtml(value || '').replace(/\n/g,'<br>');
   const techSectionTitleHtml = escapeHtml(techSectionTitle).replace(/m\/s/gi,'<span class="revize-unit-lower">m/s</span>');
-  const techTable = `<table><tr><td class="section" colspan="4">${techSectionTitleHtml}</td></tr>${techRows.map(x=>`<tr><td><b>${escapeHtml(x[0])}</b></td><td>${techCell(x[1])}</td><td><b>${escapeHtml(x[2])}</b></td><td>${techCell(x[3])}</td></tr>`).join('')}</table>`;
+  const techTable = `<table><tr><td class="section" colspan="4">${techSectionTitleHtml}</td></tr>${techRows.map((x,i)=>`${i===3?'<tr><td class="section" colspan="4">Další technické údaje</td></tr>':''}<tr><td><b>${escapeHtml(x[0])}</b></td><td>${techCell(x[1])}</td><td><b>${escapeHtml(x[2])}</b></td><td>${techCell(x[3])}</td></tr>`).join('')}</table>`;
   html = html.replace(/<table><tr><td class="section" colspan="4">Technické údaje<\/td><\/tr>[\s\S]*?<\/table><table><thead><tr><th>Kontrolovaný bod revize ZZ/, techTable + '<table><thead><tr><th>Kontrolovaný bod revize ZZ');
   const ynLegend = '<div class="revize-yn-legend">Význam zaškrtnutí: ANO = vyhovuje / ověřeno bez závad, NE = nevyhovuje / zjištěna závada nebo nedostatek.</div>';
   if(!html.includes('revize-yn-legend')){
@@ -14632,13 +14647,7 @@ function revizeLimitVariantKind(record){
   if((['Z45XC','Z4525XC'].includes(model) && capacities==='300/454') || (model==='660SJ' && capacities==='250/340') || (model==='860SJ' && capacities==='230/340') || (model==='1250AJP' && capacities==='230/450')) return 'load';
   return revizeResolvedDeviceType(record)==='scissor' ? 'outdoor' : 'unknown';
 }
-function revizeLimitsPrintTitle(record,hasLimits){
-  if(!hasLimits) return 'Technické údaje';
-  const kind=revizeLimitVariantKind(record);
-  if(kind==='outdoor') return 'Technické údaje · dvojice: uvnitř / venku (vítr do '+revizeOutdoorWindValue(record.venkovni_vitr)+' m/s).';
-  if(kind==='load') return 'Technické údaje · dvojice odpovídají zatížení koše '+(record.nosnost || '?')+' / '+(record.venkovni_nosnost || '?')+'. Nejde o rozlišení uvnitř / venku.';
-  return 'Technické údaje · varianta 1 / 2: podmínky použití ověřit podle štítku a pracovního diagramu.';
-}
+function revizeLimitsPrintTitle(){ return 'Technické údaje – pracovní parametry'; }
 function revizeEnvelopeLineHtml(envelope){
   const capacity=revizeFormatTechValue('nosnost',envelope.capacity);
   const persons=envelope.persons ? `${escapeHtml(envelope.persons)} os.` : 'počet osob ověřit';
@@ -14659,8 +14668,8 @@ function revizeLegacyZ45EnvelopeAsOutdoor(record,envelopes){
 }
 const revizePaperHtmlAddendum5377Base=revizePaperHtml;
 revizePaperHtml=function(r){
-  r=JSON.parse(JSON.stringify(r || {}));
-  if(r.manufacturerFacility && r.makerPlateAuthoritative===false) r.vyrobce=r.manufacturerFacility.displayLabel;
+  r=revizeMapWorkingParameters(JSON.parse(JSON.stringify(r || {})));
+
   for(const key of ['napajeni','normy_revize','model']) if(typeof r[key]==='string')r[key]=r[key].replace(/ovladací/g,'ovládací').replace(/dokumentace výrobce\.\./g,'dokumentace výrobce.').replace(/\b(12|24)\s*V\s*DC\b/g,'$1 V DC').replace(/Z-45\/25 JDC/g,'Z-45/25J DC');
   const template=document.createElement('template');
   template.innerHTML=String(revizePaperHtmlAddendum5377Base(r) || '');
@@ -14680,29 +14689,10 @@ revizePaperHtml=function(r){
   revizeSetPrintPair(pageB,'Pohon / napájení / stabilizátory','Umístění / pobočka',r?.umisteni || '');
   const techKind=[...(pageA?.querySelectorAll('td') || [])].find(cell=>String(cell.textContent || '').trim()==='Druh revize');
   if(techKind?.nextElementSibling){ techKind.textContent='Druh zkoušky'; techKind.nextElementSibling.textContent=revizeTestKindLabel(r?.druh_kontroly); }
-  const envelopes=revizeWorkingEnvelopesForRecord(r);
-  if(envelopes.length >= 2 && pageA){
-    const techTable=[...pageA.querySelectorAll('table')].find(table=>String(table.rows?.[0]?.textContent || '').includes('Technické údaje'));
-    if(techTable && !techTable.querySelector('.revize-working-envelope-row')){
-      if(revizeLegacyZ45EnvelopeAsOutdoor(r,envelopes)){
-        const section=techTable.querySelector('.section'); if(section) section.textContent='Technické údaje';
-        [['Nosnost','nosnost'],['Prac. výška','pracovni_vyska'],['Výška podlahy','vyska_podlahy'],['Boční dosah','bocni_dosah']].forEach(([label,key])=>{
-          const cell=[...techTable.querySelectorAll('td')].find(td=>String(td.textContent||'').trim()===label);
-          if(cell?.nextElementSibling) cell.nextElementSibling.textContent=revizeFormatTechValue(key,r?.[key]);
-        });
-      }
-      const row=document.createElement('tr');
-      row.className='revize-working-envelope-row';
-      row.innerHTML=`<td><b>Pracovní obálka podle zatížení koše</b></td><td colspan="3"><div class="revize-working-envelope-lines">${envelopes.map(revizeEnvelopeLineHtml).join('')}</div></td>`;
-      const capacityCell=[...techTable.querySelectorAll('td')].find(td=>String(td.textContent || '').trim()==='Nosnost');
-      const capacityRow=capacityCell?.closest('tr');
-      if(capacityRow?.nextSibling) techTable.tBodies[0]?.insertBefore(row,capacityRow.nextSibling);
-      else techTable.tBodies[0]?.appendChild(row);
-    }
-  }
-  if(pageA && ['nosnost','pracovni_vyska','vyska_podlahy','bocni_dosah'].some(key=>r[key] && r['venkovni_'+key])){
-    const note=document.createElement('div');note.className='revize-variant-note';note.style.cssText='font-size:8.4px;line-height:1.15';
-    note.textContent='Jsou-li uvedeny dvě hodnoty, jejich význam je vyznačen přímo u příslušného údaje. Může se jednat o rozdílné hodnoty pro vnitřní a venkovní provoz nebo o omezení pracovní obálky v závislosti na zatížení pracovního koše.';
+  if(pageA && revizeHasReducedParameters(r)){
+    const kind=revizeLimitVariantKind(r);
+    const text=kind==='load' ? 'Při zvýšeném zatížení pracovního koše dochází k omezení pracovní obálky; omezené hodnoty jsou uvedeny u příslušných technických údajů.' : kind==='outdoor' ? 'Snížené hodnoty uvedené v závorce platí pro venkovní provoz při maximální rychlosti větru 12 m/s.' : 'Význam druhé sady hodnot ověřte podle dokumentace stroje.';
+    const note=document.createElement('div');note.className='revize-variant-note';note.style.cssText='font-size:8.4px;line-height:1.15';note.textContent=text;
     const table=[...pageA.querySelectorAll('table')].find(t=>t.textContent.includes('Technické údaje'));table?.after(note);
   }
   return template.innerHTML;
@@ -14724,37 +14714,18 @@ function revisionWarnings(r){
 }
 const renderRevizeFormReviewedBase=renderRevizeForm;
 renderRevizeForm=function(r){
+  Object.assign(r,revizeMapWorkingParameters(r));
   renderRevizeFormReviewedBase(r);
   const maker=document.getElementById('rz_vyrobce');
-  if(!maker || document.getElementById('rz_manufacturerFacility'))return;
-  const panel=document.createElement('div');panel.className='helper';
-  panel.innerHTML='<label>Provozovna podle štítku / prohlášení<select id="rz_manufacturerFacility"><option value="">Nepřiřazeno – k ověření</option></select></label><div id="rz_manufacturerDetails"></div><label><input type="checkbox" id="rz_makerPlateAuthoritative"> Tisknout původní úplný údaj ze štítku</label><button type="button" class="secondary mini" id="rz_addManufacturer">Přidat ověřenou provozovnu</button>';
-  maker.after(panel);
-  const select=panel.querySelector('select');
-  const roles={'manufacturer/factory':'výrobce / závod',legalManufacturer:'právní výrobce',EURepresentative:'EU zástupce',headquarters:'sídlo',serviceCenter:'servis / provozovna',logistics:'logistika'};
-  const populate=()=>{for(const row of manufacturerDirectory()){const option=document.createElement('option');option.value=row.id;option.textContent=row.displayLabel+' · '+(roles[row.role] || row.role)+(row.verified?'':' · neověřeno');select.append(option);}select.value=r.manufacturerFacilityId || '';};
-  populate();
-  const plate=panel.querySelector('#rz_makerPlateAuthoritative');plate.checked=r.makerPlateAuthoritative!==false;
-  const details=()=>{const row=manufacturerDirectory().find(x=>x.id===select.value);panel.querySelector('#rz_manufacturerDetails').textContent=row ? [row.street,row.postalCode,row.city,row.region,row.country,row.note].filter(Boolean).join(', ') : 'Provozovnu nelze určit pouze podle značky nebo modelu.';};
-  select.addEventListener('change',()=>{r.manufacturerFacilityId=select.value;details();});plate.addEventListener('change',()=>r.makerPlateAuthoritative=plate.checked);details();
-  panel.querySelector('button').addEventListener('click',()=>{
-    const fields=[['legalName','Přesný název firmy'],['role','Role: manufacturer/factory, legalManufacturer, EURepresentative, headquarters, serviceCenter, logistics'],['street','Ulice'],['city','Město'],['postalCode','PSČ'],['region','Region (může být prázdný)'],['country','Stát'],['sourceUrl','Odkaz na zdroj ověřující adresu a roli']];
-    const row={};for(const [key,label] of fields){const value=prompt(label);if(value===null)return;row[key]=value.trim();}
-    if(!row.legalName || !row.city || !row.country || !roles[row.role] || !/^https:\/\//i.test(row.sourceUrl)){alert('Doplň firmu, město, stát, platnou roli a HTTPS odkaz na ověřený zdroj.');return;}
-    row.id='manual-'+uid();row.verified=true;row.sourceCheckedAt=todayLocal();row.displayLabel=row.legalName+' – '+row.city+', '+row.country;
-    try{const extra=manufacturerDirectory().filter(x=>x.id.startsWith('manual-'));localStorage.setItem('liftcheck_manufacturers',JSON.stringify([...extra,row]));select.replaceChildren(new Option('Nepřiřazeno – k ověření',''));populate();select.value=row.id;r.manufacturerFacilityId=row.id;details();}catch(e){alert('Provozovnu se nepodařilo uložit; původní údaj zůstává zachovaný.');}
-  });
-  const warning=document.createElement('div');warning.id='rz_dataWarnings';warning.setAttribute('role','status');warning.className='helper';panel.after(warning);
+  if(!maker)return;
+  const warning=document.createElement('div');warning.id='rz_dataWarnings';warning.setAttribute('role','status');warning.className='helper';maker.after(warning);
   const updateWarnings=()=>{const copy={...r};for(const key of ['protokol','pracovni_vyska','vyska_podlahy','nosnost','venkovni_nosnost','venkovni_pracovni_vyska','venkovni_vyska_podlahy','venkovni_bocni_dosah','limitVariantKind']){const input=document.getElementById('rz_'+key);if(input)copy[key]=input.value;}warning.textContent=revisionWarnings(copy).join(' ');};
   const wrap=document.getElementById('revizeFormWrap');if(wrap){if(wrap._reviewWarning)wrap.removeEventListener('input',wrap._reviewWarning);wrap._reviewWarning=updateWarnings;wrap.addEventListener('input',updateWarnings);}updateWarnings();
 };
 const collectRevizeDraftReviewedBase=collectRevizeDraft;
 collectRevizeDraft=function(){
   const r=collectRevizeDraftReviewedBase();if(!r)return r;
-  r.manufacturerFacilityId=document.getElementById('rz_manufacturerFacility')?.value || r.manufacturerFacilityId || '';
-  r.makerPlateAuthoritative=document.getElementById('rz_makerPlateAuthoritative')?.checked ?? r.makerPlateAuthoritative ?? true;
-  const facility=manufacturerDirectory().find(x=>x.id===r.manufacturerFacilityId);
-  if(facility)r.manufacturerFacility={...facility};
+  r.makerPlateAuthoritative=true; // The single editable manufacturer field is authoritative after editing.
   return r;
 };
 function quarterlyDiagnostic(error,field){
@@ -15231,7 +15202,7 @@ document.getElementById('appCheckCacheBtn')?.addEventListener('click', async () 
   if(!confirm('Vyčistit pouze cache aplikace? Uložená data ve Firebase ani lokální záznamy se nemažou.')) return;
   await resetAppShellCacheOnly('app-check-cache');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.393');
+  url.searchParams.set('v','5.394');
   url.searchParams.set('appCheckCache', String(Date.now()));
   location.replace(url.toString());
 });
@@ -15240,7 +15211,7 @@ document.getElementById('closeAppCheckTopBtn')?.addEventListener('click', () => 
 async function forceRefreshApplication(){
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.393');
+  url.searchParams.set('v','5.394');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 }
@@ -15827,7 +15798,7 @@ setTimeout(() => {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  const APP_CURRENT_VERSION = '5.393';
+  const APP_CURRENT_VERSION = '5.394';
   let appUpdateRegistration = null;
   let appUpdateWorker = null;
   let appReloadingForUpdate = false;
@@ -15987,7 +15958,7 @@ if ('serviceWorker' in navigator) {
       const attempted = sessionStorage.getItem(APP_UPDATE_ATTEMPT_KEY) || '';
       if(attempted && compareAppVersions(APP_CURRENT_VERSION, attempted) >= 0) sessionStorage.removeItem(APP_UPDATE_ATTEMPT_KEY);
     }catch(e){}
-    navigator.serviceWorker.register(new URL('./sw.js?v=5.393', location.href), {scope:'./', updateViaCache:'none'})
+    navigator.serviceWorker.register(new URL('./sw.js?v=5.394', location.href), {scope:'./', updateViaCache:'none'})
       .then(registration => {
         installUpdateWatcher(registration);
         registration.update().catch(err => console.warn('Service worker update check failed', err));
