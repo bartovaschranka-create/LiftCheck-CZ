@@ -1161,6 +1161,10 @@ body.dark #faultReportPreviewModal .fault-report{background:#fff;color:#172033}
 #historyModal .machine-card-row button{
   flex:0 0 auto;
 }
+#historyModal .machine-card-row > span:first-child{flex:1 1 230px}
+#historyModal .machine-card-actions{display:flex;gap:6px;flex-wrap:wrap;max-width:100%;min-width:0}
+#historyModal .machine-card-summary{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:4px}
+#historyModal .machine-card-row button{max-width:100%;white-space:normal;overflow-wrap:anywhere}
 @media(max-width:640px){
   #historyModal{padding:calc(env(safe-area-inset-top,0px) + 8px) 8px 8px!important}
   #historyModal .history-modal-content{
@@ -7857,45 +7861,46 @@ function openHistoryModal(serial){
     <div class="machine-card-block">
       <h4>Protokoly</h4>
       <div class="machine-card-list">
-        ${rows.protocols.length ? rows.protocols.slice(0,8).map(r => `<div class="machine-card-row"><span>${escapeHtml(r.datum||'Bez data')} · ${escapeHtml(displayPlaceName(r.umisteni)||'Bez místa')} · ${hasIssue(r)?('se závadou: '+escapeHtml(protocolIssueSummary(r,2))):'bez závad'}</span><button class="secondary mini" data-open-id="${r.id}">Otevřít</button></div>`).join('') : '<div class="part-sub">Bez uložených protokolů.</div>'}
+        ${rows.protocols.length ? rows.protocols.slice(0,8).map(r => `<div class="machine-card-row"><span>${escapeHtml(r.datum||'Bez data')} · ${escapeHtml(displayPlaceName(r.umisteni)||'Bez místa')} · ${hasIssue(r)?('se závadou: '+escapeHtml(protocolIssueSummary(r,2))):'bez závad'}</span><button class="secondary mini" data-open-id="${r.id}">Otevřít celý zápis</button></div>`).join('') : '<div class="part-sub">Bez uložených protokolů.</div>'}
       </div>
     </div>
 
     <div class="machine-card-block">
       <h4>Revize ZZ</h4>
       <div class="machine-card-list">
-        ${rows.revize.length ? rows.revize.slice(0,8).map(r => `<div class="machine-card-row"><span>${escapeHtml(formatDate(r.datum_kontroly)||'Bez data')} &middot; ${escapeHtml(r.protokol||'Bez cisla')} &middot; ${escapeHtml(revizeResult(r))}</span><button class="secondary mini" data-revize-print="${escapeHtml(r.id)}">Nahled / tisk</button></div>`).join('') : '<div class="part-sub">Bez ulozenych revizi ZZ.</div>'}
+        ${rows.revize.length ? rows.revize.slice(0,8).map(r => `<div class="machine-card-row"><span>${escapeHtml(formatDate(r.datum_kontroly)||'Bez data')} &middot; ${escapeHtml(r.protokol||'Bez cisla')} &middot; ${escapeHtml(revizeResult(r))}</span><button class="secondary mini" data-revize-print="${escapeHtml(r.id)}">Otevřít celou revizi</button></div>`).join('') : '<div class="part-sub">Bez ulozenych revizi ZZ.</div>'}
       </div>
     </div>
 
     <div class="machine-card-block">
       <h4>Poruchy</h4>
       <div class="machine-card-list">
-        ${rows.faults.length ? rows.faults.slice(0,8).map(f => `<div class="machine-card-row"><span>${escapeHtml(f.date||'Bez data')} · ${escapeHtml(getFaultStatus(f).txt)} · ${escapeHtml(getFaultCategoryLabel(f))} · ${escapeHtml(f.description||'')}</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button class="secondary mini" data-fault-open="${f.id}">Upravit</button>${faultIsRepaired(f) ? `<button class="primary mini" data-fault-protocol="${f.id}">Protokol</button><button class="secondary mini" data-fault-create-protocol="${f.id}">Kontrolní protokol</button>` : ''}</span></div>`).join('') : '<div class="part-sub">Bez hlášených poruch.</div>'}
+        ${rows.faults.length ? rows.faults.slice(0,8).map(f => `<div class="machine-card-row"><span>${escapeHtml(f.date||'Bez data')} · ${escapeHtml(getFaultStatus(f).txt)} · ${escapeHtml(getFaultCategoryLabel(f))}${f.description ? `<span class="machine-card-summary">${escapeHtml(f.description)}</span>` : ''}</span><span class="machine-card-actions"><button class="primary mini" data-fault-preview="${escapeHtml(f.id)}">Otevřít celý zápis</button><button class="secondary mini" data-fault-open="${f.id}">Upravit</button>${faultIsRepaired(f) ? `<button class="primary mini" data-fault-protocol="${f.id}">Protokol</button><button class="secondary mini" data-fault-create-protocol="${f.id}">Kontrolní protokol</button>` : ''}</span></div>`).join('') : '<div class="part-sub">Bez hlášených poruch.</div>'}
       </div>
     </div>
 
     <div class="machine-card-block">
       <h4>Náhradní díly</h4>
       <div class="machine-card-list">
-        ${rows.parts.length ? rows.parts.slice(0,8).map(p => `<div class="machine-card-row"><span>${escapeHtml(p.partNumber||'Bez PN')} · ${escapeHtml(getPartStatus(p).txt)} · ${escapeHtml(p.partName||'')}</span><button class="secondary mini" data-part-open="${p.id}">Upravit</button></div>`).join('') : '<div class="part-sub">Bez požadavků na ND.</div>'}
+        ${rows.parts.length ? rows.parts.slice(0,8).map(p => `<div class="machine-card-row"><span>${escapeHtml(p.partNumber||'Bez PN')} · ${escapeHtml(getPartStatus(p).txt)} · ${escapeHtml(p.partName||'')}${p.note ? `<span class="machine-card-summary">${escapeHtml(p.note)}</span>` : ''}</span><button class="secondary mini" data-part-open="${p.id}">Otevřít celý zápis</button></div>`).join('') : '<div class="part-sub">Bez požadavků na ND.</div>'}
       </div>
     </div>
     <div class="machine-card-block">
       <h4>Zapis o oprave</h4>
       <div class="machine-card-list">
-        ${rows.repairs.length ? rows.repairs.slice(0,8).map(r => `<div class="machine-card-row"><span>${escapeHtml(formatDateTime(r.finishedAt || r.savedAt)||'Bez data')} &middot; ${escapeHtml(r.tech||'Bez technika')} &middot; ${escapeHtml(repairPlaceInputValue(r.place, !!r.externalCustomer)||'Bez mista')}</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button class="secondary mini" data-repair-load="${escapeHtml(r.id)}">Upravit</button><button class="primary mini" data-repair-print="${escapeHtml(r.id)}">Nahled / tisk</button><button class="secondary mini" data-repair-part="${escapeHtml(r.id)}">Objednat ND</button><button class="danger mini" data-repair-delete="${escapeHtml(r.id)}">Smazat</button></span></div>`).join('') : '<div class="part-sub">Bez zapisu o oprave.</div>'}
+        ${rows.repairs.length ? rows.repairs.slice(0,8).map(r => `<div class="machine-card-row"><span>${escapeHtml(formatDateTime(r.finishedAt || r.savedAt)||'Bez data')} &middot; ${escapeHtml(r.tech||'Bez technika')} &middot; ${escapeHtml(repairPlaceInputValue(r.place, !!r.externalCustomer)||'Bez mista')}${r.work ? `<span class="machine-card-summary"><strong>Provedená oprava:</strong> ${escapeHtml(r.work)}</span>` : ''}</span><span class="machine-card-actions"><button class="secondary mini" data-repair-load="${escapeHtml(r.id)}">Upravit</button><button class="primary mini" data-repair-print="${escapeHtml(r.id)}">Otevřít celý zápis</button><button class="secondary mini" data-repair-part="${escapeHtml(r.id)}">Objednat ND</button><button class="danger mini" data-repair-delete="${escapeHtml(r.id)}">Smazat</button></span></div>`).join('') : '<div class="part-sub">Bez zapisu o oprave.</div>'}
       </div>
     </div>
   `;
-  els.historyBody.querySelectorAll('[data-open-id]').forEach(btn => btn.addEventListener('click', () => openPreviewById(btn.dataset.openId)));
-  els.historyBody.querySelectorAll('[data-revize-print]').forEach(btn => btn.addEventListener('click', () => printRevizeById(btn.dataset.revizePrint)));
+  els.historyBody.querySelectorAll('[data-open-id]').forEach(btn => btn.addEventListener('click', () => { closeHistoryModal(); openPreviewById(btn.dataset.openId); }));
+  els.historyBody.querySelectorAll('[data-revize-print]').forEach(btn => btn.addEventListener('click', () => { closeHistoryModal(); printRevizeById(btn.dataset.revizePrint); }));
+  els.historyBody.querySelectorAll('[data-fault-preview]').forEach(btn => btn.addEventListener('click', () => { closeHistoryModal(); openFaultReportPreview(btn.dataset.faultPreview); }));
   els.historyBody.querySelectorAll('[data-fault-open]').forEach(btn => btn.addEventListener('click', () => { closeHistoryModal(); openFaultsModal(); openFaultForm(btn.dataset.faultOpen); }));
   els.historyBody.querySelectorAll('[data-fault-protocol]').forEach(btn => btn.addEventListener('click', () => printRepairProtocol(btn.dataset.faultProtocol)));
   els.historyBody.querySelectorAll('[data-fault-create-protocol]').forEach(btn => btn.addEventListener('click', () => { closeHistoryModal(); createProtocolFromFault(btn.dataset.faultCreateProtocol); }));
   els.historyBody.querySelectorAll('[data-part-open]').forEach(btn => btn.addEventListener('click', () => { closeHistoryModal(); openPartsModal(); closePartForm(); scrollToPartCard(btn.dataset.partOpen); }));
   els.historyBody.querySelectorAll('[data-repair-load]').forEach(btn => btn.addEventListener('click', () => { const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairLoad)); if(rec){ closeHistoryModal(); openRepairModal(rec); } }));
-  els.historyBody.querySelectorAll('[data-repair-print]').forEach(btn => btn.addEventListener('click', () => { const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairPrint)); if(rec) printRepairRecord(rec); }));
+  els.historyBody.querySelectorAll('[data-repair-print]').forEach(btn => btn.addEventListener('click', () => { const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairPrint)); if(rec){ closeHistoryModal(); printRepairRecord(rec); } }));
   els.historyBody.querySelectorAll('[data-repair-part]').forEach(btn => btn.addEventListener('click', () => { const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairPart)); if(rec){ closeHistoryModal(); openPartFromRepair(rec); } }));
   els.historyBody.querySelectorAll('[data-repair-delete]').forEach(btn => btn.addEventListener('click', () => deleteRepairRecord(btn.dataset.repairDelete)));
   openModal(els.historyModal);
