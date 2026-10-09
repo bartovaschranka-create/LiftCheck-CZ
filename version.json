@@ -1,8 +1,8 @@
 {
-  "version": "5.394",
-  "appVersion": "1.6 / 5.394",
-  "cacheName": "liftcontrol-cz-v1-6-5-394",
-  "url": "./index.html?v=5.394",
-  "releasedAt": "2026-10-01",
-  "message": "Přehledné pracovní parametry revizí, upravitelný výrobce a norma, jednoznačný výstup PDF."
+  "version": "5.395",
+  "appVersion": "1.6 / 5.395",
+  "cacheName": "liftcontrol-cz-v1-6-5-395",
+  "url": "./index.html?v=5.395",
+  "releasedAt": "2026-10-05",
+  "message": "Ověřené technické předvolby dle dokumentace výrobce a jednotný vítr 12,5 m/s."
 }

@@ -26,7 +26,7 @@ const root=path.resolve(__dirname,'..');
   });
   assert.ok(result.manufacturerCount>=11);assert.ok(result.warnings.some(w=>w.includes('2 m')));
   assert.match(result.texts[0],/Snížené hodnoty uvedené v závorce/);
-  assert.match(result.texts[0],/12 m\/s/);
+  assert.match(result.texts[0],/12,5 m\/s/);
   assert.match(result.texts[1],/při 454 kg/);
   assert.match(result.texts[2],/při 340 kg/);
   assert.match(result.texts[3],/Význam druhé sady hodnot ověřte/);
