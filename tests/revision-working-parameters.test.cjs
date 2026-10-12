@@ -34,7 +34,7 @@ const root=path.resolve(__dirname,'..');
  });
  assert.equal(result.collected.norma,'MANUAL STANDARD');assert.equal(result.reopened.norma,'MANUAL STANDARD');assert.ok(!('workingEnvelopes' in result.reopened));assert.equal(result.collected.vyrobce,'Custom editable maker');assert.equal(result.collected.provozovatel,'Operator unchanged');assert.ok(!('workingEnvelopes'in result.collected));
  assert.match(result.load,/Při zvýšeném zatížení pracovního koše/);assert.doesNotMatch(result.load,/revize-working-envelope-row|Neomezená pracovní obálka:/);assert.match(result.load,/při 230 kg/);assert.match(result.load,/při 340 kg/);assert.match(result.load,/MANUAL STANDARD/);
- assert.match(result.outdoor,/maximální rychlosti větru 12 m\/s/);assert.match(result.outdoor,/8 m \(6 m\)/);assert.doesNotMatch(result.outdoor,/Při zvýšeném zatížení/);assert.doesNotMatch(result.single,/revize-variant-note/);
+ assert.match(result.outdoor,/maximální rychlosti větru 12,5 m\/s/);assert.match(result.outdoor,/8 m \(6 m\)/);assert.doesNotMatch(result.outdoor,/Při zvýšeném zatížení/);assert.doesNotMatch(result.single,/revize-variant-note/);
  assert.equal(result.mapped.nosnost_osoby,'2');assert.equal(result.mapped.venkovni_nosnost_osoby,'1');assert.equal(result.mapped.vyrobce,'Legacy manufacturer');assert.equal(result.immutable,true);assert.equal(errors.length,0,errors.join('\n'));
  console.log('revision-working-parameters: field order, editable suggestions, manual standard, legacy mapping, canonical save/reopen and distinct PDF modes passed');
  }finally{await browser.close();}
