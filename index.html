@@ -12538,6 +12538,7 @@ function revizeWorkingEnvelopesFromImportedRow(row){
   return [];
 }
 function revizeWorkingEnvelopesForRecord(record){
+  if(record?.limitVariantKind==='none') return [];
   const stored=revizeNormalizeWorkingEnvelopes(record?.workingEnvelopes);
   if(stored.length >= 2) return stored;
   const legacyUnrestricted=record?.unrestrictedCapacity;
@@ -13627,7 +13628,7 @@ function revizeMapWorkingParameters(record){
   if(Object.prototype.hasOwnProperty.call(modes,r.limitVariantKind))r.limitVariantKind=modes[r.limitVariantKind];
   if(r.manufacturerFacility && r.makerPlateAuthoritative===false)r.vyrobce=r.manufacturerFacility.displayLabel || r.vyrobce;
   const envelopes=Array.isArray(r.workingEnvelopes)?r.workingEnvelopes:[];
-  if(envelopes.length){
+  if(envelopes.length && r.limitVariantKind!=='none'){
     const number=v=>Number(String(v || '').replace(',','.').match(/\d+(?:\.\d+)?/)?.[0]);
     const first=envelopes.find(e=>number(e.capacity)===number(r.nosnost)) || envelopes.find(e=>e.mode==='unrestricted') || envelopes[0];
     const second=envelopes.find(e=>e!==first);
@@ -13636,14 +13637,23 @@ function revizeMapWorkingParameters(record){
     }
     if(!r.limitVariantKind && second)r.limitVariantKind='loadEnvelope';
   }
+  if(!revizeHasDifferentSecondaryParameters(r))r.limitVariantKind='none';
+  if(r.limitVariantKind==='none')r.venkovni_omezeni='NE';
   return r;
 }
-function revizeHasReducedParameters(r){return REVIZE_WORK_KEYS.some(k=>String(r?.['venkovni_'+k]??'').trim());}
+function revizeHasDifferentSecondaryParameters(r){
+  const comparable=(key,value)=>{
+    const text=revizeNormalizeTechInput(key,value).replace(',','.');
+    return text && Number.isFinite(Number(text)) ? String(Number(text)) : text.toLowerCase().replace(/\s+/g,'');
+  };
+  return REVIZE_WORK_KEYS.some(key=>String(r?.['venkovni_'+key]??'').trim() && comparable(key,r['venkovni_'+key])!==comparable(key,r[key]));
+}
+function revizeHasReducedParameters(r){return r?.limitVariantKind!=='none' && revizeHasDifferentSecondaryParameters(r);}
 function revizeWorkFieldLabel(k){return ({vyska_podlahy:'Výška zdvihu podlahy pracovního koše [m]',pracovni_vyska:'Pracovní výška [m]',bocni_dosah:'Vodorovný dosah [m]',nosnost:'Zatížení pracovního koše [kg]',nosnost_osoby:'Počet osob',bocni_sila:'Boční síla [N]'})[k];}
 function revizeTechnicalFieldsHtml(r){
   const field=(key,label)=>`<div class="field"><label>${escapeHtml(label || revizeFieldLabel(key))}</label><input id="rz_${key}" value="${escapeHtml(revizeInputValue(key,r[key]))}"${revizeInputAttrs(key)}${isRevizeLoadField(key)?' readonly':''}></div>`;
   return '<div class="revize-section-title">Technické údaje</div>'+REVIZE_WORK_KEYS.map(k=>field(k,revizeWorkFieldLabel(k))).join('')+
-    `<div class="field"><label>Důvod snížených hodnot</label><select id="rz_limitVariantKind"><option value="">Vyberte typ omezení</option><option value="loadEnvelope" ${r.limitVariantKind==='loadEnvelope'?'selected':''}>Omezení pracovní obálky podle zatížení pracovního koše</option><option value="indoorOutdoor" ${r.limitVariantKind==='indoorOutdoor'?'selected':''}>Rozdílné hodnoty pro vnitřní / venkovní provoz</option></select></div>`+
+    `<div class="field"><label>Důvod snížených hodnot</label><select id="rz_limitVariantKind"><option value="none" ${r.limitVariantKind==='none'?'selected':''}>Bez omezení – pracovní obálka se nemění</option><option value="loadEnvelope" ${r.limitVariantKind==='loadEnvelope'?'selected':''}>Omezení pracovní obálky podle zatížení pracovního koše</option><option value="indoorOutdoor" ${r.limitVariantKind==='indoorOutdoor'?'selected':''}>Rozdílné hodnoty pro vnitřní / venkovní provoz</option></select></div>`+
     REVIZE_WORK_KEYS.map(k=>field('venkovni_'+k,revizeWorkFieldLabel(k))).join('')+
     revizeTechFieldKeys().filter(k=>!REVIZE_WORK_KEYS.includes(k)).map(k=>field(k)).join('')+
     `<input id="rz_venkovni_omezeni" type="hidden" value="${revizeHasReducedParameters(r)?'ANO':'NE'}"><input id="rz_venkovni_vitr" type="hidden" value="${escapeHtml(r.venkovni_vitr || '')}">`;
@@ -13783,7 +13793,8 @@ async function saveRevizeFromForm(){
   if(revizeSaveInProgress) return;
   const r=safeCollectRevizeDraft('revize save');
   if(!r) return;
-  if(revizeHasReducedParameters(r) && !['loadEnvelope','indoorOutdoor'].includes(r.limitVariantKind)){alert('Vyber typ omezení pro zadané snížené hodnoty.');return;}
+  if(!revizeHasDifferentSecondaryParameters(r)){r.limitVariantKind='none';r.venkovni_omezeni='NE';}
+  else if(!['loadEnvelope','indoorOutdoor'].includes(r.limitVariantKind)){alert('Jsou zadány rozdílné sekundární hodnoty. Vyber omezení podle zatížení nebo vnitřní / venkovní provoz; hodnoty zůstaly zachovány.');return;}
   if(!r.protokol || !r.datum_kontroly || !r.vyrobni_cislo){ alert('Vyplň minimálně protokol č., datum kontroly a výrobní číslo.'); return; }
   r.draft = false;
   r.draftSavedAt = '';
@@ -14395,6 +14406,7 @@ collectRevizeDraft=function(){
   r.datum_kontroly=r.revizeStartDate;
   r.limitVariantKind=document.getElementById('rz_limitVariantKind')?.value ?? r.limitVariantKind ?? '';
   delete r.workingEnvelopes;
+  if(!revizeHasDifferentSecondaryParameters(r))r.limitVariantKind='none';
   r.venkovni_omezeni=revizeHasReducedParameters(r)?'ANO':'NE';
   window.currentRevizeDraft=r;
   return r;
@@ -14466,7 +14478,7 @@ revizePaperHtml = function(r){
     return `${first || '—'} / ${second} (význam omezení ověřit)`;
   };
   const firstCapacity=revizeFormatTechValue('nosnost',record.nosnost), secondCapacity=revizeFormatTechValue('nosnost',record.venkovni_nosnost);
-  const capacityDisplay=!secondCapacity ? firstCapacity : variant==='outdoor' ? `${firstCapacity || '—'} (${secondCapacity})` : `${firstCapacity || '—'} / ${secondCapacity}`;
+  const capacityDisplay=!hasOutdoorLimits || !secondCapacity ? firstCapacity : variant==='outdoor' ? `${firstCapacity || '—'} (${secondCapacity})` : `${firstCapacity || '—'} / ${secondCapacity}`;
   let html = revizePaperHtmlOriginal5166(record)
     .replace(/<p><b>ZÁVĚREČNÉ VYHODNOCENÍ:<\/b>([\s\S]*?)<\/p>/, '<div class="revize-final-note"><b>ZÁVĚREČNÉ VYHODNOCENÍ:</b>$1</div>')
     .replace(/<p>Rozdělovník: (?:1x provozovatel|2x objednatel) \/ 1x revizní technik<\/p>/, '<div class="revize-distribution">Rozdělovník: 2x objednatel / 1x revizní technik</div>');
@@ -14644,6 +14656,7 @@ function revizeSetPrintPair(page,labels,newLabel,value){
   labelCell.nextElementSibling.textContent=value || '';
 }
 function revizeLimitVariantKind(record){
+  if(record?.limitVariantKind==='none' || !revizeHasDifferentSecondaryParameters(record))return 'none';
   const explicit={indoorOutdoor:'outdoor',loadEnvelope:'load',custom:'unknown',outdoor:'outdoor',load:'load',unknown:'unknown'};
   if(explicit[record?.limitVariantKind]) return explicit[record.limitVariantKind];
   const model=String(record?.model || '').toUpperCase().replace(/GENIE|JLG|[^A-Z0-9]/g,'');
@@ -14696,7 +14709,7 @@ revizePaperHtml=function(r){
   if(techKind?.nextElementSibling){ techKind.textContent='Druh zkoušky'; techKind.nextElementSibling.textContent=revizeTestKindLabel(r?.druh_kontroly); }
   if(pageA && revizeHasReducedParameters(r)){
     const kind=revizeLimitVariantKind(r);
-    const text=kind==='load' ? 'Při zvýšeném zatížení pracovního koše dochází k omezení pracovní obálky; omezené hodnoty jsou uvedeny u příslušných technických údajů.' : kind==='outdoor' ? 'Snížené hodnoty uvedené v závorce platí pro venkovní provoz při maximální rychlosti větru 12 m/s.' : 'Význam druhé sady hodnot ověřte podle dokumentace stroje.';
+    const text=kind==='load' ? 'Při zvýšeném zatížení pracovního koše dochází k omezení pracovní obálky; omezené hodnoty jsou uvedeny u příslušných technických údajů.' : kind==='outdoor' ? 'Snížené hodnoty uvedené v závorce platí pro venkovní provoz při maximální rychlosti větru 12,5 m/s.' : 'Význam druhé sady hodnot ověřte podle dokumentace stroje.';
     const note=document.createElement('div');note.className='revize-variant-note';note.style.cssText='font-size:8.4px;line-height:1.15';note.textContent=text;
     const table=[...pageA.querySelectorAll('table')].find(t=>t.textContent.includes('Technické údaje'));table?.after(note);
   }
@@ -14711,10 +14724,8 @@ function revisionWarnings(r){
   if((revizeData || []).some(other=>other.id!==r.id && other.protokol===r.protokol && r.protokol))warnings.push('Číslo protokolu používá i jiná revize.');
   const number=v=>Number(String(v || '').replace(',','.').match(/\d+(?:\.\d+)?/)?.[0]);
   if(r.pracovni_vyska && r.vyska_podlahy && Math.abs(number(r.pracovni_vyska)-number(r.vyska_podlahy)-2)>0.15)warnings.push('Rozdíl pracovní výšky a výšky podlahy není přibližně 2 m.');
-  const pairs=['nosnost','pracovni_vyska','vyska_podlahy','bocni_dosah'];
-  const hasSecond=pairs.some(k=>String(r['venkovni_'+k] || '').trim());
-  if(r.limitVariantKind && !hasSecond)warnings.push('Je zvolen význam druhé varianty, ale její hodnoty chybějí.');
-  if(hasSecond && !r.limitVariantKind)warnings.push('Urči význam druhé varianty podle štítku nebo dokumentace.');
+  const hasSecond=revizeHasDifferentSecondaryParameters(r);
+  if(hasSecond && !['loadEnvelope','indoorOutdoor'].includes(r.limitVariantKind))warnings.push('Jsou zadány rozdílné sekundární hodnoty. Vyber omezení podle zatížení nebo vnitřní / venkovní provoz; hodnoty zůstaly zachovány.');
   return warnings;
 }
 const renderRevizeFormReviewedBase=renderRevizeForm;
@@ -14724,8 +14735,8 @@ renderRevizeForm=function(r){
   const maker=document.getElementById('rz_vyrobce');
   if(!maker)return;
   const warning=document.createElement('div');warning.id='rz_dataWarnings';warning.setAttribute('role','status');warning.className='helper';maker.after(warning);
-  const updateWarnings=()=>{const copy={...r};for(const key of ['protokol','pracovni_vyska','vyska_podlahy','nosnost','venkovni_nosnost','venkovni_pracovni_vyska','venkovni_vyska_podlahy','venkovni_bocni_dosah','limitVariantKind']){const input=document.getElementById('rz_'+key);if(input)copy[key]=input.value;}warning.textContent=revisionWarnings(copy).join(' ');};
-  const wrap=document.getElementById('revizeFormWrap');if(wrap){if(wrap._reviewWarning)wrap.removeEventListener('input',wrap._reviewWarning);wrap._reviewWarning=updateWarnings;wrap.addEventListener('input',updateWarnings);}updateWarnings();
+  const updateWarnings=()=>{const copy={...r};for(const key of ['protokol',...REVIZE_WORK_KEYS,...REVIZE_WORK_KEYS.map(k=>'venkovni_'+k),'limitVariantKind']){const input=document.getElementById('rz_'+key);if(input)copy[key]=input.value;}warning.textContent=revisionWarnings(copy).join(' ');};
+  const wrap=document.getElementById('revizeFormWrap');if(wrap){if(wrap._reviewWarning)wrap.removeEventListener('input',wrap._reviewWarning);wrap._reviewWarning=updateWarnings;wrap.addEventListener('input',updateWarnings);}document.getElementById('rz_limitVariantKind')?.addEventListener('change',updateWarnings);updateWarnings();
 };
 const collectRevizeDraftReviewedBase=collectRevizeDraft;
 collectRevizeDraft=function(){
