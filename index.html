@@ -2506,7 +2506,7 @@ body.mobile-safe-mode .attention-count:hover{
 
 <div class="modal" id="repairModal"><div class="modal-content"><div class="wizard-shell">
   <div class="preview-header">
-    <div><div class="preview-title">Z&aacute;pis o oprav&#283;</div><div class="card-sub">Samostatn&yacute; servisn&iacute; z&aacute;pis nebo protokol nav&aacute;zan&yacute; na poruchu.</div></div>
+    <div><div class="preview-title">Z&aacute;pis o oprav&#283; / pravideln&eacute;m servisu</div><div class="card-sub">Samostatn&yacute; servisn&iacute; z&aacute;pis nebo protokol nav&aacute;zan&yacute; na poruchu.</div></div>
     <div class="card-actions"><button id="repairArchiveBtn" class="secondary mini" type="button">Archiv oprav</button><button id="closeRepairTopBtn" class="secondary mini" type="button">Zav&#345;&iacute;t</button></div>
   </div>
   <div class="form-grid fault-form">
@@ -2524,7 +2524,7 @@ body.mobile-safe-mode .attention-count:hover{
     </div></div>
     <div class="field"><label>Zah&aacute;jen&iacute; opravy</label><input id="repairStartedAt" type="datetime-local"></div>
     <div class="field"><label>Ukon&#269;en&iacute; opravy</label><input id="repairFinishedAt" type="datetime-local"></div>
-    <div class="field"><label>&#268;as pr&aacute;ce</label><input id="repairWorkTime" inputmode="decimal" autocomplete="off" placeholder="nap&#345;. 3"></div>
+    <div class="field"><label>&#268;as pr&aacute;ce</label><input id="repairWorkTime" autocomplete="off" placeholder="Automaticky z času od–do"></div>
     <div class="field"><label>Doprava odkud</label><input id="repairTravelFrom" autocomplete="off" placeholder="nap&#345;. Modletice"></div>
     <div class="field"><label>Doprava kam</label><input id="repairTravelTo" autocomplete="off" placeholder="nap&#345;. Brno"></div>
     <div class="field"><label>Vzd&aacute;lenost dopravy</label><input id="repairTravelToCustomer" inputmode="decimal" autocomplete="off" placeholder="nap&#345;. 35"></div>
@@ -2574,7 +2574,7 @@ body.mobile-safe-mode .attention-count:hover{
     </select>
   </div>
   <div id="repairArchiveList" class="audit-list"></div>
-  <div class="preview-actions"><div class="preview-actions-left"><button id="closeRepairArchiveBtn" class="secondary" type="button">Zav&#345;&iacute;t</button></div><div class="preview-actions-right"><button id="newRepairFromArchiveBtn" class="primary" type="button">Nov&yacute; z&aacute;pis o oprav&#283;</button></div></div>
+  <div class="preview-actions"><div class="preview-actions-left"><button id="closeRepairArchiveBtn" class="secondary" type="button">Zav&#345;&iacute;t</button></div><div class="preview-actions-right"><button id="newRepairFromArchiveBtn" class="primary" type="button">Nov&yacute; z&aacute;pis o oprav&#283; / pravideln&eacute;m servisu</button></div></div>
 </div></div></div>
 
 <div class="app-update-banner" id="appUpdateBanner" role="status" aria-live="polite">
@@ -2601,7 +2601,7 @@ body.mobile-safe-mode .attention-count:hover{
           <button type="button" class="ghost small" id="homePlanBtn">Plán práce</button>
           <button type="button" class="ghost small" id="homePartsBtn">Náhradní díly</button>
           <button type="button" class="ghost small" id="homeFaultsBtn">Hlášení poruch</button>
-          <button type="button" class="ghost small" id="homeRepairBtn">Z&aacute;pis o oprav&#283;</button>
+          <button type="button" class="ghost small" id="homeRepairBtn">Z&aacute;pis o oprav&#283; / pravideln&eacute;m servisu</button>
           <button type="button" class="ghost small" id="homeRepairArchiveBtn">Archiv oprav</button>
           <button type="button" class="ghost small" id="homeUpcomingBtn">Blížící se kontroly</button>
           <button type="button" class="ghost small" id="homeMachineCardBtn">Karta stroje</button>
@@ -9211,7 +9211,7 @@ function renderHomeOverview(){
 
   if(note){
     note.innerHTML = activeRows.length
-      ? `Dnes je v plánu <strong>${activeRows.length}</strong> ${activeRows.length === 1 ? 'technik' : activeRows.length < 5 ? 'technici' : 'techniků'} / <strong>${todaysRows.length}</strong> záznam${todaysRows.length === 1 ? '' : todaysRows.length < 5 ? 'y' : 'ů'}.`
+      ? `Dnes ${activeRows.length >= 2 && activeRows.length <= 4 ? 'jsou' : 'je'} v plánu <strong>${activeRows.length}</strong> ${activeRows.length === 1 ? 'technik' : activeRows.length < 5 ? 'technici' : 'techniků'}`
       : 'Dnes zatím není zadaný žádný plán práce.';
   }
 
@@ -10278,10 +10278,24 @@ function repairDateTimeInputValue(value){
   return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
 }
 function repairResultChecked(value,want){ return String(value || 'fixed') === want; }
+function updateRepairWorkTime(){
+  const input = document.getElementById('repairWorkTime');
+  const start = document.getElementById('repairStartedAt')?.value;
+  const end = document.getElementById('repairFinishedAt')?.value;
+  if(!input) return;
+  const minutes = start && end ? Math.round((new Date(end) - new Date(start)) / 60000) : NaN;
+  if(!Number.isFinite(minutes) || minutes < 0){
+    if(input.dataset.autoValue === input.value) input.value = '';
+    delete input.dataset.autoValue;
+    return;
+  }
+  input.value = Math.floor(minutes / 60) + ' h' + (minutes % 60 ? ' ' + (minutes % 60) + ' min' : '');
+  input.dataset.autoValue = input.value;
+}
 function repairPhotosHtml(photos){
   const list = (Array.isArray(photos) ? photos : []).map(p => p && (p.url || p.dataUrl)).filter(Boolean);
   if(!list.length) return '';
-  return '<div class="repair-protocol-paper" style="page-break-before:always"><h1>PROTOKOL - Z&Aacute;PIS O OPRAV&#282;</h1><h2>FOTODOKUMENTACE</h2><div class="rp-photo-grid">' + list.map(src => '<div class="rp-photo"><img src="' + escapeHtml(src) + '" alt=""></div>').join('') + '</div><div class="rp-page-no">Strana 2</div></div>';
+  return '<div class="repair-protocol-paper" style="page-break-before:always"><h1>PROTOKOL - Z&Aacute;PIS O OPRAV&#282; / PRAVIDELN&Eacute;M SERVISU</h1><h2>FOTODOKUMENTACE</h2><div class="rp-photo-grid">' + list.map(src => '<div class="rp-photo"><img src="' + escapeHtml(src) + '" alt=""></div>').join('') + '</div><div class="rp-page-no">Strana 2</div></div>';
 }
 function normalizeRepairParts(parts){
   if(Array.isArray(parts)){
@@ -10484,9 +10498,9 @@ function repairProtocolHtml(r){
   const protocolPlace = repairProtocolPlace(r);
   const protocolCustomer = repairCustomerDisplay(r);
   const originalText = r.sourceFaultText ? '<div class="rp-section">P&#366;vodn&iacute; hl&aacute;&scaron;en&iacute; / z&aacute;vada</div><div class="rp-text">' + escapeHtml(r.sourceFaultText) + '</div>' : '';
-  return '<!doctype html><html><head><meta charset="utf-8"><title>Z&aacute;pis o oprav&#283;</title></head><body>' +
+  return '<!doctype html><html><head><meta charset="utf-8"><title>Z&aacute;pis o oprav&#283; / pravideln&eacute;m servisu</title></head><body>' +
     '<div class="repair-protocol-toolbar"><button onclick="prepareAndPrintRepair()" style="border:0;border-radius:10px;padding:10px 14px;font-weight:700;background:#2563eb;color:white;cursor:pointer">Tisk / PDF</button><button onclick="window.close()" style="border:0;border-radius:10px;padding:10px 14px;font-weight:700;background:#e5e7eb;color:#111827;cursor:pointer">Zav&#345;&iacute;t</button><small id="repairPrintStatus" style="align-self:center;color:#475569;font-weight:700">P&#345;ipraveno k tisku.</small></div>' +
-    '<div class="repair-protocol-paper"><h1>PROTOKOL - Z&Aacute;PIS O OPRAV&#282;</h1><h2>SERVISN&Iacute; Z&Aacute;SAH NA PRACOVN&Iacute; PLO&Scaron;IN&#282;</h2>' +
+    '<div class="repair-protocol-paper"><h1>PROTOKOL - Z&Aacute;PIS O OPRAV&#282; / PRAVIDELN&Eacute;M SERVISU</h1><h2>SERVISN&Iacute; Z&Aacute;SAH NA PRACOVN&Iacute; PLO&Scaron;IN&#282;</h2>' +
     '<div class="rp-legal">Z&aacute;pis dokumentuje provedenou opravu, ov&#283;&#345;en&iacute; funkce a stav za&#345;&iacute;zen&iacute; po servisn&iacute;m z&aacute;sahu. Nenahrazuje revizi vyhrazen&eacute;ho zdvihac&iacute;ho za&#345;&iacute;zen&iacute;, pokud je vy&#382;adov&aacute;na pr&aacute;vn&iacute;mi p&#345;edpisy nebo dokumentac&iacute; v&yacute;robce.</div>' +
     '<table class="rp-kv"><tr><th>Stroj / model</th><td>' + escapeHtml(r.type || r.model || '') + '</td><th>V&yacute;robce</th><td>' + escapeHtml(r.maker || '') + '</td></tr>' +
     '<tr><th>V&yacute;robn&iacute; / evid. &#269;.</th><td>' + escapeHtml([r.serial,r.evidence].filter(Boolean).join(' / ')) + '</td><th>Motohodiny</th><td>' + escapeHtml(r.mh || '') + '</td></tr>' +
@@ -10888,7 +10902,7 @@ function renderRepairSavedList(){
   if(!rows.length){ wrap.innerHTML = ''; return; }
   wrap.innerHTML = '<div class="audit-item"><div class="audit-title">Archiv z&aacute;pis&#367; o oprav&#283;</div><div class="audit-sub">Sd&iacute;len&yacute; archiv oprav &middot; ' + rows.length + ' z&aacute;znam&#367;.</div></div>' + rows.map(r => `
     <div class="audit-item">
-      <div class="audit-title">${escapeHtml(r.serial || r.type || r.model || 'Z&aacute;pis o oprav&#283;')} ${repairSyncBadgeHtml(r)}</div>
+      <div class="audit-title">${escapeHtml(r.serial || r.type || r.model || 'Z&aacute;pis o oprav&#283; / pravideln&eacute;m servisu')} ${repairSyncBadgeHtml(r)}</div>
       <div class="audit-sub">${escapeHtml([r.type || r.model, r.maker, repairPlaceInputValue(r.place, !!r.externalCustomer), formatDateTime(r.savedAt)].filter(Boolean).join(' · '))}</div>
       <div class="card-actions"><button class="secondary mini" type="button" data-repair-load="${escapeHtml(r.id)}">Upravit</button><button class="primary mini" type="button" data-repair-print="${escapeHtml(r.id)}">N&aacute;hled / tisk</button><button class="secondary mini" type="button" data-repair-part="${escapeHtml(r.id)}">Objednat ND</button><button class="danger mini" type="button" data-repair-delete="${escapeHtml(r.id)}">Smazat</button></div>
     </div>`).join('');
@@ -11095,6 +11109,8 @@ function openRepairModal(prefill={}){
   set('repairStartedAt', repairDateTimeInputValue(prefill.startedAt || new Date()));
   set('repairFinishedAt', repairDateTimeInputValue(prefill.finishedAt || new Date()));
   set('repairWorkTime', prefill.workTime || prefill.workDuration || prefill.casPrace);
+  delete document.getElementById('repairWorkTime').dataset.autoValue;
+  if(!document.getElementById('repairWorkTime').value) updateRepairWorkTime();
   set('repairTravelFrom', prefill.travelFrom || prefill.dopravaOdkud || prefill.doprava_odkud);
   set('repairTravelTo', prefill.travelTo || prefill.dopravaKam || prefill.doprava_kam || prefill.place);
   set('repairTravelToCustomer', prefill.travelToCustomer || prefill.travel || prefill.doprava);
@@ -14885,6 +14901,9 @@ document.getElementById('addRepairPartRowBtn')?.addEventListener('click', () => 
 document.getElementById('repairSerial')?.addEventListener('change', () => applyMachineInfoToRepair(document.getElementById('repairSerial')?.value, true));
 document.getElementById('repairSerial')?.addEventListener('blur', () => applyMachineInfoToRepair(document.getElementById('repairSerial')?.value, true));
 document.getElementById('repairPlace')?.addEventListener('change', repairSyncPlaceCustomer);
+['repairStartedAt','repairFinishedAt'].forEach(id => {
+  ['input','change'].forEach(event => document.getElementById(id)?.addEventListener(event, updateRepairWorkTime));
+});
 document.getElementById('repairPlace')?.addEventListener('blur', repairSyncPlaceCustomer);
 document.getElementById('repairPlace')?.addEventListener('focus', keepRepairPlaceFieldVisible);
 document.getElementById('repairExternalCustomer')?.addEventListener('change', wireRepairExternalDetails);
