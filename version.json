@@ -1,8 +1,8 @@
 {
-  "version": "5.396",
-  "appVersion": "1.6 / 5.396",
-  "cacheName": "liftcontrol-cz-v1-6-5-396",
-  "url": "./index.html?v=5.396",
+  "version": "5.397",
+  "appVersion": "1.6 / 5.397",
+  "cacheName": "liftcontrol-cz-v1-6-5-397",
+  "url": "./index.html?v=5.397",
   "releasedAt": "2026-10-24",
-  "message": "Samotné celkové znečištění neovlivňuje výsledek ani u již hotových čtvrtletních kontrol."
+  "message": "Karta stroje zobrazuje potvrzené opravy, původní závady a související protokoly."
 }
