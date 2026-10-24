@@ -5847,6 +5847,24 @@ function quarterlyRepairFollowUp(sourceId, rows=data){
   if(!sourceId) return null;
   return (rows || []).find(row => String(row?.repairFollowUpOf || '') === String(sourceId)) || null;
 }
+function quarterlyRepairIssueDetails(source){
+  if(!source) return '';
+  return getStepsForRecord(source).filter(step =>
+    ['yn','yntext','yntextphoto'].includes(step.type) && isProblemAnswer(step.k, source[step.k], source)
+  ).map(step => {
+    const note = String(source[step.textKey || step.k + '_p'] || '').trim();
+    return protocolIssueLabel(step) + (note ? ': ' + note : '');
+  }).join('; ') || protocolIssueSummary(source, 20);
+}
+function quarterlyRepairHistoryHtml(record, protocols){
+  const followUp = quarterlyRepairFollowUp(record.id, protocols);
+  const repaired = record.repairFollowUpOf ? record : followUp;
+  if(!repaired) return '';
+  const source = protocols.find(row => String(row.id) === String(repaired.repairFollowUpOf));
+  const issues = quarterlyRepairIssueDetails(source) || repaired.repairSourceIssues || 'Viz původní protokol';
+  const related = record.repairFollowUpOf ? source : followUp;
+  return `<span class="machine-card-summary"><strong>Odstranění závad potvrzeno</strong> · ${escapeHtml(formatDateTime(repaired.repairConfirmedAt || repaired.savedAt || repaired.datum))} · ${escapeHtml(repaired.repairConfirmedBy || repaired.technik || '—')}<br><strong>Původní závady:</strong> ${escapeHtml(issues)}</span>${related ? `<button class="secondary mini" data-open-id="${escapeHtml(related.id)}">${record.repairFollowUpOf ? 'Otevřít původní protokol se závadou' : 'Otevřít protokol po opravě'}</button>` : ''}`;
+}
 function repairedQuarterlyPhotoRefs(photos){
   const out = {};
   Object.entries(photos || {}).forEach(([key, photo]) => {
@@ -5858,7 +5876,7 @@ function buildRepairedQuarterlyProtocol(source, actor){
   const repaired = JSON.parse(JSON.stringify(source || {}));
   const now = new Date().toISOString();
   const repairedDate = todayLocal();
-  const sourceIssues = protocolIssueSummary(source, 20) || 'Závady uvedené v původním protokolu';
+  const sourceIssues = quarterlyRepairIssueDetails(source) || 'Závady uvedené v původním protokolu';
   repaired.id = uid();
   repaired.datum = repairedDate;
   repaired.dalsiKontrola = addMonthsToDate(repairedDate, 3);
@@ -5926,6 +5944,7 @@ async function createRepairedQuarterlyProtocol(id, button){
     logAuditAction('create','protocol',repaired,actor,`Navazující protokol po odstranění závad · původní kontrola ${formatDate(source.datum)} · ${issues}`)
       .catch(err => console.warn('Audit potvrzení opravy se nepodařilo zapsat na pozadí.', err));
     render();
+    updateMainOverview();
     if(saveResult?.cloud) alert('Oprava potvrzena. Byl vytvořen nový protokol bez závad a původní protokol zůstal zachovaný v historii.');
     else alertCloudResult(saveResult, 'Nový protokol po opravě');
   }catch(err){
@@ -7187,7 +7206,10 @@ function getMachineState(serial){
   }
   const openPart = rows.parts.find(p => !p.sent && !p.resolved);
   if(openPart) return {txt:'Čeká na ND', cls:'status-machine-warn'};
-  const issueProtocol = rows.protocols.find(r => hasIssue(r));
+  const issueProtocol = rows.protocols.find(r => {
+    const followUp = quarterlyRepairFollowUp(r.id, rows.protocols);
+    return hasIssue(r) && !(followUp && !hasIssue(followUp));
+  });
   if(issueProtocol) return {txt:'Závada v protokolu', cls:'status-machine-bad'};
   return {txt:'OK / schopné provozu', cls:'status-machine-ok'};
 }
@@ -7868,7 +7890,7 @@ function openHistoryModal(serial){
     <div class="machine-card-block">
       <h4>Protokoly</h4>
       <div class="machine-card-list">
-        ${rows.protocols.length ? rows.protocols.map(r => `<div class="machine-card-row" data-history-date="${escapeHtml(syncTimestamp(r.datum))}"><span><strong>Tříměsíční kontrola</strong> · ${escapeHtml(formatDate(r.datum) || 'Bez data')} · ${escapeHtml(r.technik || r.enteredBy || '—')} · ${escapeHtml(r.typ || '—')}<br>${escapeHtml(r.datum||'Bez data')} · ${escapeHtml(displayPlaceName(r.umisteni)||'Bez místa')} · ${hasIssue(r)?('se závadou: '+escapeHtml(protocolIssueSummary(r,2))):'bez závad'}</span><button class="secondary mini" data-open-id="${r.id}">Otevřít celý zápis</button></div>`).join('') : '<div class="part-sub">Bez uložených protokolů.</div>'}
+        ${rows.protocols.length ? rows.protocols.map(r => `<div class="machine-card-row" data-history-date="${escapeHtml(syncTimestamp(r.repairConfirmedAt || r.datum))}"><span><strong>Tříměsíční kontrola</strong> · ${escapeHtml(formatDate(r.datum) || 'Bez data')} · ${escapeHtml(r.technik || r.enteredBy || '—')} · ${escapeHtml(r.typ || '—')}<br>${escapeHtml(r.datum||'Bez data')} · ${escapeHtml(displayPlaceName(r.umisteni)||'Bez místa')} · ${hasIssue(r)?('se závadou: '+escapeHtml(protocolIssueSummary(r,2))):'bez závad'}${quarterlyRepairHistoryHtml(r, rows.protocols)}</span><button class="secondary mini" data-open-id="${r.id}">Otevřít celý zápis</button></div>`).join('') : '<div class="part-sub">Bez uložených protokolů.</div>'}
       </div>
     </div>
 
