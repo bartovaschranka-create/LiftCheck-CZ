@@ -5705,8 +5705,8 @@ function isCProblemAnswer(record, value){
 }
 function isProblemAnswer(key, value, record){
   if(value !== 'ANO' && value !== 'NE') return false;
-  // Version only new quarterly records; archived protocols retain their result.
-  if(key === 'C1' && value === 'ANO' && record?.quarterlyEvaluationVersion === 2) return false;
+  // Contamination alone is informational for all quarterly records, including archived ones.
+  if(key === 'C1' && value === 'ANO') return false;
   if(isGeneralCheckKey(key)) return isCProblemAnswer(record, value);
   return isInvertedIssueKey(key) ? value === 'ANO' : value === 'NE';
 }
