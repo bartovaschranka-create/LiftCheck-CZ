@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict');
+const {previewHistoryLinks}=require('../tools/history-link-dry-run.cjs');
+const input={protocols:[{id:'one',vc:' sn-001 ',model:'GS-2032'},{id:'two',vc:'SN001',model:'GS2032'},{vc:'SN001',model:'GS2032'},{id:'no-serial'}],faults:[{id:'fault',serial:'SN002',maker:'Maker A'},{id:'other',serial:'SN002',maker:'Maker B'}]};
+const before=JSON.stringify(input),preview=previewHistoryLinks(input);
+assert.equal(JSON.stringify(input),before);assert.equal(preview.readOnly,true);
+assert.equal(preview.proposals.length,1);assert.equal(preview.proposals[0].documents.length,3);
+assert.ok(preview.review.some(item=>item.reason==='missing_serial'));
+assert.ok(preview.review.some(item=>item.reason==='conflicting_machine_identity'));
+assert.ok(preview.review.some(item=>item.reason==='missing_document_id'));
+assert.deepEqual(preview,previewHistoryLinks(input));
+assert.equal(preview.proposals[0].documents.filter(item=>item.id).length,2);
+console.log('history-link-dry-run: immutable input, stable proposals, document identity preservation, conflicting serial and missing ID review passed');
