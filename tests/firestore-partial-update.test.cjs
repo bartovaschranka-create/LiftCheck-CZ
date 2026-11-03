@@ -1,6 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
-const code=html.slice(html.indexOf('async function setAndVerifyFirestoreRest('),html.indexOf('function cloudSaveResult('));
+// Include the real canonical comparison dependency used by full-save verification.
+const code=html.slice(html.indexOf('function canonicalFirestoreRestFields('),html.indexOf('function cloudSaveResult('));
 let saved, requests=[];
 const context=vm.createContext({URL,console,window:{fetch:true},firebaseAvailable:true,db:{},setTimeout:()=>{},
   firestoreRestDocUrl:()=> 'https://example.invalid/doc?key=test',
