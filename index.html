@@ -8041,23 +8041,17 @@ function openHistoryModal(serial){
   `;
   const events = [...els.historyBody.querySelectorAll('[data-history-date]')];
   const entries=machineHistoryEntries(rows);
-  const byRecord=new Map(events.map((row,index)=>[row,entries[index]]));
   events.sort((a,b) => (Date.parse(b.dataset.historyDate) || 0) - (Date.parse(a.dataset.historyDate) || 0));
   const timeline = document.createElement('div');
   timeline.className = 'machine-card-block';
   timeline.innerHTML = '<h4>Kompletní historie stroje</h4><div class="machine-card-list"></div>';
   const list = timeline.querySelector('.machine-card-list');
   events.forEach(row => list.append(row));
-  for(const [row,entry] of byRecord){
-    const button=document.createElement('button');button.className='secondary mini';button.textContent='Původní údaje / tisk';
-    button.addEventListener('click',()=>openStoredHistoryRecord(entry.label,entry.record));row.append(button);
-  }
   const controls=document.createElement('div');controls.className='machine-card-block';
   const status=machineHistoryLoads.get(normalizeSerial(serial));
-  controls.innerHTML='<p>'+escapeHtml(status?.text || 'Úplnost neověřena. Zobrazeny jsou aktuálně dostupné záznamy; starší audit načtěte z Firebase.')+'</p><button type="button" data-history-refresh>Načíst úplnou historii</button> <button type="button" data-history-print>Vytisknout historii stroje</button>';
+  controls.innerHTML='<p>'+escapeHtml(status?.text || 'Úplnost neověřena. Zobrazeny jsou aktuálně dostupné záznamy; starší audit načtěte z Firebase.')+'</p><button type="button" data-history-refresh>Načíst úplnou historii</button>';
   controls.querySelector('[data-history-refresh]').disabled=!!status?.loading;
   controls.querySelector('[data-history-refresh]').addEventListener('click',()=>refreshCompleteMachineHistory(serial));
-  controls.querySelector('[data-history-print]').addEventListener('click',()=>printMachineHistory(serial));
   timeline.prepend(controls);
   const audits=machineHistoryAudit(serial,entries);
   const auditBlock=document.createElement('div');auditBlock.className='machine-card-block';

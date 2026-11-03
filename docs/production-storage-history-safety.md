@@ -1,5 +1,7 @@
 # Opravy ostré verze LiftControl CZ – podklady ke kontrole
 
+Aktualizace podle připomínky uživatele: z karty stroje byla odstraněna tlačítka **Vytisknout historii stroje** a **Původní údaje / tisk**, protože technický výpis uložených polí není pro běžnou práci užitečný. Původní otevírání jednotlivých záznamů a jejich schválené tiskové protokoly zůstávají. Níže uvedený popis univerzálních výpisů dokumentuje předchozí implementaci; tyto dvě akce již karta nenabízí. Test ověřuje jejich nepřítomnost i zachování všech řádků historie.
+
 Datum: 3. 11. 2026. Pracovní větev: `codex/production-storage-history-safety`.
 Ověřený výchozí produkční `main`: `002a16a28a16b3854cd3e0de719720ff4cad0a34`.
 Aktuálnost byla ověřena čtením GitHub API; místní `HEAD` měl před vytvořením větve stejný obsah. Běžný `git fetch` blokovala systémová politika načítání `libcurl-4.dll`; ověření proto proběhlo konektorem GitHub. Nová větev byla zarovnána na ověřený `origin/main`.
