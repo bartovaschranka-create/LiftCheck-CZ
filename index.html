@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0f5fbf">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -3631,7 +3631,7 @@ function filterDeletedProtocols(rows){
 
 function getLastEnteredBy(){ try { return localStorage.getItem('liftcontrol_last_entered_by') || ''; } catch(e) { return ''; } }
 function setLastEnteredBy(name){ try { if(name) localStorage.setItem('liftcontrol_last_entered_by', name); } catch(e) {} }
-function getEnteredByDefault(){ return getLastEnteredBy() || 'Jan Bartoš'; }
+function getEnteredByDefault(){ return getLastEnteredBy(); }
 function getLastHandlerBy(){ try { return localStorage.getItem('liftcontrol_last_handler_by') || ''; } catch(e) { return ''; } }
 function setLastHandlerBy(name){ try { if(name) localStorage.setItem('liftcontrol_last_handler_by', name); } catch(e) {} }
 function askHandlerBy(question='Kdo to řešil / doplnil?'){
@@ -3643,7 +3643,7 @@ function askHandlerBy(question='Kdo to řešil / doplnil?'){
 }
 function operatorOptionsHtml(selected=''){
   const names = uniqueNonEmpty([selected, getLastEnteredBy(), ...(TECHNICI || [])]);
-  return names.map(n => `<option value="${escapeHtml(n)}" ${n===selected?'selected':''}>${escapeHtml(n)}</option>`).join('');
+  return '<option value="">Vyberte autora</option>' + names.map(n => `<option value="${escapeHtml(n)}" ${n===selected?'selected':''}>${escapeHtml(n)}</option>`).join('');
 }
 function externalDetailsHtml(prefix, obj={}){
   const on = !!(obj && obj.externalCustomer);
@@ -4084,7 +4084,7 @@ async function saveVersionedRecord(collectionName,id,record,label,setMs,getMs){
 async function setAndVerifyFirestore(collectionName, id, record, label, setMs=30000, getMs=15000){
   if(!(firebaseAvailable && db)) throw new Error('Firebase neni dostupny.');
   if(!collectionName || !id) throw new Error(label + ': chybi kolekce nebo ID zaznamu.');
-  if(collectionName===REVIZE_ZZ_COLLECTION_NAME || collectionName===REPAIRS_COLLECTION_NAME) return saveVersionedRecord(collectionName,id,record,label,setMs,getMs);
+  if(collectionName===REVIZE_ZZ_COLLECTION_NAME || collectionName===REPAIRS_COLLECTION_NAME || collectionName===PARTS_COLLECTION_NAME) return saveVersionedRecord(collectionName,id,record,label,setMs,getMs);
   try{
     return await setAndVerifyFirestoreRest(collectionName, id, record, label, setMs, getMs);
   }catch(restErr){
@@ -4864,11 +4864,21 @@ function preferMergedRow(current, next){
 }
 function mergeRowsById(primary=[], secondary=[]){
   const byKey=new Map();
-  [...(primary||[]), ...(secondary||[])].forEach(row=>{
-    if(!row) return;
-    const key=row.id || [row.vc,row.protokol,row.datum,row.savedAt,row.updatedAt].filter(Boolean).join('|') || JSON.stringify(row);
-    byKey.set(key, preferMergedRow(byKey.get(key), row));
-  });
+  for(const source of [primary, secondary]){
+    const legacyCounts = new Map();
+    (source||[]).forEach(row=>{
+      if(!row) return;
+      let key;
+      if(row.id != null && row.id !== '') key='id:'+String(row.id);
+      else{
+        // Preserve every occurrence in a legacy archive. Match repeated reads
+        // by the complete snapshot and occurrence, never by serial/date alone.
+        const content=JSON.stringify(row), occurrence=(legacyCounts.get(content)||0)+1;
+        legacyCounts.set(content,occurrence);key='legacy:'+content+':'+occurrence;
+      }
+      byKey.set(key, preferMergedRow(byKey.get(key), row));
+    });
+  }
   return Array.from(byKey.values()).sort((a,b)=>rowSyncTime(b)-rowSyncTime(a));
 }
 function mergeCloudWithLocal(cloudRows, localRows, saveLocal){
@@ -5007,6 +5017,7 @@ async function runPendingSyncBatch(reason='manual', force=false){
     await retryPendingFaultSync();
     await retryPendingRepairSync();
     await retryPendingRevizeSync();
+    await retryPendingAuditSync();
     pendingSyncLastAt = Date.now();
   }catch(err){
     console.warn('Pending sync batch failed (' + reason + '):', err);
@@ -5227,6 +5238,11 @@ let currentFaultPhotos = [];
 let editingFaultId = null;
 let currentPartPhotos = [];
 let editingPartId = null;
+let partFormOriginalRecord = null;
+let unsavedPartRecord = null;
+window.addEventListener('beforeunload', event => {
+  if(unsavedPartRecord || quarterlyDraftStorageFailed || unsavedAuditEntries.size){ event.preventDefault(); event.returnValue = ''; }
+});
 let currentWorkWeekStart = null;
 let currentHomeDate = new Date();
 let editingWorkPlanId = null;
@@ -5249,6 +5265,7 @@ const QUARTERLY_DRAFT_KEY = 'liftcontrol_quarterly_protocol_draft_v2';
 const QUARTERLY_DRAFT_PHOTOS_KEY = 'liftcontrol_quarterly_protocol_draft_photos_v1';
 let quarterlyDraftSaveTimer = null;
 let quarterlyDraftEnabled = true;
+let quarterlyDraftStorageFailed = false;
 let quarterlyDraftPhotoCacheDirty = true;
 let quarterlySuggestCache = {};
 let quarterlySuggestTimer = null;
@@ -5293,8 +5310,8 @@ function quarterlyDraftPhotoPayload(draft){
 }
 function saveQuarterlyDraftPhotoCache(draft, force=false){
   try{
-    if(!draft || !draft.id) return;
-    if(!force && !quarterlyDraftPhotoCacheDirty) return;
+    if(!draft || !draft.id) return false;
+    if(!force && !quarterlyDraftPhotoCacheDirty) return true;
     const payload = quarterlyDraftPhotoPayload(draft);
     if(draftHasPhotoData(payload) || payload.techSignature || payload.customerSignature){
       localStorage.setItem(QUARTERLY_DRAFT_PHOTOS_KEY, JSON.stringify(payload));
@@ -5302,8 +5319,10 @@ function saveQuarterlyDraftPhotoCache(draft, force=false){
       localStorage.removeItem(QUARTERLY_DRAFT_PHOTOS_KEY);
     }
     quarterlyDraftPhotoCacheDirty = false;
+    return true;
   }catch(err){
     console.warn('Quarterly draft photo cache save failed', err);
+    return false;
   }
 }
 function saveQuarterlyDraft(reason=''){
@@ -5315,15 +5334,16 @@ function saveQuarterlyDraft(reason=''){
   const forcePhotoCache = /photo|signature|manual-button|preview/i.test(String(reason || ''));
   try{
     localStorage.setItem(QUARTERLY_DRAFT_KEY, JSON.stringify(stripDraftPhotoData(draft)));
-    saveQuarterlyDraftPhotoCache(draft, forcePhotoCache);
-    return true;
+    quarterlyDraftStorageFailed = !saveQuarterlyDraftPhotoCache(draft, forcePhotoCache);
+    return !quarterlyDraftStorageFailed;
   }catch(err){
     try{
       localStorage.setItem(QUARTERLY_DRAFT_KEY, JSON.stringify(stripDraftPhotoData(draft)));
-      saveQuarterlyDraftPhotoCache(draft, forcePhotoCache);
-      return true;
-    }catch(_e){}
+      quarterlyDraftStorageFailed = !saveQuarterlyDraftPhotoCache(draft, forcePhotoCache);
+      return !quarterlyDraftStorageFailed;
+    }catch(error){console.warn('Rozpracovanou kontrolu nelze uložit.',error);}
   }
+  quarterlyDraftStorageFailed = true;
   return false;
 }
 function scheduleQuarterlyDraftSave(reason=''){
@@ -5350,6 +5370,7 @@ function loadQuarterlyDraft(){
   }
 }
 function clearQuarterlyDraft(){
+  quarterlyDraftStorageFailed = false;
   clearTimeout(quarterlyDraftSaveTimer);
   try{ localStorage.removeItem(QUARTERLY_DRAFT_KEY); }catch(e){}
   try{ localStorage.removeItem(QUARTERLY_DRAFT_PHOTOS_KEY); }catch(e){}
@@ -6979,7 +7000,10 @@ function downloadById(id){
 
 let auditData = [];
 function loadLocalAudit(){ try { return JSON.parse(localStorage.getItem('liftcontrol_audit_local') || '[]'); } catch(e) { return []; } }
-function saveLocalAudit(rows){ try { localStorage.setItem('liftcontrol_audit_local', JSON.stringify(rows)); } catch(e) {} }
+function saveLocalAudit(rows){
+  try { localStorage.setItem('liftcontrol_audit_local', JSON.stringify(rows)); return localSaveResult(true); }
+  catch(error) { console.error('Místní audit se nepodařilo uložit.',error); return localSaveResult(false,error); }
+}
 function auditUid(){ return 'audit_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
 function summarizeRecordForAudit(record){
   record = record || {};
@@ -6991,13 +7015,36 @@ function auditEntityLabel(entity){
 function auditActionLabel(action){
   return ({create:'Vytvořeno', update:'Upraveno', delete:'Smazáno', status:'Změna stavu', restore:'Obnova'})[action] || action || 'Změna';
 }
+const unsavedAuditEntries = new Map();
+const auditSyncInFlight = new Set();
+function retainAuditEntry(item){
+  const rows=[item,...loadLocalAudit().filter(row=>String(row.id)!==String(item.id))];
+  const result=saveLocalAudit(rows);
+  auditData=[item,...(auditData||[]).filter(row=>String(row.id)!==String(item.id))];
+  if(result.ok || !item.auditPending) unsavedAuditEntries.delete(item.id);
+  else unsavedAuditEntries.set(item.id,item);
+  return result;
+}
+async function syncAuditEntry(item){
+  if(!(firebaseAvailable && db) || auditSyncInFlight.has(item.id)) return;
+  auditSyncInFlight.add(item.id);
+  try{
+    const cloud={...cloneForCloudSync(item),auditPending:false};
+    await setAndVerifyFirestore(AUDIT_COLLECTION_NAME,item.id,cloud,'Uložení historie změn',30000,15000);
+    Object.assign(item,cloud);retainAuditEntry(item);
+  }catch(error){console.warn('Audit čeká na synchronizaci.',error);}
+  finally{auditSyncInFlight.delete(item.id);}
+}
+async function retryPendingAuditSync(){
+  for(const item of mergeRowsById(auditData,loadLocalAudit()).filter(row=>row.auditPending)) await syncAuditEntry(item);
+}
 async function logAuditAction(action, entity, record, by, detail, beforeRecord){
   try{
     const hasBeforeArg = arguments.length >= 6;
     const beforeSnapshot = hasBeforeArg ? beforeRecord : (action === 'delete' ? record : null);
     const afterSnapshot = action === 'delete' ? null : record;
     const item = {
-      id: auditUid(), action, entity,
+      id: auditUid(), action, entity, auditPending:true,
       entityId: record?.id || '',
       by: String(by || getEnteredByDefault() || '').trim() || 'Neuvedeno',
       detail: detail || summarizeRecordForAudit(record),
@@ -7009,14 +7056,9 @@ async function logAuditAction(action, entity, record, by, detail, beforeRecord){
       before: beforeSnapshot ? cloneForAuditSnapshot(beforeSnapshot) : null,
       after: afterSnapshot ? cloneForAuditSnapshot(afterSnapshot) : null
     };
-    const rows = loadLocalAudit();
-    rows.unshift(item);
-    saveLocalAudit(rows.slice(0,300));
-    auditData = rows.slice(0,300);
-    if(firebaseAvailable && db){
-      setAndVerifyFirestore(AUDIT_COLLECTION_NAME, item.id, item, 'Ulozeni historie zmen', 30000, 15000)
-        .catch(err => console.warn('Cloud sync historie změn selhal, lokální záznam zůstává uložený.', err));
-    }
+    const result=retainAuditEntry(item);
+    if(!result.ok) console.warn('Audit zatím není uložený v zařízení; probíhá pokus o odeslání do Firebase.');
+    syncAuditEntry(item).catch(error=>console.error('Odeslání auditu selhalo.',error));
   }catch(e){ console.warn('Nepodařilo se zapsat historii změn:', e); }
 }
 function promptDeleteActor(recordLabel){
@@ -7191,7 +7233,7 @@ function getMachineRows(serial){
     protocols: data.filter(matches).sort((a,b)=>String(b.datum||'').localeCompare(String(a.datum||''))),
     faults: faultsData.filter(matches).sort((a,b)=>String(b.createdAt||b.date||'').localeCompare(String(a.createdAt||a.date||''))),
     parts: partsData.filter(matches).sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||''))),
-    repairs: loadLocalRepairs().filter(matches).map(r => normalizeRepairRecordForProtocol(r)).sort((a,b)=>String(b.savedAt||b.finishedAt||'').localeCompare(String(a.savedAt||a.finishedAt||''))),
+    repairs: mergeRowsById(repairHistoryRows,loadLocalRepairs()).filter(matches).map(r => normalizeRepairRecordForProtocol(r)).sort((a,b)=>String(b.savedAt||b.finishedAt||'').localeCompare(String(a.savedAt||a.finishedAt||''))),
     revize: revizeData.filter(matches).sort((a,b)=>String(b.datum_kontroly||'').localeCompare(String(a.datum_kontroly||'')))
   };
 }
@@ -7864,6 +7906,82 @@ function bindAttentionCounterClicks(){
 function openMachineCard(serial){
   openHistoryModal(serial);
 }
+const machineHistoryLoads = new Map();
+let repairHistoryRows = [];
+function machineHistoryEntries(rows){
+  const originalRepairs=mergeRowsById(repairHistoryRows,loadLocalRepairs());
+  return [['protocols','Čtvrtletní kontrola'],['revize','Revize ZZ'],['faults','Hlášení poruchy'],['parts','Náhradní díl'],['repairs','Zápis o opravě / pravidelném servisu']]
+    .flatMap(([key,label]) => (rows[key] || []).map(row => {
+      const record=key==='repairs' ? originalRepairs.find(r=>r.id != null && String(r.id)===String(row.id)) || originalRepairs.find(r=>JSON.stringify(normalizeRepairRecordForProtocol(r))===JSON.stringify(row)) || row : row;
+      return {label,entity:({protocols:'protocol',revize:'revize_zz',faults:'fault',parts:'part',repairs:'repair'})[key],record,date:syncTimestamp(record.datum || record.datum_kontroly || record.createdAt || record.finishedAt || record.savedAt || record.date)};
+    }));
+}
+function machineHistoryAudit(serial, entries){
+  const target=normalizeSerial(serial);if(!target) return [];
+  const ids = new Set(entries.filter(e=>e.record.id != null).map(e=>e.entity+':'+String(e.record.id)));
+  return mergeRowsById(auditData, loadLocalAudit()).filter(row => {
+    const original=normalizeSerial(row.serial || row.before?.serial || row.before?.vc || row.before?.vyrobni_cislo || row.after?.serial || row.after?.vc || row.after?.vyrobni_cislo);
+    return original ? original===target : ids.has(row.entity+':'+String(row.entityId || ''));
+  });
+}
+async function refreshCompleteMachineHistory(serial){
+  const key = normalizeSerial(serial);
+  if(machineHistoryLoads.get(key)?.loading) return;
+  machineHistoryLoads.set(key,{loading:true,text:'Načítám všechny stránky historie…'});
+  openHistoryModal(serial);
+  const sources = [
+    [COLLECTION_NAME, rows => {data=mergeRowsById(data,filterDeletedProtocols(rows));}],
+    [REVIZE_ZZ_COLLECTION_NAME, rows => {revizeData=mergeRowsById(revizeData,filterDeletedRevizeRows(rows));}],
+    [FAULTS_COLLECTION_NAME, rows => {faultsData=mergeRowsById(faultsData,rows);}],
+    [PARTS_COLLECTION_NAME, rows => {partsData=mergeRowsById(partsData,rows);}],
+    [REPAIRS_COLLECTION_NAME, rows => {repairHistoryRows=mergeRowsById(rows,repairHistoryRows);} ],
+    [AUDIT_COLLECTION_NAME, rows => {auditData=mergeRowsById(auditData,rows);}]
+  ];
+  const failures=[];
+  for(const [collection,accept] of sources){
+    try{accept(await getCollectionRowsFromServer(collection));}
+    catch(error){failures.push(collection+': '+errorText(error));}
+  }
+  machineHistoryLoads.set(key,{loading:false,text:failures.length
+    ? 'Historie není úplně ověřena. Dostupné záznamy zůstávají zobrazené. '+failures.join('; ')
+    : 'Všechny stránky všech šesti zdrojů načteny. Úplnost původních dat nelze zpětně doložit.'});
+  if(els.historyModal.dataset.serial === serial && els.historyModal.classList.contains('show')) openHistoryModal(serial);
+}
+function storedHistoryValueHtml(value){
+  if(value == null || value === '') return '<span>Neuvedeno v uloženém záznamu</span>';
+  if(Array.isArray(value)) return value.length ? value.map(item=>'<div>'+storedHistoryValueHtml(item)+'</div>').join('') : '[]';
+  if(typeof value === 'object') return '<table>'+Object.entries(value).map(([key,item])=>'<tr><th>'+escapeHtml(key)+'</th><td>'+storedHistoryValueHtml(item)+'</td></tr>').join('')+'</table>';
+  const text=String(value);
+  if(/^https?:\/\//i.test(text)) return '<a target="_blank" rel="noopener noreferrer" href="'+escapeHtml(text)+'">'+escapeHtml(text)+'</a>';
+  if(/^data:image\/(png|jpeg|webp|gif);base64,/i.test(text)) return '<img alt="Uložená příloha" style="max-width:100%;max-height:240mm" src="'+escapeHtml(text)+'">';
+  return escapeHtml(text);
+}
+const HISTORY_PRINT_STYLES = 'body{font:14px sans-serif;color:#111;background:white;margin:20px}.paper{max-width:190mm;margin:auto}table{border-collapse:collapse;width:100%;table-layout:fixed}td,th{border:1px solid #bbb;padding:6px;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{width:28%}img{max-width:100%}h2{break-after:avoid}.history-record{break-before:page}@media print{.print-toolbar{display:none}body{margin:0}a{color:inherit}}';
+async function openStoredHistoryRecord(label, record){
+  const w=openBatchPrintWindow({title:label,styles:HISTORY_PRINT_STYLES,count:1,
+    bodyHtml:'<article class="paper"><h1>'+escapeHtml(label)+'</h1><p>Původní uložené údaje. Chybějící pole nebyla doplněna. Úplnost dokumentu není ověřena; místní přílohy bez dostupného obsahu mají pouze uložený odkaz nebo klíč.</p>'+storedHistoryValueHtml(record)+'</article>'});
+  if(!w) return;
+  const localPhotos=Array.isArray(record.photos) && record.photos.some(photo=>photo?.localPhotoKey);
+  const signatures=['techSignature','receiverSignature'].filter(field=>record[field+'Key']);
+  if(!localPhotos && !signatures.length) return;
+  const button=w.document.querySelector('.print-toolbar button');if(button)button.disabled=true;
+  const section=w.document.createElement('section');section.textContent='Načítám původní místní přílohy…';w.document.querySelector('.paper').append(section);
+  try{
+    const hydrated=localPhotos ? await hydrateFaultPhotos(cloneForCloudSync(record)) : {record:{photos:[]},errors:[]};
+    const values={photos:hydrated.record.photos};
+    for(const field of signatures){const stored=await getFaultPhotoData(record[field+'Key']);values[field]=stored?.dataUrl || 'Původní příloha není dostupná v tomto zařízení.';}
+    section.innerHTML='<h2>Původní místní přílohy</h2>'+storedHistoryValueHtml(values)+(hydrated.errors.length?'<p>Některé přílohy nejsou dostupné.</p>':'');
+  }catch(error){section.textContent='Přílohy se nepodařilo načíst: '+errorText(error);}
+  finally{if(button)button.disabled=false;}
+}
+function printMachineHistory(serial){
+  const entries=machineHistoryEntries(getMachineRows(serial));
+  entries.push(...machineHistoryAudit(serial,entries).map(record=>({label:'Audit / změna stavu',record,date:syncTimestamp(record.createdAt)})));
+  entries.sort((a,b)=>(Date.parse(a.date)||0)-(Date.parse(b.date)||0));
+  const status=machineHistoryLoads.get(normalizeSerial(serial))?.text || 'Úplnost neověřena: pouze aktuálně dostupná historie. Pro načtení všech cloudových zdrojů použijte Načíst úplnou historii.';
+  openBatchPrintWindow({title:'Historie stroje '+serial,styles:HISTORY_PRINT_STYLES,count:entries.length,
+    bodyHtml:'<article class="paper"><h1>Historie stroje '+escapeHtml(serial)+'</h1><p>'+escapeHtml(status)+'</p><p>Počet záznamů: '+entries.length+'</p>'+entries.map(e=>'<section><h2>'+escapeHtml(e.date||'Bez uloženého data')+' · '+escapeHtml(e.label)+'</h2>'+storedHistoryValueHtml(e.record)+'</section>').join('')+'</article>'});
+}
 function openHistoryModal(serial){
   const rows = getMachineRows(serial);
   els.historyModal.dataset.serial = serial;
@@ -7922,12 +8040,30 @@ function openHistoryModal(serial){
     </div>
   `;
   const events = [...els.historyBody.querySelectorAll('[data-history-date]')];
+  const entries=machineHistoryEntries(rows);
+  const byRecord=new Map(events.map((row,index)=>[row,entries[index]]));
   events.sort((a,b) => (Date.parse(b.dataset.historyDate) || 0) - (Date.parse(a.dataset.historyDate) || 0));
   const timeline = document.createElement('div');
   timeline.className = 'machine-card-block';
   timeline.innerHTML = '<h4>Kompletní historie stroje</h4><div class="machine-card-list"></div>';
   const list = timeline.querySelector('.machine-card-list');
   events.forEach(row => list.append(row));
+  for(const [row,entry] of byRecord){
+    const button=document.createElement('button');button.className='secondary mini';button.textContent='Původní údaje / tisk';
+    button.addEventListener('click',()=>openStoredHistoryRecord(entry.label,entry.record));row.append(button);
+  }
+  const controls=document.createElement('div');controls.className='machine-card-block';
+  const status=machineHistoryLoads.get(normalizeSerial(serial));
+  controls.innerHTML='<p>'+escapeHtml(status?.text || 'Úplnost neověřena. Zobrazeny jsou aktuálně dostupné záznamy; starší audit načtěte z Firebase.')+'</p><button type="button" data-history-refresh>Načíst úplnou historii</button> <button type="button" data-history-print>Vytisknout historii stroje</button>';
+  controls.querySelector('[data-history-refresh]').disabled=!!status?.loading;
+  controls.querySelector('[data-history-refresh]').addEventListener('click',()=>refreshCompleteMachineHistory(serial));
+  controls.querySelector('[data-history-print]').addEventListener('click',()=>printMachineHistory(serial));
+  timeline.prepend(controls);
+  const audits=machineHistoryAudit(serial,entries);
+  const auditBlock=document.createElement('div');auditBlock.className='machine-card-block';
+  auditBlock.innerHTML='<h4>Audit a změny stavů ('+audits.length+')</h4>';
+  for(const record of audits){const button=document.createElement('button');button.className='secondary mini';button.textContent=(record.createdAt||'Bez data')+' · '+(record.detail||record.action||'Změna');button.addEventListener('click',()=>openStoredHistoryRecord('Audit / změna stavu',record));auditBlock.append(button);}
+  timeline.append(auditBlock);
   if(!events.length) list.innerHTML = '<div class="part-sub">Bez uložených událostí.</div>';
   [...els.historyBody.children].slice(1).forEach(block => block.remove());
   els.historyBody.append(timeline);
@@ -7938,9 +8074,10 @@ function openHistoryModal(serial){
   els.historyBody.querySelectorAll('[data-fault-protocol]').forEach(btn => btn.addEventListener('click', () => printRepairProtocol(btn.dataset.faultProtocol)));
   els.historyBody.querySelectorAll('[data-fault-create-protocol]').forEach(btn => btn.addEventListener('click', () => { closeHistoryModal(); createProtocolFromFault(btn.dataset.faultCreateProtocol); }));
   els.historyBody.querySelectorAll('[data-part-open]').forEach(btn => btn.addEventListener('click', () => { closeHistoryModal(); openPartsModal(); closePartForm(); scrollToPartCard(btn.dataset.partOpen); }));
-  els.historyBody.querySelectorAll('[data-repair-load]').forEach(btn => btn.addEventListener('click', () => { const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairLoad)); if(rec){ closeHistoryModal(); openRepairModal(rec); } }));
-  els.historyBody.querySelectorAll('[data-repair-print]').forEach(btn => btn.addEventListener('click', () => { const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairPrint)); if(rec){ closeHistoryModal(); printRepairRecord(rec); } }));
-  els.historyBody.querySelectorAll('[data-repair-part]').forEach(btn => btn.addEventListener('click', () => { const rec = loadLocalRepairs().find(x => String(x.id) === String(btn.dataset.repairPart)); if(rec){ closeHistoryModal(); openPartFromRepair(rec); } }));
+  const historyRepairById=id=>entries.find(entry=>entry.entity==='repair' && String(entry.record.id)===String(id))?.record;
+  els.historyBody.querySelectorAll('[data-repair-load]').forEach(btn => btn.addEventListener('click', () => { const record=historyRepairById(btn.dataset.repairLoad); if(record){ closeHistoryModal(); openRepairModal(record); } }));
+  els.historyBody.querySelectorAll('[data-repair-print]').forEach(btn => btn.addEventListener('click', () => { const record=historyRepairById(btn.dataset.repairPrint); if(record){ closeHistoryModal(); printRepairRecord(record); } }));
+  els.historyBody.querySelectorAll('[data-repair-part]').forEach(btn => btn.addEventListener('click', () => { const record=historyRepairById(btn.dataset.repairPart); if(record){ closeHistoryModal(); openPartFromRepair(record); } }));
   els.historyBody.querySelectorAll('[data-repair-delete]').forEach(btn => btn.addEventListener('click', () => deleteRepairRecord(btn.dataset.repairDelete)));
   openModal(els.historyModal);
   requestAnimationFrame(() => {
@@ -8387,6 +8524,7 @@ function openBatchPrintWindow({title, styles, bodyHtml, count}){
   if(!w){ alert('Prohlížeč zablokoval otevření hromadného tisku.'); return; }
   w.document.open(); w.document.write(html); w.document.close();
   try{ w.focus(); }catch(e){}
+  return w;
 }
 function selectedBulkIds(selector){
   return Array.from(document.querySelectorAll(selector + ':checked')).map(el => el.dataset.bulkQuarterly || el.dataset.bulkRevize || el.value).filter(Boolean);
@@ -9102,6 +9240,7 @@ function setActiveSideNav(view){
   document.querySelectorAll('.side-link[data-view]').forEach(btn => btn.classList.toggle('active', btn.dataset.view === view));
 }
 function showSection(view){
+  if(view !== 'parts' && unsavedPartRecord && closePartForm() === false) return;
   const map = {home:'section-home', archive:'section-archive', plan:'section-plan', parts:'section-parts', faults:'section-faults', revize:'section-revize', revizeArchive:'section-revize', manuals:'section-manuals'};
   Object.values(map).forEach(id => document.getElementById(id)?.classList.remove('active'));
   const target = document.getElementById(map[view] || map.home);
@@ -11303,7 +11442,13 @@ function showProtocolsSection(){
   schedulePendingProtocolSync('protocols-open');
 }
 function partUid(){ return 'nd_' + Date.now() + '_' + Math.random().toString(36).slice(2,8); }
-function loadLocalParts(){ try { return JSON.parse(localStorage.getItem('liftcheck_parts_local') || '[]'); } catch(e) { return []; } }
+const partAcknowledgements = new Map();
+function loadLocalParts(){
+  try { return JSON.parse(localStorage.getItem('liftcheck_parts_local') || '[]').map(row=>{
+    const ack=partAcknowledgements.get(String(row.id));
+    return ack?.sources.has(versionedContentFields(row)) ? ack.record : row;
+  }); } catch(e) { console.warn('Místní archiv dílů nelze načíst.',e); return []; }
+}
 function saveLocalParts(rows){
   try {
     localStorage.setItem('liftcheck_parts_local', JSON.stringify(rows));
@@ -11350,9 +11495,18 @@ async function preparePartForSave(record){
     const p = photos[i];
     if(p && p.dataUrl && !p.url){
       if(!(firebaseAvailable && storageAvailable && storage)) throw new Error('Fotografie čeká na dostupné Firebase Storage.');
-      const path = `${PARTS_STORAGE_PREFIX}/${record.id}/photo_${i+1}.jpg`;
-      const url = await uploadDataUrl(path, p.dataUrl);
-      out.push({url, path, bytes:p.bytes||0, width:p.width||0, height:p.height||0, updatedAt:new Date().toISOString()});
+      // Content-addressed names keep concurrent edits and older attachments
+      // separate. Reuse an existing upload so retries do not rotate its token.
+      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(p.dataUrl));
+      const hash=Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');
+      const path = `${PARTS_STORAGE_PREFIX}/${record.id}/photo_${hash}.jpg`;
+      let url='';
+      if(typeof storage.ref==='function'){
+        try{url=await withTimeout(storage.ref(path).getDownloadURL(),15000,'Ověření dříve nahrané fotografie');}
+        catch(error){if(error?.code!=='storage/object-not-found')throw error;}
+      }
+      if(!url)url=await uploadDataUrl(path,p.dataUrl);
+      out.push({url, path, bytes:p.bytes||0, width:p.width||0, height:p.height||0, updatedAt:p.updatedAt || record.createdAt || ''});
     } else if(p) {
       out.push(p);
     }
@@ -11366,8 +11520,8 @@ function upsertLocalPartRowSafe(record){
   const idx = rows.findIndex(x => String(x.id) === String(record.id));
   if(idx >= 0) rows[idx] = record; else rows.unshift(record);
   let localResult = saveLocalParts(rows);
+  partsData = rows;
   if(localResult && localResult.ok){
-    partsData = rows;
     renderParts();
     updateMainOverview();
     return {localResult, record};
@@ -11379,12 +11533,16 @@ async function savePartRecord(record){
   if(partSyncInFlight.has(record.id)) return {local:false, cloud:false, error:new Error('Požadavek se právě synchronizuje. Zkuste uložení znovu za chvíli.')};
   partSyncInFlight.add(record.id);
   try{
+  const previousLocal = loadLocalParts().find(row=>String(row.id)===String(record.id));
+  partAcknowledgements.delete(String(record.id));
+  if(!partSyncPending(record) && record.updatedAt && !Object.prototype.hasOwnProperty.call(record,'baseServerUpdatedAt')) record.baseServerUpdatedAt = syncTimestamp(record.updatedAt);
   record.photos = getPartPhotoList(record);
   record.photo = record.photos[0] || null;
   record.updatedAt = new Date().toISOString();
   markPartSyncState(record, false);
   // Keep the complete pending order before any network request can hang or fail.
   const pendingSave = upsertLocalPartRowSafe(record);
+  const pendingContent = versionedContentFields(record);
   if(firebaseAvailable && db){
     try{
       const cloudRecord = await preparePartForSave(cloneForCloudSync(record));
@@ -11392,6 +11550,7 @@ async function savePartRecord(record){
       await setAndVerifyFirestore(PARTS_COLLECTION_NAME, cloudRecord.id, cloudRecord, 'Ulozeni nahradniho dilu', 30000, 15000);
       Object.assign(record, cloudRecord);
       markPartSyncState(record, true);
+      partAcknowledgements.set(String(record.id),{record:cloneForCloudSync(record),sources:new Set([pendingContent,...(previousLocal?[versionedContentFields(previousLocal)]:[])])});
       const localSave = upsertLocalPartRowSafe(record);
       if(!localSave.localResult || !localSave.localResult.ok){
         return {local:false, cloud:true, error:localSave.localResult?.error || new Error('Lokalni ulozeni nahradniho dilu selhalo.')};
@@ -11428,7 +11587,7 @@ async function retryPendingPartSync(){
     try{
       const docRef = db.collection(PARTS_COLLECTION_NAME).doc(record.id);
       const existingDoc = await withTimeout(readFirestoreDocument(docRef), 8000, 'Ověření objednávky před opakováním synchronizace');
-      if(partSyncPending(record) && existingDoc.exists && rowSyncTime(existingDoc.data()) > rowSyncTime(record)){
+      if(partSyncPending(record) && !('baseServerUpdatedAt' in record) && !record.syncRevision && existingDoc.exists && rowSyncTime(existingDoc.data()) > rowSyncTime(record)){
         throw new Error('Na serveru je novější objednávka. Místní změny zůstávají zachované; před odesláním je porovnejte.');
       }
       if(!partSyncPending(record) && partNeedsLegacySyncRetry(record)){
@@ -11443,6 +11602,7 @@ async function retryPendingPartSync(){
       const cloudRecord = await preparePartForSave(cloneForCloudSync(record));
       markPartSyncState(cloudRecord, true, null);
       await setAndVerifyFirestore(PARTS_COLLECTION_NAME, cloudRecord.id, cloudRecord, 'Opakovana synchronizace nahradniho dilu', 30000, 15000);
+      partAcknowledgements.set(String(record.id),{record:cloneForCloudSync(cloudRecord),sources:new Set([versionedContentFields(record)])});
       upsertLocalPartRowSafe(cloudRecord);
     }catch(err){
       console.warn('Pending part sync retry failed', err);
@@ -11489,7 +11649,7 @@ function openPartsModal(){
   showSection('parts');
 }
 function closePartsModal(){
-  closePartForm();
+  if(closePartForm() === false) return;
   showSection('home');
 }
 function scrollToPartCard(id){
@@ -11559,6 +11719,7 @@ function renderParts(){
   list.querySelectorAll('[data-part-resolved]').forEach(btn => btn.addEventListener('click', () => markPartResolved(btn.dataset.partResolved)));
 }
 function openPartForm(id=null){
+  if(unsavedPartRecord && id !== editingPartId && closePartForm() === false) return;
   partSaveInProgress = false;
   const saveBtn = document.getElementById('savePartBtn');
   if(saveBtn) saveBtn.disabled = false;
@@ -11566,6 +11727,7 @@ function openPartForm(id=null){
   editingPartId = id;
   currentPartPhotos = [];
   const p = id ? (partsData || []).find(x => x.id === id) : null;
+  partFormOriginalRecord=p ? cloneForCloudSync(p) : null;
   document.getElementById('partType').value = (p && p.type) || '';
   document.getElementById('partSerial').value = (p && p.serial) || '';
   const partEntered = document.getElementById('partEnteredBy');
@@ -11615,10 +11777,13 @@ function openPartForm(id=null){
   document.getElementById('partsFormWrap').scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 function closePartForm(){
+  if(unsavedPartRecord && !confirm('Požadavek není bezpečně uložený. Opravdu opustit formulář a zahodit rozpracované údaje?')) return false;
+  unsavedPartRecord = null;
   partSaveInProgress = false;
   const saveBtn = document.getElementById('savePartBtn');
   if(saveBtn) saveBtn.disabled = false;
   editingPartId = null;
+  partFormOriginalRecord = null;
   currentPartPhotos = [];
   document.getElementById('partsFormWrap')?.classList.add('hidden');
 }
@@ -11707,13 +11872,14 @@ async function savePartFromForm(){
   const serial = document.getElementById('partSerial').value.trim();
   if(!type){ alert('Vyplň typ zařízení.'); return; }
   if(!serial){ alert('Vyplň výrobní číslo.'); return; }
+  if(!document.getElementById('partEnteredBy')?.value.trim()){ alert('Vyberte autora požadavku.'); return; }
   if(partSaveInProgress) return;
   partSaveInProgress = true;
   const saveBtn = document.getElementById('savePartBtn');
   if(saveBtn) saveBtn.disabled = true;
   try{
-    const existing = editingPartId ? (partsData || []).find(x => x.id === editingPartId) : null;
-    const beforeRecord = existing ? cloneForCloudSync(existing) : null;
+    const existing = editingPartId ? (partsData || []).find(x => x.id === editingPartId) || unsavedPartRecord : null;
+    const beforeRecord = partFormOriginalRecord ? cloneForCloudSync(partFormOriginalRecord) : null;
     const statusVal = document.getElementById('partStatusSelect')?.value || 'open';
     const newHandlerNote = document.getElementById('partHandlerNote')?.value.trim() || '';
     const oldHandlerNote = existing ? (existing.handlerNote || existing.resolveNote || existing.processingNote || '') : '';
@@ -11756,13 +11922,19 @@ async function savePartFromForm(){
     record.photo = record.photos[0] || null;
     if(!record.createdAt) record.createdAt = new Date().toISOString();
     setLastEnteredBy(record.enteredBy);
+    // Keep the same document identity even after a timeout or failed local save.
+    editingPartId = record.id;
+    unsavedPartRecord = record;
     const saveResult = await savePartRecord(record);
+    if(saveResult.local || saveResult.cloud) unsavedPartRecord = null;
     if(saveResult.local === false && !saveResult.cloud){
       alert('Požadavek se nepodařilo uložit místně ani do Firebase. Formulář a fotografie zůstávají otevřené. ' + errorText(saveResult.error));
       return;
     }
-    alertCloudResult(saveResult, 'Pozadavek na ND');
-    await logAuditAction(existing ? 'update' : 'create','part',record,record.enteredBy, undefined, beforeRecord);
+    alert(saveResult.cloud
+      ? 'Odesláno do Firebase.' + (saveResult.local === false ? ' Uložení v zařízení selhalo: ' + errorText(saveResult.error) : ' Uloženo v zařízení.')
+      : 'Uloženo v zařízení. Čeká na synchronizaci. ' + errorText(saveResult.error));
+    await logAuditAction(partFormOriginalRecord ? 'update' : 'create','part',record,record.enteredBy, undefined, beforeRecord);
     closePartForm();
     renderParts();
   }catch(err){

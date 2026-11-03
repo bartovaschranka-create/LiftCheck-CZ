@@ -12,6 +12,15 @@ const root=path.resolve(__dirname,'..'),origin='http://127.0.0.1:4179';
     const req=route.request(),url=new URL(req.url()),local=path.resolve(root,'.'+url.pathname);
     if(url.origin===origin && local.startsWith(root+path.sep) && fs.existsSync(local))return route.fulfill({path:local});
     if(url.hostname==='firestore.googleapis.com'){
+     if(req.method()==='POST' && url.pathname.endsWith('/documents:commit')){
+      if(fail)return route.fulfill({status:503,json:{error:'simulated outage'}});
+      const write=req.postDataJSON().writes[0],key=write.update.name.split('/documents/')[1],previous=server.get(key);
+      if(!key.startsWith('nahradni_dily/'))return route.abort();
+      if((previous && previous.updateTime!==write.currentDocument.updateTime)||(!previous && write.currentDocument.exists!==false))return route.fulfill({status:409,json:{error:'conflict'}});
+      writes++;const stamp=new Date(Date.now()+writes*1000).toISOString();
+      server.set(key,{name:write.update.name,fields:{...write.update.fields,updatedAt:{timestampValue:stamp}},updateTime:stamp});
+      return route.fulfill({json:{writeResults:[{updateTime:stamp}]}});
+     }
      const suffix=decodeURIComponent(url.pathname.split('/documents/')[1]||'');
      if(!suffix.startsWith('nahradni_dily'))return route.abort();
      if(fail)return route.fulfill({status:503,json:{error:'simulated outage'}});
@@ -22,7 +31,7 @@ const root=path.resolve(__dirname,'..'),origin='http://127.0.0.1:4179';
     return route.abort();
    };
    await context.route('**/*',route);const page=await context.newPage();await page.goto(origin+'/index.html');
-   await page.evaluate(()=>{firebaseAvailable=false;usesRestCloudRefresh=()=>true;});
+   await page.evaluate(()=>{firebaseAvailable=false;usesRestCloudRefresh=()=>true;clearTimeout(pendingSyncTimer);schedulePendingSyncBatch=()=>{};});
    const evaluation=await page.evaluate(()=>{
     const r={id:'quarterly',typ:'JLG 450 AJ',vc:'TEST-001',datum:'2026-10-01',cLogic:'legacy',quarterlyEvaluationVersion:2,photos:{},issuePhotos:{}};
     for(const step of getStepsForRecord(r))if(['yn','yntext','yntextphoto'].includes(step.type))r[step.k]=isGeneralCheckKey(step.k)||isInvertedIssueKey(step.k)?'NE':'ANO';
@@ -83,9 +92,9 @@ const root=path.resolve(__dirname,'..'),origin='http://127.0.0.1:4179';
    assert.equal(server.get('nahradni_dily/order').fields.note.stringValue,'Offline edit');assert.ok(conflict.syncPending);assert.match(conflict.syncError,/novější objednávka/);
    // Persist the outbox before an upload is allowed to complete; serialize retries.
    const outbox=await page.evaluate(async()=>{
-    storageAvailable=true;storage={};let release;uploadDataUrl=()=>new Promise(r=>{release=r;});
+    storageAvailable=true;storage={};let release,notifyStarted;const started=new Promise(resolve=>{notifyStarted=resolve;});uploadDataUrl=()=>new Promise(r=>{release=r;notifyStarted();});
     const row={id:'pending-photo',serial:'TEST-001',photos:[{dataUrl:'data:image/jpeg;base64,AA=='}]};
-    const promise=savePartRecord(row);const before=loadLocalParts().find(r=>r.id===row.id);await retryPendingPartSync();release('https://test.invalid/new.jpg');await promise;
+    const promise=savePartRecord(row);const before=loadLocalParts().find(r=>r.id===row.id);await started;await retryPendingPartSync();release('https://test.invalid/new.jpg');await promise;
     return {durable:before?.photos[0].dataUrl,pending:before?.syncPending};
    });assert.ok(outbox.durable&&outbox.pending);
    const quota=await page.evaluate(async()=>{
@@ -97,7 +106,20 @@ const root=path.resolve(__dirname,'..'),origin='http://127.0.0.1:4179';
     const result=await savePartRecord(row);saveLocalParts=original;
     return {count,local:result.local,cloud:result.cloud,photo:row.photos[0].dataUrl};
    });assert.equal(quota.count,306);assert.equal(quota.local,false);assert.equal(quota.cloud,false);assert.ok(quota.photo);
-   await second.close();await context.close();console.log((profile.userAgent?.includes('iPhone')?'iPhone profile':profile.userAgent?.includes('Android')?'Android profile':'desktop')+' (Chromium): four fixes, second-session REST read, offline/retry/legacy/photos/quota passed');
+   // Two independent devices edit the same server revision. Exactly one wins;
+   // the other retains its complete local outbox instead of overwriting it.
+   const concurrentBase=await page.evaluate(async()=>{
+    firebaseAvailable=true;storageAvailable=false;db={};partsData=[];localStorage.removeItem('liftcheck_parts_local');
+    const row={id:'concurrent',serial:'TEST-001',note:'base',photos:[]};await savePartRecord(row);return row;
+   });
+   const races=await Promise.all([page,other].map((client,index)=>client.evaluate(async({base,index})=>{
+    firebaseAvailable=true;db={};clearTimeout(pendingSyncTimer);schedulePendingSyncBatch=()=>{};
+    const row={...base,note:'device-'+index};const result=await savePartRecord(row);
+    return {cloud:result.cloud,local:result.local,pending:loadLocalParts().find(r=>r.id===row.id)?.syncPending,note:row.note};
+   },{base:concurrentBase,index})));
+   assert.equal(races.filter(r=>r.cloud).length,1);assert.ok(races.find(r=>!r.cloud).local&&races.find(r=>!r.cloud).pending);
+   assert.equal(server.get('nahradni_dily/concurrent').fields.note.stringValue,races.find(r=>r.cloud).note);
+   await second.close();await context.close();console.log((profile.userAgent?.includes('iPhone')?'iPhone profile':profile.userAgent?.includes('Android')?'Android profile':'desktop')+' (Chromium): four fixes, second-session REST read, offline/retry/legacy/photos/quota and concurrent-device conflict passed');
   }
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
