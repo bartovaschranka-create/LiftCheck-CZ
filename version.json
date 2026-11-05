@@ -1,8 +1,8 @@
 {
-  "version": "5.397",
-  "appVersion": "1.6 / 5.397",
-  "cacheName": "liftcontrol-cz-v1-6-5-397",
-  "url": "./index.html?v=5.397",
-  "releasedAt": "2026-10-24",
-  "message": "Karta stroje zobrazuje potvrzené opravy, původní závady a související protokoly."
+  "version": "5.398",
+  "appVersion": "1.6 / 5.398",
+  "cacheName": "liftcontrol-cz-v1-6-5-398",
+  "url": "./index.html?v=5.398",
+  "releasedAt": "2026-11-05",
+  "message": "Revize ZZ lze bezpečně upravit z libovolného kroku. Požadavky podporují více dílů a částečné dodání."
 }

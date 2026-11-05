@@ -2402,7 +2402,7 @@ body.mobile-safe-mode .attention-count:hover{
     <button type="button" class="side-link" id="sideSettingsBtn">Nastavení</button>
   </nav>
   <div class="side-bottom">
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.397</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.398</div>
   </div>
 </aside>
 
@@ -2945,13 +2945,9 @@ body.mobile-safe-mode .attention-count:hover{
         <label>Jiné místo</label>
         <input id="partCustomPlace" type="text" autocomplete="off">
       </div>
-      <div class="field">
-        <label>PN dílu</label>
-        <input id="partNumber" type="text" placeholder="Objednací číslo / PN">
-      </div>
-      <div class="field">
-        <label>Název / popis dílu</label>
-        <input id="partName" type="text">
+      <div class="field" style="grid-column:1/-1">
+        <div id="partItems"></div>
+        <button id="addPartItemBtn" class="secondary mini" type="button">+ Přidat díl</button>
       </div>
       <div class="field">
         <label>Fotky dílu / štítku</label>
@@ -2978,15 +2974,6 @@ body.mobile-safe-mode .attention-count:hover{
         <label>Poznámka řešitele</label>
         <textarea id="partHandlerNote" placeholder="Volitelné doplnění pro řešitele při objednání / odeslání / vyřešení"></textarea>
         <div class="helper">Pro řešitele požadavku. V detailu zůstane vidět jako servisní poznámka.</div>
-      </div>
-      <div class="field part-handler-only hidden" id="partStatusWrap">
-        <label>Stav požadavku</label>
-        <select id="partStatusSelect">
-          <option value="open">Požadavek</option>
-          <option value="ordered">Objednáno</option>
-          <option value="sent">Odesláno</option>
-          <option value="resolved">Vyřešeno</option>
-        </select>
       </div>
     </div>
     <div class="preview-actions">
@@ -5117,7 +5104,7 @@ async function runAppCheck(){
   renderAppCheckResults(results, true);
   appCheckAddResult(results, navigator.onLine ? 'ok' : 'error', 'Internet', navigator.onLine ? 'Zarizeni hlasi online rezim.' : 'Prohlizec hlasi offline rezim.');
   const versionText = document.querySelector('.side-version')?.textContent || '';
-  appCheckAddResult(results, versionText.includes('5.397') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
+  appCheckAddResult(results, versionText.includes('5.398') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
   appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
@@ -5197,14 +5184,14 @@ function scheduleEmptyAppRecovery(reason='startup'){
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.397');
+        url.searchParams.set('v','5.398');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
       }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_336') !== '1'){
         sessionStorage.setItem('liftcontrol_cache_recovery_5_336','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.397');
+        url.searchParams.set('v','5.398');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -5261,6 +5248,7 @@ let partSaveInProgress = false;
 let revizeSaveInProgress = false;
 let revizeMode = 'new';
 let revizeStepIndex = 0;
+let completedRevizeEdit = null;
 const QUARTERLY_DRAFT_KEY = 'liftcontrol_quarterly_protocol_draft_v2';
 const QUARTERLY_DRAFT_PHOTOS_KEY = 'liftcontrol_quarterly_protocol_draft_photos_v1';
 let quarterlyDraftSaveTimer = null;
@@ -7389,7 +7377,7 @@ function sideStatsFilteredRows(){
     if(partStatus !== 'all' && x.kind !== 'part') return false;
     if(faultType !== 'all' && normalizeSearchText(x.faultType) !== normalizeSearchText(faultType)) return false;
     if(search){
-      const hay = normalizeSearchText([x.machine,x.serial,x.person,displayPlaceSearchText(x.place),x.label,x.model,x.maker,x.partName,x.faultType,x.row?.partNumber,x.row?.partName,x.row?.description,x.row?.zavady].filter(Boolean).join(' '));
+      const hay = normalizeSearchText([x.machine,x.serial,x.person,displayPlaceSearchText(x.place),x.label,x.model,x.maker,x.partName,x.faultType,x.row?.partNumber,x.row?.partName,...(x.kind==='part' ? partItemsText(x.row) : []),x.row?.description,x.row?.zavady].filter(Boolean).join(' '));
       if(!hay.includes(search)) return false;
     }
     return true;
@@ -8029,7 +8017,7 @@ function openHistoryModal(serial){
     <div class="machine-card-block">
       <h4>Náhradní díly</h4>
       <div class="machine-card-list">
-        ${rows.parts.length ? rows.parts.map(p => `<div class="machine-card-row" data-history-date="${escapeHtml(syncTimestamp(p.createdAt))}"><span><strong>Náhradní díly</strong> · ${escapeHtml(formatDate(p.createdAt) || 'Bez data')} · ${escapeHtml(p.enteredBy || '—')} · ${escapeHtml(getPartStatus(p).txt || '—')}<br>${escapeHtml(p.partNumber||'Bez PN')} · ${escapeHtml(getPartStatus(p).txt)} · ${escapeHtml(p.partName||'')}${p.note ? `<span class="machine-card-summary">${escapeHtml(p.note)}</span>` : ''}</span><button class="secondary mini" data-part-open="${p.id}">Otevřít celý zápis</button></div>`).join('') : '<div class="part-sub">Bez požadavků na ND.</div>'}
+        ${rows.parts.length ? rows.parts.map(p => `<div class="machine-card-row" data-history-date="${escapeHtml(syncTimestamp(p.createdAt))}"><span><strong>Náhradní díly</strong> · ${escapeHtml(formatDate(p.createdAt) || 'Bez data')} · ${escapeHtml(p.enteredBy || '—')} · ${escapeHtml(getPartStatus(p).txt || '—')}<br>${escapeHtml(p.partNumber||'Bez PN')} · ${escapeHtml(getPartStatus(p).txt)} · ${Array.isArray(p.items) ? '<ul>'+partItemsText(p).map(line=>'<li>'+escapeHtml(line)+'</li>').join('')+'</ul>' : escapeHtml(p.partName||'')}${p.note ? `<span class="machine-card-summary">${escapeHtml(p.note)}</span>` : ''}</span><button class="secondary mini" data-part-open="${p.id}">Otevřít celý zápis</button></div>`).join('') : '<div class="part-sub">Bez požadavků na ND.</div>'}
       </div>
     </div>
     <div class="machine-card-block">
@@ -9864,8 +9852,8 @@ function getSerialSuggestionsAll(){
 function getPlaceSuggestionsAll(){
   return uniqueNonEmpty([...(BRANCHES || []), ...(data || []).map(r => r.umisteni), ...(faultsData || []).map(r => r.place), ...(partsData || []).map(r => r.place), ...(scheduleData || []).map(r => r.place), ...(scheduleData || []).flatMap(r => Array.isArray(r.extraPlaces) ? r.extraPlaces : parseExtraPlaces(r.extraPlaces)), ...(revizeData || []).map(r => r.umisteni), ...loadLocalRevize().map(r => r.umisteni), ...revizeMachineRows().map(r => r.place)].map(normalizeCanonicalBranch)).sort((a,b)=>String(a).localeCompare(String(b),'cs'));
 }
-function getPartNumberSuggestionsAll(){ return uniqueNonEmpty((partsData || []).map(r => r.partNumber)).sort((a,b)=>String(a).localeCompare(String(b),'cs')); }
-function getPartNameSuggestionsAll(){ return uniqueNonEmpty((partsData || []).map(r => r.partName)).sort((a,b)=>String(a).localeCompare(String(b),'cs')); }
+function getPartNumberSuggestionsAll(){ return uniqueNonEmpty((partsData || []).flatMap(r => getPartItems(r).map(item=>item.number))).sort((a,b)=>String(a).localeCompare(String(b),'cs')); }
+function getPartNameSuggestionsAll(){ return uniqueNonEmpty((partsData || []).flatMap(r => getPartItems(r).map(item=>item.name))).sort((a,b)=>String(a).localeCompare(String(b),'cs')); }
 function getPartNoteSuggestionsAll(){ return uniqueNonEmpty((partsData || []).map(r => r.note)).sort((a,b)=>String(a).localeCompare(String(b),'cs')); }
 function getFaultDescSuggestionsAll(){
   return uniqueNonEmpty([...(faultsData || []).map(r => r.description), ...(data || []).flatMap(r => Object.keys(r || {}).filter(k => k.endsWith('_p')).map(k => r[k]))]).sort((a,b)=>String(a).localeCompare(String(b),'cs'));
@@ -11631,7 +11619,98 @@ function fillPartSelects(){
   if(typeList) typeList.innerHTML = getModelSuggestionsAll().map(v => `<option value="${escapeHtml(v)}"></option>`).join('');
   if(serialList) serialList.innerHTML = getSerialSuggestionsAll().map(v => `<option value="${escapeHtml(v)}"></option>`).join('');
 }
+const PART_ITEM_STATES = {
+  requested:'Požadováno', ordered:'Objednáno', delivered:'Dodáno', unavailable:'Nedostupné'
+};
+function getPartItems(record){
+  if(Array.isArray(record?.items) && record.items.length) return record.items;
+  const delivered = Boolean(record?.resolved || record?.vyreseno);
+  return [{
+    id: record?.id ? String(record.id) + '-1' : partUid(),
+    name: record?.partName || '',
+    number: record?.partNumber || '',
+    quantity: 1,
+    unit: 'ks',
+    status: delivered ? 'delivered' : (record?.ordered || record?.sent || record?.objednano || record?.odeslano ? 'ordered' : 'requested'),
+    deliveredQuantity: delivered ? 1 : 0
+  }];
+}
+function appendPartItem(item = getPartItems()[0], saved=false){
+  const host = document.getElementById('partItems');
+  const first = !host.children.length;
+  const row = document.createElement('div');
+  row.className = 'part-grid';
+  row.dataset.partItemId = item.id;
+  row.innerHTML = `<label>Název dílu<input data-item-name ${first?'id="partName"':''}></label>
+    <label>Katalogové číslo<input data-item-number ${first?'id="partNumber"':''}></label>
+    <label>Množství<input type="number" min="0" step="any" data-item-quantity></label>
+    <label>Jednotka<input data-item-unit></label>
+    <label>Stav položky<select data-item-status>${Object.entries(PART_ITEM_STATES).map(([key,label])=>`<option value="${key}">${label}</option>`).join('')}</select></label>
+    <label data-item-delivery>Dodané množství<input type="number" min="0" step="any" data-item-delivered></label>
+    ${!first&&!saved?'<button type="button" class="ghost mini" aria-label="Odebrat nový díl" data-remove-item>×</button>':''}`;
+  const field = key => row.querySelector('[data-item-'+key+']');
+  field('name').value = item.name || '';
+  field('number').value = item.number || '';
+  field('quantity').value = item.quantity ?? 1;
+  field('unit').value = item.unit || 'ks';
+  field('status').value = item.status || 'requested';
+  field('delivered').value = item.deliveredQuantity ?? 0;
+  function showDeliveredQuantity(){
+    field('delivery').hidden = field('status').value !== 'ordered';
+  }
+  field('status').addEventListener('change',showDeliveredQuantity);
+  row.querySelector('[data-remove-item]')?.addEventListener('click',()=>row.remove());
+  showDeliveredQuantity();
+  host.append(row);
+  return row;
+}
+function collectPartItems(){
+  return [...document.querySelectorAll('#partItems [data-part-item-id]')].map((row,index)=>{
+    const read = key => row.querySelector('[data-item-'+key+']').value.trim();
+    const quantity = Number(read('quantity'));
+    const status = read('status');
+    if(!Object.hasOwn(PART_ITEM_STATES,status)) throw new Error('Vyber stav položky '+(index+1)+'.');
+    const name = read('name');
+    const number = read('number');
+    const unit = read('unit');
+    const delivered = status === 'delivered' ? quantity : Number(read('delivered'));
+    if(!name && !number && (index>0 || document.getElementById('partItems').children.length>1))
+      throw new Error('Doplň název nebo katalogové číslo položky '+(index+1)+'.');
+    if(!Number.isFinite(quantity) || quantity <= 0 || !unit || !Number.isFinite(delivered) || delivered < 0 || delivered > quantity)
+      throw new Error('Zkontroluj množství a jednotku položky '+(index+1)+'. Dodané množství musí být mezi nulou a požadovaným množstvím.');
+    return {
+      id:row.dataset.partItemId, name, number, quantity, unit,
+      status:delivered===quantity ? 'delivered' : status, deliveredQuantity:delivered
+    };
+  });
+}
+function partItemLabel(item){
+  const name = [item.number,item.name].filter(Boolean).join(' · ') || 'Bez popisu';
+  return `${name} · ${PART_ITEM_STATES[item.status]} · dodáno ${item.deliveredQuantity}/${item.quantity} ${item.unit}`;
+}
+function partItemsText(record){
+  return getPartItems(record).map(partItemLabel);
+}
+function printPartRequest(record){
+  const items = partItemsText(record).map(line=>'<li>'+escapeHtml(line)+'</li>').join('');
+  const heading = [record.type, record.serial, displayPlaceName(record.place)].filter(Boolean).join(' · ');
+  const meta = [formatDateTime(record.createdAt), record.enteredBy || record.zadal].filter(Boolean).join(' · ');
+  const notes = [record.note, record.handlerNote].filter(Boolean).map(value=>'<p>'+escapeHtml(value)+'</p>').join('');
+  const photos = getPartPhotoList(record).map(photo=>photo.url || photo.dataUrl).filter(Boolean)
+    .map(src=>'<img alt="Fotografie dílu" src="'+escapeHtml(src)+'">').join('');
+  const w = openBatchPrintWindow({
+    title:'Požadavek na náhradní díly',
+    styles:'body{font:15px sans-serif;margin:20px;color:#111}img{max-width:100%;max-height:220px;margin:4px}@media print{.print-toolbar{display:none}}',
+    bodyHtml:'<article class="paper"><h1>Požadavek na náhradní díly</h1><p>'+escapeHtml(heading)+'</p><p>'+escapeHtml(meta)+'</p><ul>'+items+'</ul>'+notes+photos+'</article>',
+    count:1
+  });
+  if(w) w.document.getElementById('printStatus').textContent='Připraveno k tisku nebo uložení jako PDF.';
+}
 function getPartStatus(p){
+  if(Array.isArray(p.items) && p.items.length){
+    const count = p.items.filter(item=>item.status==='delivered').length;
+    return {txt:'Dodáno '+count+'/'+p.items.length+' položek', cls:count===p.items.length?'status-resolved':'status-open'};
+  }
   if(p.resolved || p.vyreseno) return {txt:'Vyřešeno', cls:'status-resolved'};
   if(p.sent) return {txt:'Odesláno', cls:'status-sent'};
   if(p.ordered) return {txt:'Objednáno', cls:'status-ordered'};
@@ -11662,7 +11741,7 @@ function renderParts(){
   const customerFilter = document.getElementById('partsCustomerFilter')?.value || 'all';
   const sort = document.getElementById('partsSort')?.value || 'created_desc';
   let rows = [...(partsData || [])];
-  if(query) rows = rows.filter(p => archiveMatchesQuery(p, query, [p.type,p.serial,displayPlaceSearchText(p.place),p.partNumber,p.partName,p.note,p.handlerNote,p.enteredBy,p.customerName,p.customerAddress], [p.serial]));
+  if(query) rows = rows.filter(p => archiveMatchesQuery(p, query, [p.type,p.serial,displayPlaceSearchText(p.place),p.partNumber,p.partName,...partItemsText(p),p.note,p.handlerNote,p.enteredBy,p.customerName,p.customerAddress], [p.serial]));
   if(customerFilter === 'external') rows = rows.filter(p => !!p.externalCustomer);
   if(customerFilter === 'internal') rows = rows.filter(p => !p.externalCustomer);
   rows.sort((a,b) => {
@@ -11679,7 +11758,7 @@ function renderParts(){
     return `<div class="part-card ${p.externalCustomer ? 'external-customer-card' : ''}" id="part-card-${escapeHtml(p.id || '')}">
       <div class="part-head">
         <div>
-          <div class="part-title">${escapeHtml(p.partNumber || 'Bez PN')} · ${escapeHtml(p.partName || 'Bez popisu')}</div>
+          <div class="part-title">${p.items?.length ? 'Náhradní díly · '+p.items.length+' položek' : escapeHtml(p.partNumber || 'Bez PN')+' · '+escapeHtml(p.partName || 'Bez popisu')}</div>
           <div class="part-sub">${escapeHtml(p.type || 'Bez typu')} · v.č. ${escapeHtml(p.serial || '—')} · ${escapeHtml(displayPlaceName(p.place) || '—')}</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">${st.txt !== 'Požadavek' ? `<span class="status-pill ${st.cls}">${st.txt}</span>` : ''}${p.externalCustomer ? '<span class="status-pill status-external">Externí zákazník</span>' : ''}${cloudSyncBadgeHtml(p)}</div>
@@ -11692,25 +11771,25 @@ function renderParts(){
         <div class="part-meta"><div class="part-meta-label">Odesláno</div><div class="part-meta-value">${p.sent ? escapeHtml(formatDateTime(p.sentAt)) + (p.sentBy ? '<br><small>' + escapeHtml(p.sentBy) + '</small>' : '') : 'Ne'}</div></div>
         <div class="part-meta"><div class="part-meta-label">Vyřešeno</div><div class="part-meta-value">${(p.resolved || p.vyreseno) ? escapeHtml(formatDateTime(p.resolvedAt || p.vyresenoAt || p.updatedAt)) + (p.resolvedBy ? '<br><small>' + escapeHtml(p.resolvedBy) + '</small>' : '') : 'Ne'}</div></div>
       </div>
+      ${Array.isArray(p.items) ? '<ul>'+partItemsText(p).map(line=>'<li>'+escapeHtml(line)+'</li>').join('')+'</ul>' : ''}
       ${p.note ? `<div class="part-note-display"><strong>Popis závady / poznámka</strong><div>${escapeHtml(p.note)}</div></div>` : ''}
       ${p.handlerNote ? `<div class="part-note-display part-handler-note-display"><strong>Poznámka řešitele</strong><div>${escapeHtml(p.handlerNote)}</div>${(p.handlerNoteBy || p.handlerNoteAt) ? `<small>${escapeHtml(p.handlerNoteBy || '')}${p.handlerNoteAt ? ' · ' + escapeHtml(formatDateTime(p.handlerNoteAt)) : ''}</small>` : ''}</div>` : ''}
       ${photoHtml ? `<div class="part-photo">${photoHtml}</div>` : ''}
       <div class="part-actions">
         ${!(p.resolved || p.vyreseno) ? `<button class="secondary mini" type="button" data-part-note="${p.id}">Poznámka</button>` : ''}
         <button class="secondary mini" type="button" data-part-edit="${p.id}">Upravit</button>
-        ${!(p.resolved || p.vyreseno) && !p.ordered ? `<button class="secondary mini" type="button" data-part-ordered="${p.id}">Objednáno</button>` : ''}
-        ${!(p.resolved || p.vyreseno) && !p.sent ? `<button class="secondary mini" type="button" data-part-sent="${p.id}">Odesláno</button>` : ''}
-        ${!(p.resolved || p.vyreseno) ? `<button class="success mini" type="button" data-part-resolved="${p.id}">Vyřešeno</button>` : ''}
+        <button class="secondary mini" type="button" data-part-print="${escapeHtml(p.id)}">Tisk požadavku</button>
         <button class="danger mini" type="button" data-part-delete="${p.id}">Smazat</button>
       </div>
     </div>`;
   }).join('');
   list.querySelectorAll('[data-part-note]').forEach(btn => btn.addEventListener('click', () => addPartHandlerNote(btn.dataset.partNote)));
+  list.querySelectorAll('[data-part-print]').forEach(btn=>btn.addEventListener('click',()=>{
+    const record = rows.find(row=>String(row.id)===btn.dataset.partPrint);
+    if(record) printPartRequest(record);
+  }));
   list.querySelectorAll('[data-part-edit]').forEach(btn => btn.addEventListener('click', () => openPartForm(btn.dataset.partEdit)));
   list.querySelectorAll('[data-part-delete]').forEach(btn => btn.addEventListener('click', () => deletePartRecord(btn.dataset.partDelete)));
-  list.querySelectorAll('[data-part-ordered]').forEach(btn => btn.addEventListener('click', () => markPartOrdered(btn.dataset.partOrdered)));
-  list.querySelectorAll('[data-part-sent]').forEach(btn => btn.addEventListener('click', () => markPartSent(btn.dataset.partSent)));
-  list.querySelectorAll('[data-part-resolved]').forEach(btn => btn.addEventListener('click', () => markPartResolved(btn.dataset.partResolved)));
 }
 function openPartForm(id=null){
   if(unsavedPartRecord && id !== editingPartId && closePartForm() === false) return;
@@ -11747,8 +11826,8 @@ function openPartForm(id=null){
     customWrap.classList.remove('hidden');
     customInput.value = placeVal;
   }
-  document.getElementById('partNumber').value = (p && p.partNumber) || '';
-  document.getElementById('partName').value = (p && p.partName) || '';
+  document.getElementById('partItems').replaceChildren();
+  getPartItems(p).forEach(item=>appendPartItem(item,Boolean(p)));
   const extChk = document.getElementById('partExternalCustomer');
   if(extChk) extChk.checked = !!(p && p.externalCustomer);
   document.getElementById('partCustomerName').value = (p && (p.customerName || p.companyName)) || '';
@@ -11756,14 +11835,10 @@ function openPartForm(id=null){
   wireExternalDetails('part');
   document.getElementById('partNote').value = (p && p.note) || '';
   const handlerNoteWrap = document.getElementById('partHandlerNoteWrap');
-  const partStatusWrap = document.getElementById('partStatusWrap');
   const showHandlerFields = !!p;
   if(handlerNoteWrap) handlerNoteWrap.classList.toggle('hidden', !showHandlerFields);
-  if(partStatusWrap) partStatusWrap.classList.toggle('hidden', !showHandlerFields);
   const handlerNoteEl = document.getElementById('partHandlerNote');
   if(handlerNoteEl) handlerNoteEl.value = showHandlerFields ? ((p && (p.handlerNote || p.resolveNote || p.processingNote)) || '') : '';
-  const partStatusSel = document.getElementById('partStatusSelect');
-  if(partStatusSel) partStatusSel.value = showHandlerFields ? ((p.resolved || p.vyreseno) ? 'resolved' : (p.sent ? 'sent' : (p.ordered ? 'ordered' : 'open'))) : 'open';
   currentPartPhotos = p ? JSON.parse(JSON.stringify(getPartPhotoList(p))) : [];
   renderPartPhotoPreview();
   document.getElementById('partsFormWrap').classList.remove('hidden');
@@ -11861,7 +11936,6 @@ function installMobileSwipeBack(){
 async function savePartFromForm(){
   const placeSel = document.getElementById('partPlace').value;
   const place = normalizeCanonicalBranch(placeSel === '__custom__' ? document.getElementById('partCustomPlace').value.trim() : placeSel);
-  const partNumber = document.getElementById('partNumber').value.trim();
   const type = document.getElementById('partType').value.trim();
   const serial = document.getElementById('partSerial').value.trim();
   if(!type){ alert('Vyplň typ zařízení.'); return; }
@@ -11872,9 +11946,11 @@ async function savePartFromForm(){
   const saveBtn = document.getElementById('savePartBtn');
   if(saveBtn) saveBtn.disabled = true;
   try{
-    const existing = editingPartId ? (partsData || []).find(x => x.id === editingPartId) || unsavedPartRecord : null;
+    const existing = unsavedPartRecord || partFormOriginalRecord;
     const beforeRecord = partFormOriginalRecord ? cloneForCloudSync(partFormOriginalRecord) : null;
-    const statusVal = document.getElementById('partStatusSelect')?.value || 'open';
+    const items = collectPartItems();
+    const resolved = items.every(item=>item.status==='delivered');
+    const ordered = Boolean(existing?.ordered || items.some(item=>item.status==='ordered' || item.deliveredQuantity>0));
     const newHandlerNote = document.getElementById('partHandlerNote')?.value.trim() || '';
     const oldHandlerNote = existing ? (existing.handlerNote || existing.resolveNote || existing.processingNote || '') : '';
     let handlerNoteBy = (existing && existing.handlerNoteBy) || '';
@@ -11894,8 +11970,9 @@ async function savePartFromForm(){
       type,
       serial,
       place,
-      partNumber,
-      partName: document.getElementById('partName').value.trim(),
+      items,
+      partNumber:items[0].number,
+      partName:items[0].name,
       enteredBy: document.getElementById('partEnteredBy')?.value || getEnteredByDefault(),
       externalCustomer: !!document.getElementById('partExternalCustomer')?.checked,
       customerName: !!document.getElementById('partExternalCustomer')?.checked ? document.getElementById('partCustomerName').value.trim() : '',
@@ -11904,12 +11981,11 @@ async function savePartFromForm(){
       handlerNote: newHandlerNote,
       handlerNoteBy,
       handlerNoteAt,
-      ordered: statusVal === 'ordered' || statusVal === 'sent' || statusVal === 'resolved',
-      sent: statusVal === 'sent' || statusVal === 'resolved',
-      resolved: statusVal === 'resolved',
-      orderedAt: (statusVal === 'ordered' || statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.orderedAt) || new Date().toISOString()) : '',
-      sentAt: (statusVal === 'sent' || statusVal === 'resolved') ? ((existing && existing.sentAt) || new Date().toISOString()) : '',
-      resolvedAt: statusVal === 'resolved' ? ((existing && existing.resolvedAt) || new Date().toISOString()) : '',
+      ordered,
+      resolved,
+      vyreseno:resolved && Boolean(existing?.vyreseno),
+      orderedAt:existing?.orderedAt || (ordered ? new Date().toISOString() : ''),
+      resolvedAt:existing?.resolvedAt || (resolved ? new Date().toISOString() : ''),
       appVersion:'1.6 / 5.384'
     });
     record.photos = JSON.parse(JSON.stringify(currentPartPhotos || []));
@@ -11957,61 +12033,6 @@ async function addPartHandlerNote(id){
   await logAuditAction('update','part',p,actor || getEnteredByDefault(), cleaned ? ('Doplněna poznámka řešitele · ' + summarizeRecordForAudit(p)) : ('Smazána poznámka řešitele · ' + summarizeRecordForAudit(p)), beforeRecord);
   renderParts();
 }
-async function markPartOrdered(id){
-  const p = (partsData || []).find(x => x.id === id);
-  if(!p) return;
-  const actor = askHandlerBy('Kdo označil ND jako objednáno?');
-  if(!actor) return;
-  const beforeRecord = cloneForCloudSync(p);
-  p.ordered = true;
-  p.orderedAt = new Date().toISOString();
-  p.orderedBy = actor;
-  await savePartRecord(p);
-  await logAuditAction('status','part',p,actor,'Označeno jako objednáno · ' + summarizeRecordForAudit(p), beforeRecord);
-}
-async function markPartSent(id){
-  const p = (partsData || []).find(x => x.id === id);
-  if(!p) return;
-  const actor = askHandlerBy('Kdo označil ND jako odesláno?');
-  if(!actor) return;
-  const beforeRecord = cloneForCloudSync(p);
-  const now = new Date().toISOString();
-  if(!p.ordered){
-    p.ordered = true;
-    p.orderedAt = p.orderedAt || now;
-    p.orderedBy = p.orderedBy || actor;
-  }
-  p.sent = true;
-  p.sentAt = now;
-  p.sentBy = actor;
-  await savePartRecord(p);
-  await logAuditAction('status','part',p,actor,'Označeno jako odesláno · ' + summarizeRecordForAudit(p), beforeRecord);
-}
-async function markPartResolved(id){
-  const p = (partsData || []).find(x => x.id === id);
-  if(!p) return;
-  const beforeRecord = cloneForCloudSync(p);
-  const now = new Date().toISOString();
-  if(!confirm('Označit požadavek na ND jako vyřešený? Zůstane v historii, ale nebude svítit jako aktivní požadavek.')) return;
-  const actor = askHandlerBy('Kdo označil ND jako vyřešené?');
-  if(!actor) return;
-  const resolveNote = prompt('Poznámka k vyřešení / řešení ND (volitelné):', p.handlerNote || '');
-  if(resolveNote === null) return;
-  if(String(resolveNote || '').trim()){
-    p.handlerNote = String(resolveNote || '').trim();
-    p.handlerNoteBy = actor;
-    p.handlerNoteAt = now;
-  }
-  if(!p.ordered){ p.ordered = true; p.orderedAt = p.orderedAt || now; p.orderedBy = p.orderedBy || actor; }
-  if(!p.sent){ p.sent = true; p.sentAt = p.sentAt || now; p.sentBy = p.sentBy || actor; }
-  p.resolved = true;
-  p.resolvedAt = now;
-  p.resolvedBy = actor;
-  await savePartRecord(p);
-  await logAuditAction('status','part',p,actor,'Označeno jako vyřešeno · ' + summarizeRecordForAudit(p), beforeRecord);
-}
-
-
 /* v1.6 / 5.159: Revize ZZ / PZP */
 const REVIZE_DEVICE_TYPES = {
   scissor:{label:'Nůžková plošina', druh:'samohybná nůžková zdvihací pracovní plošina', skupina:'A/3', use:['rozmer_plosiny','deck'], skip:['bocni_dosah']},
@@ -12080,11 +12101,6 @@ function revizeHasElectricalEquipment(r){
   if(!r) return true;
   return revizeChargerValue(r.nabijec) === 'ANO' || revizeYesNoValue(r.zasuvka_kos) === 'ANO' || revizeYesNoValue(r.rcd) === 'ANO' || revizeHasRcdMeasurement(r);
 }
-function revizeNormyLooksAuto(value){
-  const text = String(value || '');
-  if(!text.trim()) return true;
-  return /250\/2021|193\/2022|378\/2001|280|50699|33\s*1600/i.test(text);
-}
 function revizeDefaultNormy(norma='', record=null){
   const base = String(norma||'').trim();
   const parts = [
@@ -12100,9 +12116,42 @@ function revizeDefaultNormy(norma='', record=null){
   return [...new Set(parts)].join('; ');
 }
 function revizeNormyForRecord(r){
-  const suggested = normaPodleRokuVyroby(r?.rok_vyroby) || r?.norma || '';
+  if(r?.normyConfirmed) return String(r.normy_revize || '');
+  const suggested = r?.normaManual ? r.norma : (normaPodleRokuVyroby(r?.rok_vyroby) || r?.norma || '');
   const norm = suggested || String(r?.norma || '').trim();
   return revizeDefaultNormy(norm, r || null);
+}
+function bindRevizeNormSelection(norma){
+  const list = document.getElementById('rz_normy_revize');
+  if(!norma || !list) return;
+  let previous = norma.value.trim();
+  list.addEventListener('input', () => {
+    delete list.dataset.needsConfirmation;
+    list.removeAttribute('aria-label');
+    window.currentRevizeDraft.normyConfirmed = true;
+  });
+  norma.addEventListener('input', () => {
+    const draft = window.currentRevizeDraft;
+    const selected = norma.value.trim();
+    const entries = list.value.split(';').map(value => value.trim()).filter(Boolean);
+    let oldIndex = previous ? entries.indexOf(previous) : -1;
+    const generated = normaPodleRokuVyroby(document.getElementById('rz_rok_vyroby')?.value);
+    if(oldIndex < 0 && generated && generated !== selected && entries.includes(generated)){
+      if([revizeDefaultNormy(generated),revizeDefaultNormy(generated,{})].includes(list.value.trim())){
+        oldIndex = entries.indexOf(generated);
+      }else{
+        list.dataset.needsConfirmation = '1';
+        list.setAttribute('aria-label','Zkontroluj a uprav seznam norem. Obsahuje také normu navrženou podle roku.');
+      }
+    }
+    if(oldIndex >= 0) entries.splice(oldIndex, 1);
+    if(selected && !entries.includes(selected)) entries.unshift(selected);
+    list.value = entries.join('; ');
+    previous = selected;
+    draft.normaManual = true;
+    draft.normyConfirmed = true;
+    norma.dataset.auto = '0';
+  });
 }
 function revizeSyncElectricalDependencies(r){
   if(!r) return r;
@@ -12125,8 +12174,8 @@ function syncNormaFromRokVyroby(force=false){
     zasuvka_kos: document.getElementById('rz_zasuvka_kos')?.value || '',
     rcd: document.getElementById('rz_rcd')?.value || ''
   };
-  if(normy && suggested && (!String(normy.value||'').trim() || normy.dataset.auto==='1' || revizeNormyLooksAuto(normy.value))){
-    normy.value=revizeDefaultNormy(suggested, formRecord);
+  if(normy && suggested && !window.currentRevizeDraft?.normyConfirmed && !completedRevizeEdit){
+    normy.value=revizeDefaultNormy(norma.value || suggested, formRecord);
     normy.dataset.auto='1';
   }
 }
@@ -12443,8 +12492,30 @@ function unlockPageBehindRevize(){
   delete document.body.dataset.revizeScrollY;
   window.scrollTo(0, scrollY);
 }
-function openRevizeForm(id){ setRevizeMode('new'); editingRevizeId = id || null; revizeStepIndex = 0; const row = id ? JSON.parse(JSON.stringify((revizeData||[]).find(r=>r.id===id)||revizeDefaultRecord())) : revizeDefaultRecord(); if(!id){ const today=todayLocal(); row.datum_kontroly=today; row.revizeStartDate=today; row.revizeEndDate=today; row.kontrolaStartDate=today; row.kontrolaEndDate=today; row.platnost=addMonthsToDate(today,12); } window.currentRevizeDraft = row; const modal=ensureRevizeWizardModal(); renderRevizeForm(row); document.getElementById('revizeFormWrap')?.classList.remove('hidden'); showSection('revize'); openModal(modal); const formScroller=document.getElementById('revizeFormWrap'); if(formScroller) formScroller.scrollTop=0; setTimeout(()=>document.getElementById(id ? 'rz_protokol' : 'rz_vyrobni_cislo')?.focus({preventScroll:true}),0); }
-function closeRevizeForm(){ editingRevizeId=null; window.currentRevizeDraft=null; document.getElementById('revizeFormWrap')?.classList.add('hidden'); closeModal(document.getElementById('revizeWizardModal')); }
+function openRevizeForm(id){
+  const stored = id ? revizeData.find(record=>record.id===id) : null;
+  if(id && !stored){ alert('Revizi se nepodařilo najít. Obnov přehled.'); return; }
+  setRevizeMode('new');
+  editingRevizeId = id || null;
+  revizeStepIndex = 0;
+  const row = stored ? cloneForCloudSync(stored) : revizeDefaultRecord();
+  completedRevizeEdit = stored && !stored.draft ? {original:cloneForCloudSync(stored)} : null;
+  window.currentRevizeDraft = row;
+  const modal = ensureRevizeWizardModal();
+  renderRevizeForm(row);
+  // Use the rendered values as the comparison baseline. Fields merely
+  // normalized for display must not replace their stored counterparts.
+  if(completedRevizeEdit) completedRevizeEdit.baseline = cloneForCloudSync(collectRevizeDraft());
+  const form = document.getElementById('revizeFormWrap');
+  form?.classList.remove('hidden');
+  showSection('revize');
+  openModal(modal);
+  if(form) form.scrollTop = 0;
+  if(!completedRevizeEdit){
+    setTimeout(()=>document.getElementById(id ? 'rz_protokol' : 'rz_vyrobni_cislo')?.focus({preventScroll:true}),0);
+  }
+}
+function closeRevizeForm(){ completedRevizeEdit=null; editingRevizeId=null; window.currentRevizeDraft=null; document.getElementById('revizeFormWrap')?.classList.add('hidden'); closeModal(document.getElementById('revizeWizardModal')); }
 function closeRevizeToHome(){ closeRevizeForm(); showSection('home'); }
 let revizeMachineRowsCache = null;
 let revizeMachineRowsCacheAt = 0;
@@ -13292,7 +13363,7 @@ function applyRevizeDefaultsFromSerial(serial){
     const info=revizeLatestMachine(serial);
     if(!info) return;
     window.revizeApplyingDefaults = true;
-    const set=(id,val,force=false)=>{ const el=document.getElementById(id); if(!el || val===undefined || val===null || !String(val).trim()) return; const cur=String(el.value||'').trim(); if(force || !cur || el.dataset.rzAuto==='1'){ const key=id.replace(/^rz_/,''); el.value=revizeInputValue(key,val); el.dataset.rzAuto='1'; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); } };
+    const set=(id,val,force=false)=>{ if((id==='rz_norma' && window.currentRevizeDraft?.normaManual) || (id==='rz_normy_revize' && window.currentRevizeDraft?.normyConfirmed)) return; const el=document.getElementById(id); if(!el || val===undefined || val===null || !String(val).trim()) return; const cur=String(el.value||'').trim(); if(force || !cur || el.dataset.rzAuto==='1'){ const key=id.replace(/^rz_/,''); el.value=revizeInputValue(key,val); el.dataset.rzAuto='1'; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); } };
     const inferredType=isRevizeOmmeTrailer(info)?'trailer':(info.deviceType||inferRevizeDeviceType([info.type,info.model].filter(Boolean).join(' '))||'scissor');
     const deckDefault = String(info.deck || '').trim() || (inferredType === 'scissor' ? 'ANO' : 'NE');
     const loadSensingDefault = String(info.loadSensing || '').trim() || (isRevizeOmmeTrailer({...info, typ_zarizeni:inferredType}) ? 'NE' : 'ANO');
@@ -14012,12 +14083,33 @@ renderRevize = function(){
   el.addEventListener(eventName, resetRevizeVisibleLimit);
 });
 
+function applyRevizeFormChanges(original, baseline, draft){
+  const result = {...original};
+  for(const [key, value] of Object.entries(draft)){
+    const old = baseline[key];
+    if(JSON.stringify(value) === JSON.stringify(old)) continue;
+    const nested = value && old && typeof value === 'object' && typeof old === 'object'
+      && !Array.isArray(value) && !Array.isArray(old);
+    result[key] = nested ? applyRevizeFormChanges(original?.[key], old, value) : value;
+  }
+  return result;
+}
+function revizeNormListReady(){
+  if(!document.getElementById('rz_normy_revize')?.dataset.needsConfirmation) return true;
+  alert('Zkontroluj seznam norem a NV na kroku Zařízení – potvrzení údajů. Potvrď jej úpravou seznamu.');
+  return false;
+}
 async function saveRevizeFromForm(){
+  if(!revizeNormListReady()) return;
   if(revizeSaveInProgress) return;
-  const r=safeCollectRevizeDraft('revize save');
-  if(!r) return;
-  if(!revizeHasDifferentSecondaryParameters(r)){r.limitVariantKind='none';r.venkovni_omezeni='NE';}
-  else if(!['loadEnvelope','indoorOutdoor'].includes(r.limitVariantKind)){alert('Jsou zadány rozdílné sekundární hodnoty. Vyber omezení podle zatížení nebo vnitřní / venkovní provoz; hodnoty zůstaly zachovány.');return;}
+  const collected = safeCollectRevizeDraft('revize save');
+  if(!collected) return;
+  const edit = completedRevizeEdit;
+  const r = edit ? applyRevizeFormChanges(edit.original,edit.baseline,collected) : collected;
+  if(edit && !revizeSyncPending(r)) r.baseServerUpdatedAt = syncTimestamp(edit.original.updatedAt);
+  const hasSecondary = revizeHasDifferentSecondaryParameters(r);
+  if(!hasSecondary && !edit){r.limitVariantKind='none';r.venkovni_omezeni='NE';}
+  if(hasSecondary && !['loadEnvelope','indoorOutdoor'].includes(r.limitVariantKind)){alert('Jsou zadány rozdílné sekundární hodnoty. Vyber omezení podle zatížení nebo vnitřní / venkovní provoz; hodnoty zůstaly zachovány.');return;}
   if(!r.protokol || !r.datum_kontroly || !r.vyrobni_cislo){ alert('Vyplň minimálně protokol č., datum kontroly a výrobní číslo.'); return; }
   r.draft = false;
   r.draftSavedAt = '';
@@ -14026,9 +14118,9 @@ async function saveRevizeFromForm(){
   const saveBtn=document.getElementById('saveRevizeBtn');
   if(saveBtn) saveBtn.disabled=true;
   try{
-    const beforeRecord = editingRevizeId ? cloneForCloudSync((revizeData || []).find(x => x.id === editingRevizeId) || null) : null;
+    const beforeRecord = edit?.original || (editingRevizeId ? cloneForCloudSync(revizeData.find(x=>x.id===editingRevizeId) || null) : null);
     const wasEdit = !!editingRevizeId;
-    const saveResult = await saveRevizeRecord(r);
+    const saveResult = await saveRevizeRecord(r, Boolean(edit));
     if(!saveResult.local && !saveResult.cloud){
       alert('Revizi se nepodarilo bezpecne ulozit ani do tohoto zarizeni. Formular zustava otevreny. Uvolni misto v telefonu a zkus ulozeni znovu.\n\n' + errorText(saveResult.error));
       editingRevizeId = r.id;
@@ -14057,6 +14149,7 @@ async function saveRevizeFromForm(){
   }
 }
 async function saveRevizeDraftFromForm(){
+  if(!revizeNormListReady()) return;
   if(revizeSaveInProgress) return;
   const r=safeCollectRevizeDraft('revize draft save');
   if(!r){ alert('Rozpracovanou revizi se nepodařilo připravit.'); return; }
@@ -14129,14 +14222,16 @@ async function saveRevizeRecord(r){
   }
   return cloudSaveResult(false, null, r);
 }
-saveRevizeRecord = async function(r){
+saveRevizeRecord = async function(r, preserveExistingFields=false){
   r.id = r.id || uid();
   if(loadDeletedRevizeIds().includes(String(r.id))) throw new Error('Tato revize byla smazána. Rozepsané změny zůstávají ve formuláři.');
-  revizeNormalizeTiltAxes(r);
-  applyRevizeCalculatedLoads(r);
-  normalizeRevizeElectroForConfig(r);
-  const normalizedTilt = normalizeRevizeTiltValue(r.naklon, r);
-  if(normalizedTilt) r.naklon = normalizedTilt;
+  if(!preserveExistingFields){
+    revizeNormalizeTiltAxes(r);
+    applyRevizeCalculatedLoads(r);
+    normalizeRevizeElectroForConfig(r);
+    const normalizedTilt = normalizeRevizeTiltValue(r.naklon, r);
+    if(normalizedTilt) r.naklon = normalizedTilt;
+  }
   markRevizeSyncState(r, false, null);
   revizeData = upsertLocalRow(loadLocalRevize, saveLocalRevize, r);
   let localPersist = await persistRevizeRowsDurably(revizeData);
@@ -14297,7 +14392,7 @@ function refreshRevizeElectroBlock(){
   const rcdInput = document.getElementById('rz_rcd');
   if(rcdInput && !revizeHasElectricalEquipment(draft)) rcdInput.value = 'NE';
   const normyInput = document.getElementById('rz_normy_revize');
-  if(normyInput && (!String(normyInput.value||'').trim() || normyInput.dataset.auto === '1' || revizeNormyLooksAuto(normyInput.value))){
+  if(normyInput && !draft.normyConfirmed && !completedRevizeEdit){
     normyInput.value = revizeNormyForRecord(draft);
     normyInput.dataset.auto = '1';
   }
@@ -14473,30 +14568,37 @@ function setupRevizeWizard(){
     kids.forEach(el=>el.classList.toggle('rz-hidden-step', Number(el.dataset.rzStep)!==revizeStepIndex));
     const label=titles[revizeStepIndex]?.textContent||'Revize ZZ';
     bar.innerHTML=`<div><strong>${escapeHtml(label)}</strong><br><span>Blokové zadávání revize ZZ</span></div><div class="revize-stepbar-actions"><span>Krok ${revizeStepIndex+1}/${total}</span><button type="button" class="secondary" data-rz-save-progress>Uložit průběžně</button></div>`;
-    bar.querySelector('[data-rz-save-progress]')?.addEventListener('click', saveRevizeDraftFromForm);
+    if(completedRevizeEdit) bar.querySelector('[data-rz-save-progress]')?.remove();
+    else bar.querySelector('[data-rz-save-progress]')?.addEventListener('click', saveRevizeDraftFromForm);
     const prev=document.getElementById('prevRevizeStepBtn'), next=document.getElementById('nextRevizeStepBtn'), save=document.getElementById('saveRevizeBtn'), prog=document.getElementById('revizeStepProgress');
     if(prev) prev.disabled=revizeStepIndex===0;
     if(next) next.classList.toggle('hidden', revizeStepIndex>=total-1);
-    if(save) save.classList.toggle('hidden', revizeStepIndex<total-1);
+    if(save){
+      save.textContent = completedRevizeEdit ? 'Uložit změny' : 'Uložit revizi';
+      save.classList.toggle('hidden', !completedRevizeEdit && revizeStepIndex<total-1);
+    }
     if(prog) prog.textContent=`${revizeStepIndex+1}/${total}`;
   }
-  function focusCurrentStep(){ const nodes=kids.filter(el=>Number(el.dataset.rzStep)===revizeStepIndex); const target=nodes.map(el=>el.matches?.('input,select,textarea')?el:el.querySelector?.('input,select,textarea')).find(Boolean); setTimeout(()=>{ if(target){ target.dataset.rzProgrammaticFocus='1'; target.focus(); } },0); }
+  bar.tabIndex = -1;
+  function focusCurrentStep(){
+    document.getElementById('revizeFormWrap')?.scrollTo({top:0});
+    bar.focus({preventScroll:true});
+  }
   const rokVyroby=document.getElementById('rz_rok_vyroby'), norma=document.getElementById('rz_norma');
   rokVyroby?.addEventListener('change',()=>syncNormaFromRokVyroby(true));
   rokVyroby?.addEventListener('input',()=>syncNormaFromRokVyroby(false));
-  norma?.addEventListener('input',()=>{ norma.dataset.auto='0'; if(window.currentRevizeDraft)window.currentRevizeDraft.normaManual=true; });
+  bindRevizeNormSelection(norma);
   syncNormaFromRokVyroby(false);
   const prevBtn=document.getElementById('prevRevizeStepBtn'), nextBtn=document.getElementById('nextRevizeStepBtn');
   let revizeStepMoveInProgress=false;
   if(prevBtn) prevBtn.onclick=()=>{ if(revizeStepMoveInProgress) return; safeCollectRevizeDraft('revize previous'); moveStep(-1); paint(); focusCurrentStep(); };
-  let revizeNextPointerAt=0;
   const advanceRevizeStep=()=>{
     if(revizeStepMoveInProgress) return;
     revizeStepMoveInProgress=true;
     nextBtn.disabled=true;
     try{
       const serialStep=revizeStepIndex===0;
-      if(serialStep) applyCurrentSerial();
+      if(serialStep && !completedRevizeEdit) applyCurrentSerial();
       safeCollectRevizeDraft(serialStep?'revize next after serial':'revize next');
       moveStep(1);
       paint();
@@ -14507,18 +14609,10 @@ function setupRevizeWizard(){
     }
   };
   if(nextBtn){
-    nextBtn.onclick=()=>{
-      if(Date.now()-revizeNextPointerAt<650) return;
-      advanceRevizeStep();
-    };
-    nextBtn.onpointerup=ev=>{
-      if(!ev.pointerType || ev.pointerType==='mouse') return;
-      revizeNextPointerAt=Date.now();
-      ev.preventDefault();
-      advanceRevizeStep();
-    };
+    nextBtn.onpointerup = null;
+    nextBtn.onclick = advanceRevizeStep;
   }
-  setTimeout(()=>{ applyCurrentSerial(); safeCollectRevizeDraft('revize initial defaults'); },80);
+  if(!completedRevizeEdit) setTimeout(()=>{ applyCurrentSerial(); safeCollectRevizeDraft('revize initial defaults'); },80);
   paint();
 }
 function revizeActiveFormRoot(){
@@ -14576,7 +14670,6 @@ collectRevizeDraft = function(){
   const suggestedNorma = normaPodleRokuVyroby(r.rok_vyroby);
   if(suggestedNorma && !r.normaManual && !String(r.norma||'').trim()) r.norma = suggestedNorma;
   revizeSyncElectricalDependencies(r);
-  if(!String(r.normy_revize||'').trim() || revizeNormyLooksAuto(r.normy_revize)) r.normy_revize = revizeNormyForRecord(r);
   r.pristroj = ensureRevizeMeterText(r.pristroj);
   const meterInfo = revizeMeterInfo(r.pristroj);
   r.pristroj_ev = meterInfo.ev;
@@ -15198,12 +15291,6 @@ document.getElementById('homeRevizeWizardBtn')?.addEventListener('click', closeR
 document.getElementById('previewRevizeBtn')?.addEventListener('click', previewRevizeFromForm);
 document.getElementById('draftRevizeBtn')?.addEventListener('click', saveRevizeDraftFromForm);
 document.getElementById('saveRevizeBtn')?.addEventListener('click', saveRevizeFromForm);
-document.getElementById('saveRevizeBtn')?.addEventListener('pointerup', ev => {
-  if(ev.pointerType && ev.pointerType !== 'mouse'){
-    ev.preventDefault();
-    saveRevizeFromForm();
-  }
-}, {passive:false});
 document.getElementById('revizeSearch')?.addEventListener('input', renderRevizeDebounced);
 document.getElementById('revizeTypeFilter')?.addEventListener('change', renderRevize);
 document.getElementById('revizeResultFilter')?.addEventListener('change', renderRevize);document.getElementById('revizeSort')?.addEventListener('change', renderRevize);
@@ -15272,6 +15359,7 @@ document.getElementById('closePartsBtn')?.addEventListener('click', closePartsMo
 document.getElementById('closePartsTopBtn')?.addEventListener('click', closePartsModal);
 document.getElementById('addPartBtn')?.addEventListener('click', () => openPartForm());
 document.getElementById('cancelPartBtn')?.addEventListener('click', closePartForm);
+document.getElementById('addPartItemBtn')?.addEventListener('click', () => appendPartItem().querySelector('[data-item-name]').focus());
 document.getElementById('savePartBtn')?.addEventListener('click', savePartFromForm);
 document.getElementById('partsSearch')?.addEventListener('input', renderPartsDebounced);
 document.getElementById('partsCustomerFilter')?.addEventListener('change', renderParts);
@@ -15444,7 +15532,7 @@ document.getElementById('appCheckCacheBtn')?.addEventListener('click', async () 
   if(!confirm('Vyčistit pouze cache aplikace? Uložená data ve Firebase ani lokální záznamy se nemažou.')) return;
   await resetAppShellCacheOnly('app-check-cache');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.397');
+  url.searchParams.set('v','5.398');
   url.searchParams.set('appCheckCache', String(Date.now()));
   location.replace(url.toString());
 });
@@ -15453,7 +15541,7 @@ document.getElementById('closeAppCheckTopBtn')?.addEventListener('click', () => 
 async function forceRefreshApplication(){
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.397');
+  url.searchParams.set('v','5.398');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 }
@@ -15885,7 +15973,7 @@ function installDoubleTapGuard(){
   let lastTapTarget = null;
   document.addEventListener('touchend', (ev) => {
     const target = ev.target && ev.target.closest ? ev.target.closest('button,.yn-btn,a,[data-action],[data-answer],[data-answer-text],[data-charger-answer],[data-charger-reason],[data-socket230-answer]') : null;
-    if(!target) return;
+    if(!target || target.id==='nextRevizeStepBtn' || target.id==='prevRevizeStepBtn') return;
     const now = Date.now();
     if(target === lastTapTarget && now - lastTapAt < 420){
       ev.preventDefault();
@@ -16040,7 +16128,7 @@ setTimeout(() => {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  const APP_CURRENT_VERSION = '5.397';
+  const APP_CURRENT_VERSION = '5.398';
   let appUpdateRegistration = null;
   let appUpdateWorker = null;
   let appReloadingForUpdate = false;
@@ -16200,7 +16288,7 @@ if ('serviceWorker' in navigator) {
       const attempted = sessionStorage.getItem(APP_UPDATE_ATTEMPT_KEY) || '';
       if(attempted && compareAppVersions(APP_CURRENT_VERSION, attempted) >= 0) sessionStorage.removeItem(APP_UPDATE_ATTEMPT_KEY);
     }catch(e){}
-    navigator.serviceWorker.register(new URL('./sw.js?v=5.397', location.href), {scope:'./', updateViaCache:'none'})
+    navigator.serviceWorker.register(new URL('./sw.js?v=5.398', location.href), {scope:'./', updateViaCache:'none'})
       .then(registration => {
         installUpdateWatcher(registration);
         registration.update().catch(err => console.warn('Service worker update check failed', err));
