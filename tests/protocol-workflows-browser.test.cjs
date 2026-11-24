@@ -74,6 +74,8 @@ const photoUrl = 'http://127.0.0.1:4190/photo.png';
       revizeLatestMachine = serial => serial === quarterly.vc
         ? {serial, model:'gs-3246dc', deviceType:'scissor', maker:'Genie', year:'2022'}
         : lookup(serial);
+      const findModelDefaults = revizeSameModelDefaults;
+      revizeSameModelDefaults = () => ({});
       applyRevizeDefaultsFromSerial(quarterly.vc);
       const modelInput = document.getElementById('rz_model');
       const suggestedModel = modelInput.value;
@@ -81,18 +83,31 @@ const photoUrl = 'http://127.0.0.1:4190/photo.png';
       modelInput.dispatchEvent(new Event('input', {bubbles:true}));
       window.lastRevizeSerialDefaultAt = 0;
       document.getElementById('nextRevizeStepBtn').click();
+      revizeSameModelDefaults = findModelDefaults;
       const toggle = document.getElementById('rzExternalCustomer');
       toggle.click();
       const company = document.getElementById('rzCustomerName');
       const revisionOptions = Array.from(company.list.options, option => option.value);
       company.value = name.toUpperCase().replace(/ +/g, ' ');
       company.dispatchEvent(new Event('input', {bubbles:true}));
+      const address = document.getElementById('rzCustomerAddress');
+      address.value = 'Brno, Zkušební 42';
+      address.dispatchEvent(new Event('input', {bubbles:true}));
+      const norms = document.getElementById('rz_normy_revize');
+      norms.dispatchEvent(new Event('input', {bubbles:true}));
+      const savedRevisionAlerts = [];
+      const alertBeforeSave = window.alert;
+      window.alert = message => savedRevisionAlerts.push(message);
       await saveRevizeFromForm();
+      window.alert = alertBeforeSave;
+      if(!revizeData.some(row => row.id === revisionId)) throw new Error('Revision was not saved: ' + savedRevisionAlerts.join(' | '));
       closeRevizeForm();
       openRevizeForm(revisionId);
       const reopened = document.getElementById('rzExternalCustomer').checked;
       const reopenedName = document.getElementById('rzCustomerName').value;
       const reopenedModel = document.getElementById('rz_model').value;
+      const reopenedAddress = document.getElementById('rzCustomerAddress').value;
+      const revisionHtml = revizePaperHtml(window.currentRevizeDraft);
       const deduplicated = customerNameSuggestions().filter(value => value.toLowerCase().startsWith('zkušební'));
       closeRevizeForm();
       storageAvailable = true;
@@ -104,7 +119,7 @@ const photoUrl = 'http://127.0.0.1:4190/photo.png';
       })};
       openPreviewById(id);
       return {quarterly, photos, quarterlyOptions, revisionOptions, reopened, reopenedName,
-        reopenedModel, suggestedModel, deduplicated, saveVisibleAtStart, historyId:history[0]?.id};
+        reopenedModel, reopenedAddress, revisionHtml, suggestedModel, deduplicated, saveVisibleAtStart, historyId:history[0]?.id};
     }, photoUrl);
     assert.ok(saved.saveVisibleAtStart);
     assert.equal(saved.quarterly.typ,'GS-3246DC');
@@ -115,6 +130,8 @@ const photoUrl = 'http://127.0.0.1:4190/photo.png';
     assert.ok(saved.revisionOptions.includes('Zkušební  Firma s.r.o.'));
     assert.equal(saved.reopened,true);
     assert.equal(saved.reopenedName,'ZKUŠEBNÍ FIRMA S.R.O.');
+    assert.equal(saved.reopenedAddress,'Brno, Zkušební 42');
+    assert.ok(saved.revisionHtml.includes('ZKUŠEBNÍ FIRMA S.R.O., Brno, Zkušební 42'), 'The revision print must show the external company and address');
     assert.equal(saved.suggestedModel,'gs-3246dc');
     assert.equal(saved.reopenedModel,'GS-3246DC');
     assert.deepEqual(saved.deduplicated,['Zkušební  Firma s.r.o.']);
@@ -152,6 +169,70 @@ const photoUrl = 'http://127.0.0.1:4190/photo.png';
       await output.close();
     }
     assert.equal(documents[0],documents[1]);
+
+    const [brokenPrint] = await Promise.all([
+      page.waitForEvent('popup'),
+      page.evaluate(() => {
+        currentPreview.photos = {[PHOTO_STEPS[0].photoKey]:{url:'https://fixtures.invalid/missing.png'}};
+        currentPreview.issuePhotos = {};
+        printCurrent();
+      })
+    ]);
+    await brokenPrint.locator('.paper').waitFor();
+    await brokenPrint.evaluate(async () => {
+      window.print = () => { window.printInvoked = true; };
+      await prepareAndPrint();
+    });
+    assert.match(await brokenPrint.locator('.print-error').textContent(), /nepodařilo načíst/);
+    assert.equal(await brokenPrint.evaluate(() => Boolean(window.printInvoked)),false);
+    await brokenPrint.close();
+
+    await page.reload();
+    const persisted = await page.evaluate(async () => {
+      closePreview();
+      const names = customerNameSuggestions();
+      openWizard();
+      rec.poznamka = 'Rozepsaný koncept';
+      saveQuarterlyDraft('manual-button');
+      navigator.serviceWorker.dispatchEvent(new Event('controllerchange'));
+      const updateDeferred = document.getElementById('appUpdateBanner').classList.contains('show');
+      return {names, updateDeferred, draft:loadQuarterlyDraft()?.poznamka};
+    });
+    assert.ok(persisted.names.includes('Zkušební  Firma s.r.o.'));
+    assert.equal(persisted.updateDeferred,true);
+    assert.equal(persisted.draft,'Rozepsaný koncept');
+    assert.equal(await page.locator('#wizard.show').count(),1);
+
+    const cameraFallback = await page.evaluate(async () => {
+      let stops = 0;
+      const camera = navigator.mediaDevices;
+      if(!camera) return null;
+      const nativeGetUserMedia = camera.getUserMedia;
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.setAttribute('capture','environment');
+      document.body.append(input);
+      try{
+        camera.getUserMedia = async () => ({
+          getVideoTracks: () => [{getCapabilities: () => ({})}],
+          getTracks: () => [{stop: () => { stops++; }}]
+        });
+        await openProtocolZoomCamera(input);
+        const dialog = document.querySelector('dialog[open]');
+        const message = dialog.querySelector('[role="status"]').textContent;
+        dialog.close();
+        await new Promise(resolve => dialog.addEventListener('close', resolve, {once:true}));
+        return {message, stopped:stops>0, nativeCapture:input.getAttribute('capture')};
+      }finally{
+        camera.getUserMedia = nativeGetUserMedia;
+        input.remove();
+      }
+    });
+    assert.ok(cameraFallback);
+    assert.match(cameraFallback.message,/systémový fotoaparát/);
+    assert.ok(cameraFallback.stopped);
+    assert.equal(cameraFallback.nativeCapture,'environment');
+
     assert.deepEqual(errors,[]);
     console.log('protocol workflows: saved customers, stable ID, history, preserved photo data and matching three-page print/PDF passed');
   } finally {

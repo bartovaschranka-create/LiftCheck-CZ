@@ -31,9 +31,22 @@ const root=path.resolve(__dirname,'..');
  await saveVersionedRecord('test',tombstone.id,tombstone,'delete',1000,1000);
  let resurrectionRejected=false;try{await saveVersionedRecord('test',stale.id,stale,'resurrect',1000,1000);}catch(e){resurrectionRejected=true;}
  const hidden=mergeAndNormalizeRevizeRows([tombstone]).rows.every(r=>r.id!==tombstone.id);
- return {staleRejected,idempotent,resurrectionRejected,hidden,version:newer.syncRevision,time:newer.updatedAt};
+ const quarterly = {id:'quarterly-concurrent', vc:'SYNTHETIC', savedAt:'2026-06-01T00:00:00.000Z', poznamka:'Původní', photos:{front:{url:'https://fixtures.invalid/retained.jpg'}}};
+ document={name:'projects/test/databases/(default)/documents/'+COLLECTION_NAME+'/'+quarterly.id,fields:firestoreRestFields(quarterly),updateTime:String(++clock)};
+ firebaseAvailable=true;
+ db={};
+ const edit = {...quarterly, baseServerUpdatedAt:quarterly.savedAt, poznamka:'První klient'};
+ const savedEdit=await syncProtocolToCloud(edit);
+ const staleEdit=await syncProtocolToCloud({...edit,poznamka:'Druhý klient'});
+ const retryCount=writes;
+ const retriedEdit=await syncProtocolToCloud(edit);
+ const storedQuarterly=firestoreRestSnapshot(document).data();
+ return {staleRejected,idempotent,resurrectionRejected,hidden,version:newer.syncRevision,time:newer.updatedAt,
+   quarterly:{saved:savedEdit.cloud,version:savedEdit.record?.syncRevision,stale:staleEdit.cloud,retried:retriedEdit.cloud,
+     retryWrites:writes-retryCount,notes:storedQuarterly.poznamka,photo:storedQuarterly.photos.front.url}};
  });
  assert.equal(result.staleRejected,true);assert.equal(result.idempotent,true);assert.equal(result.resurrectionRejected,true);assert.equal(result.hidden,true);assert.equal(result.version,2);assert.equal(result.time,'2023-11-14T22:13:22.000Z');
+ assert.deepEqual(result.quarterly,{saved:true,version:1,stale:false,retried:true,retryWrites:0,notes:'První klient',photo:'https://fixtures.invalid/retained.jpg'});
  console.log('versioned-sync: server timestamp, create/edit, stale client conflict, idempotent retry, tombstone and resurrection rejection passed');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
