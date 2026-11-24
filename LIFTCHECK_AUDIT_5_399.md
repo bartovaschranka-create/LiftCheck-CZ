@@ -26,7 +26,7 @@ Audit se vztahuje k produkční revizi `7a193a5475d1b0851b9786589ea367df11c3d572
 
 ## Výsledky testů
 
-Při úplném běhu produkční sady prošlo 26 z 28 testovacích souborů. Dva neúspěchy vyvolal test externí revize, jehož stroj obsahoval nechtěnou sekundární hodnotu, a zastaralé očekávání plošné normalizace historických parametrů. Po opravách prošlo všech pět opakovaných testovacích souborů, včetně obou předtím neúspěšných. Testy e-mailových připomínek patří do jiné větve a nejsou součástí auditovaného produkčního commitu.
+Závěrečný úplný běh produkční sady skončil výsledkem **28 z 28 testovacích souborů úspěšných**, bez přeskočených testů. Dřívější běh odhalil nechtěnou sekundární hodnotu v testu externí revize a zastaralé očekávání plošné normalizace historických parametrů. Oběma scénářům se věnuje závěrečný běh. Testy e-mailových připomínek patří do jiné větve a nejsou součástí auditovaného produkčního commitu.
 
 ## Zbývající rizika a ověření před nasazením
 
