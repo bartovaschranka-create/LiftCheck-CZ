@@ -70,7 +70,7 @@ const source = {
   assert.equal(repaired.repairSourceNote, 'Původní interní poznámka k závadě', 'The original note remains in traceability metadata');
   assert.doesNotMatch(repaired.poznamka, /Původní interní poznámka/, 'An old issue note must not look like a current finding');
   assert.match(repaired.poznamka, /Původní závady byly odstraněny/);
-  assert.equal(repaired.appVersion, '1.6 / 5.384');
+  assert.equal(repaired.appVersion, require('../version.json').appVersion);
 
   const compatibility = await page.evaluate(() => {
     const positive = buildRepairedQuarterlyProtocol({

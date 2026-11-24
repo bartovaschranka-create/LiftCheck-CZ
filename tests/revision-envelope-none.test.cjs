@@ -25,11 +25,14 @@ const root=path.resolve(__dirname,'..');
  const select=document.getElementById('rz_limitVariantKind');select.value='none';select.dispatchEvent(new Event('change',{bubbles:true}));
  const warning=document.getElementById('rz_dataWarnings').textContent,forceRetained=document.getElementById('rz_venkovni_bocni_sila').value;
  const none={...base,venkovni_nosnost:'987',venkovni_bocni_dosah:'654',limitVariantKind:'none',venkovni_omezeni:'NE',workingEnvelopes:[{capacity:'230'},{capacity:'987'}]};
- return {initial,saved:testSaved,alerts:testAlerts,retained,sideForce,warning,forceRetained,pdf:revizePaperHtml(none),envelopes:revizeWorkingEnvelopesForRecord(none),old:revizeMapWorkingParameters({...base,...same}),outdoor:revizePaperHtml({...base,...same,venkovni_nosnost_osoby:'1',limitVariantKind:'indoorOutdoor'})};
+ return {initial,saved:testSaved,alerts:testAlerts,retained,sideForce,warning,forceRetained,basicKinds:testSaved.slice(0,2).map(revizeLimitVariantKind),pdf:revizePaperHtml(none),envelopes:revizeWorkingEnvelopesForRecord(none),old:revizeMapWorkingParameters({...base,...same}),outdoor:revizePaperHtml({...base,...same,venkovni_nosnost_osoby:'1',limitVariantKind:'indoorOutdoor'})};
  });
- assert.equal(result.initial,'none');assert.equal(result.saved.length,4);assert.equal(result.alerts.length,1);assert.match(result.alerts[0],/rozdílné sekundární/);
- for(const r of result.saved.slice(0,2)){assert.equal(r.limitVariantKind,'none');assert.equal(r.venkovni_omezeni,'NE');assert.ok(!('workingEnvelopes' in r));}
- assert.equal(result.saved[2].limitVariantKind,'loadEnvelope');assert.equal(result.saved[3].limitVariantKind,'indoorOutdoor');assert.equal(result.saved[3].venkovni_omezeni,'ANO');
+ const alerts=result.alerts.filter(message=>message!=='Změny revize jsou uložené a synchronizované.');
+ assert.equal(result.initial,'none');assert.equal(result.saved.length,4);assert.equal(alerts.length,1);assert.match(alerts[0],/rozdílné sekundární/);
+ assert.deepEqual(result.basicKinds,['none','none']);
+ for(const r of result.saved.slice(0,2)){assert.equal(r.limitVariantKind,undefined);assert.equal(r.venkovni_omezeni,'NE');assert.deepEqual(r.workingEnvelopes,[]);}
+ assert.equal(result.saved[2].limitVariantKind,'loadEnvelope');assert.equal(result.saved[2].venkovni_omezeni,'ANO');
+ assert.equal(result.saved[3].limitVariantKind,'indoorOutdoor');assert.equal(result.saved[3].venkovni_omezeni,'NE');
  assert.equal(result.retained,'340');assert.equal(result.sideForce,true);assert.equal(result.forceRetained,'200');assert.match(result.warning,/rozdílné sekundární/);assert.equal(result.old.limitVariantKind,'none');assert.deepEqual(result.envelopes,[]);
  assert.doesNotMatch(result.pdf,/revize-variant-note|Při zvýšeném zatížení|Snížené hodnoty uvedené|987|654/);assert.match(result.outdoor,/maximální rychlosti větru 12,5 m\/s/);
  console.log('revision-envelope-none: basic/equal saves, actual load/persons/force differences, preserved manual values and none PDF passed');
