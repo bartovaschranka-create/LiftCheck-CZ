@@ -2402,7 +2402,7 @@ body.mobile-safe-mode .attention-count:hover{
     <button type="button" class="side-link" id="sideSettingsBtn">Nastavení</button>
   </nav>
   <div class="side-bottom">
-    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.398</div>
+    <div class="side-version">Vlastník/Admin: Jan Bartoš<br>Ostrá verze<br>Verze: 1.6 / 5.399</div>
   </div>
 </aside>
 
@@ -3130,7 +3130,7 @@ body.mobile-safe-mode .attention-count:hover{
     <input id="revizeSearch" class="search" list="revizeArchiveSerialList" placeholder="Hledat protokol, výrobní číslo, model, provozovatel">
     <datalist id="revizeArchiveSerialList"></datalist>
     <select id="revizeTypeFilter" class="filter"><option value="all">Všechny typy</option><option value="scissor">Nůžková</option><option value="articulated">Kloubová</option><option value="telescopic">Teleskopická</option><option value="trailer">Vlečná</option><option value="mast">Anténní / sloupová</option></select>
-    <select id="revizeResultFilter" class="filter"><option value="all">Vše</option><option value="ok">Vyhovuje</option><option value="bad">Nevyhovuje</option></select><select id="revizeSort" class="filter"><option value="protocol_desc">Protokol &#269;.</option><option value="inspection_desc">Datum kontroly</option><option value="created_desc">Datum vytvoření</option><option value="valid_until_asc">Platnost revize</option></select>
+    <select id="revizeResultFilter" class="filter"><option value="all">Vše</option><option value="ok">Vyhovuje</option><option value="bad">Nevyhovuje</option></select><select id="revizeCustomerFilter" class="filter" aria-label="Typ zákazníka"><option value="all">Všichni zákazníci</option><option value="external">Externí zákazník</option><option value="internal">Půjčovna / interní</option></select><select id="revizeSort" class="filter"><option value="protocol_desc">Protokol &#269;.</option><option value="inspection_desc">Datum kontroly</option><option value="created_desc">Datum vytvoření</option><option value="valid_until_asc">Platnost revize</option></select>
     <button id="bulkPrintRevizeBtn" class="primary mini" type="button">Tisk vybraných</button>
   </div>
   <div id="revizeFormWrap" class="revize-form hidden">
@@ -3157,7 +3157,7 @@ body.mobile-safe-mode .attention-count:hover{
   <h3 class="step-title" id="title"></h3>
   <p class="step-desc" id="stepDesc"></p>
   <div id="content"></div>
-  <div class="wizard-actions"><button id="closeWizardBtn" class="ghost" type="button">Ukončit</button><div style="display:flex;gap:10px;flex-wrap:wrap"><button id="prevStepBtn" class="secondary" type="button">Zpět</button><button id="draftQuarterlyBtn" class="secondary" type="button">Uložit rozpracované</button><button id="previewQuarterlyBtn" class="secondary" type="button">Náhled</button><button id="nextBtn" class="primary" type="button">Další</button></div></div>
+  <div class="wizard-actions"><button id="closeWizardBtn" class="ghost" type="button">Ukončit</button><div style="display:flex;gap:10px;flex-wrap:wrap"><button id="prevStepBtn" class="secondary" type="button">Zpět</button><button id="editQuarterlySaveBtn" class="secondary hidden" type="button">Uložit změny</button><button id="draftQuarterlyBtn" class="secondary" type="button">Uložit rozpracované</button><button id="previewQuarterlyBtn" class="secondary" type="button">Náhled</button><button id="nextBtn" class="primary" type="button">Další</button></div></div>
 </div></div></div>
 
 <div class="modal" id="qrModal"><div class="modal-content"><div class="wizard-shell">
@@ -3632,18 +3632,36 @@ function operatorOptionsHtml(selected=''){
   const names = uniqueNonEmpty([selected, getLastEnteredBy(), ...(TECHNICI || [])]);
   return '<option value="">Vyberte autora</option>' + names.map(n => `<option value="${escapeHtml(n)}" ${n===selected?'selected':''}>${escapeHtml(n)}</option>`).join('');
 }
+function customerNameSuggestions(){
+  const names = new Map();
+  const add = value => {
+    const name = String(value || '');
+    const key = name.trim().replace(/\s+/g, ' ').toLocaleLowerCase('cs-CZ');
+    if(key && !names.has(key)) names.set(key, name);
+  };
+  for(const row of [...data, ...revizeData]){
+    if(row.draft) continue;
+    add(row.customerName || row.companyName);
+    add(row.provozovatel);
+  }
+  return [...names.values()].sort((a,b) => a.localeCompare(b, 'cs'));
+}
+function externalCustomerHtml(prefix, obj){
+  const id = prefix === 'protocol' ? 'externalCustomerInput' : prefix + 'ExternalCustomer';
+  return `<label class="external-check"><input id="${id}" type="checkbox" ${obj.externalCustomer ? 'checked' : ''}><div><strong>Externí zákazník</strong><span>Zaškrtni jen u zakázek mimo běžnou půjčovnu. Údaje firmy se vyplní jen tady a v protokolu budou vidět.</span></div></label>${externalDetailsHtml(prefix, obj)}`;
+}
 function externalDetailsHtml(prefix, obj={}){
   const on = !!(obj && obj.externalCustomer);
   return `<div class="field ${prefix==='protocol'?'':'parts-note'} ${on ? '' : 'hidden'}" id="${prefix}ExternalDetails">
     <div class="customer-extra-grid">
-      <div class="field"><label>Název firmy</label><input id="${prefix}CustomerName" type="text" value="${escapeHtml((obj && (obj.customerName || obj.companyName)) || '')}" autocomplete="off" placeholder="Jen u externí zakázky"></div>
+      <div class="field"><label>Název firmy</label><input id="${prefix}CustomerName" list="${prefix}CustomerNames" type="text" value="${escapeHtml((obj && (obj.customerName || obj.companyName)) || '')}" autocomplete="off" placeholder="Jen u externí zakázky"><datalist id="${prefix}CustomerNames"></datalist></div>
       <div class="field"><label>Adresa firmy</label><input id="${prefix}CustomerAddress" type="text" value="${escapeHtml((obj && (obj.customerAddress || obj.companyAddress)) || '')}" autocomplete="off" placeholder="Volitelné"></div>
     </div>
     <div class="customer-extra-note">U interní půjčovny nech prázdné. Pole se ukládají jen když je zaškrtnutý externí zákazník.</div>
   </div>`;
 }
 function wireExternalDetails(prefix, targetObj=null){
-  const chk = document.getElementById(prefix + 'ExternalCustomer') || document.getElementById('externalCustomerInput');
+  const chk = document.getElementById(prefix === 'protocol' ? 'externalCustomerInput' : prefix + 'ExternalCustomer');
   const details = document.getElementById(prefix + 'ExternalDetails');
   const name = document.getElementById(prefix + 'CustomerName');
   const addr = document.getElementById(prefix + 'CustomerAddress');
@@ -3652,10 +3670,16 @@ function wireExternalDetails(prefix, targetObj=null){
     details?.classList.toggle('hidden', !on);
     if(targetObj){
       targetObj.externalCustomer = on;
-      targetObj.customerName = on ? (name?.value || '').trim() : '';
+      targetObj.customerName = on ? (name?.value || '') : '';
       targetObj.customerAddress = on ? (addr?.value || '').trim() : '';
     }
   };
+  const options = document.getElementById(prefix + 'CustomerNames');
+  const refreshNames = () => {
+    if(options) options.innerHTML = customerNameSuggestions().map(name => `<option value="${escapeHtml(name)}"></option>`).join('');
+  };
+  name?.addEventListener('focus', refreshNames);
+  refreshNames();
   chk?.addEventListener('change', sync);
   name?.addEventListener('input', sync);
   addr?.addEventListener('input', sync);
@@ -5104,7 +5128,7 @@ async function runAppCheck(){
   renderAppCheckResults(results, true);
   appCheckAddResult(results, navigator.onLine ? 'ok' : 'error', 'Internet', navigator.onLine ? 'Zarizeni hlasi online rezim.' : 'Prohlizec hlasi offline rezim.');
   const versionText = document.querySelector('.side-version')?.textContent || '';
-  appCheckAddResult(results, versionText.includes('5.398') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
+  appCheckAddResult(results, versionText.includes('5.399') ? 'ok' : 'warn', 'Verze aplikace', versionText.trim() || 'Verzi se nepodarilo precist.');
   const profile = window.DEVICE_PROFILE || {};
   appCheckAddResult(results, 'ok', 'Profil zarizeni', `Android: ${profile.android ? 'ano' : 'ne'}, starsi Android: ${profile.oldAndroid ? 'ano' : 'ne'}, iOS: ${profile.ios ? 'ano' : 'ne'}, starsi iOS: ${profile.oldIOS ? 'ano' : 'ne'}, usporny rezim: ${profile.safeMode ? 'ano' : 'ne'}, RAM: ${navigator.deviceMemory || '?'} GB, jadra: ${navigator.hardwareConcurrency || '?'}.`);
   try{
@@ -5184,14 +5208,14 @@ function scheduleEmptyAppRecovery(reason='startup'){
       if(navigator.onLine && !already){
         sessionStorage.setItem(key, String(Date.now()));
         const url = new URL(location.href);
-        url.searchParams.set('v','5.398');
+        url.searchParams.set('v','5.399');
         url.searchParams.set('recovery', String(Date.now()));
         location.replace(url.toString());
       }else if(navigator.onLine && already && sessionStorage.getItem('liftcontrol_cache_recovery_5_336') !== '1'){
         sessionStorage.setItem('liftcontrol_cache_recovery_5_336','1');
         await resetAppShellCacheOnly('empty-app-' + reason);
         const url = new URL(location.href);
-        url.searchParams.set('v','5.398');
+        url.searchParams.set('v','5.399');
         url.searchParams.set('cachefix', String(Date.now()));
         location.replace(url.toString());
       }else{
@@ -6280,7 +6304,7 @@ function closeWizard(){
   hideSuggestions();
   closeModal(els.wizard);
 }
-function prevStep(){ hideSuggestions(); if(stepIndex > 0){ stepIndex--; showStep(); } }
+function prevStep(){ if(protocolSaveInProgress || els.content.querySelector('[data-processing="1"]')) return; syncQuarterlyCurrentStepInputs(); hideSuggestions(); if(stepIndex > 0){ stepIndex--; showStep(); } }
 
 function normalizeQuarterlyStepValue(key, value){
   if(key === 'umisteni') return normalizeCanonicalBranch(value);
@@ -6300,30 +6324,37 @@ function syncQuarterlyCurrentStepInputs(){
 }
 
 async function saveQuarterlyEditedProtocolFromWizard(){
-  if(protocolSaveInProgress) return false;
+  if(protocolSaveInProgress || els.content.querySelector('[data-processing="1"]')) return false;
+  const button = document.getElementById('editQuarterlySaveBtn');
+  if(button) button.disabled = true;
   protocolSaveInProgress = true;
+  els.content.inert = true;
   if(els.nextBtn) els.nextBtn.disabled = true;
   try{
     syncQuarterlyCurrentStepInputs();
-    syncRevizeIssue(rec);
+    const existingProtocol = data.find(x => x.id === rec.id);
+    if(!existingProtocol || existingProtocol.revizeDo !== rec.revizeDo || existingProtocol.datum !== rec.datum) syncRevizeIssue(rec);
     syncModelPreferences(rec);
     if(!rec.cLogic) rec.cLogic = 'legacy';
     rec.appVersion = '1.6 / 5.384';
     if(!rec.enteredBy) rec.enteredBy = rec.technik || getEnteredByDefault();
     setLastEnteredBy(rec.enteredBy);
     rec.savedAt = new Date().toISOString();
-    const existingProtocol = data.find(x => x.id === rec.id);
     const beforeProtocol = existingProtocol ? cloneForCloudSync(existingProtocol) : null;
-    const saveResult = await saveProtocol(rec);
+    const saveResult = await saveProtocol(cloneForCloudSync(rec));
+    if(!saveResult?.cloud){
+      alertCloudResult(saveResult, 'Protokol');
+      return false;
+    }
     logAuditAction(existingProtocol ? 'update' : 'create','protocol',rec,rec.enteredBy || rec.technik, undefined, beforeProtocol)
       .catch(err => console.warn('Audit protokolu se nepodařilo zapsat na pozadí.', err));
     clearQuarterlyDraft();
     closeWizard();
     showSection('archive');
     render();
-    if(!saveResult?.cloud) alertCloudResult(saveResult, 'Protokol');
-    if(saveResult?.cloud && (saveResult.pendingPhotos || protocolPhotoSyncPending(saveResult.record))) alert(storageSyncErrorText(saveResult.photoErrors?.[0] || new Error('Fotografie cekaji na nahrani.')));
-    if(saveResult?.cloud && !saveResult.pendingPhotos && !protocolPhotoSyncPending(saveResult.record)) alert('Změny protokolu jsou uložené a synchronizované.');
+    if(saveResult.local === false) alertCloudResult(saveResult, 'Protokol');
+    if(saveResult.pendingPhotos || protocolPhotoSyncPending(saveResult.record)) alert(storageSyncErrorText(saveResult.photoErrors?.[0] || new Error('Fotografie cekaji na nahrani.')));
+    else if(saveResult.local !== false) alert('Změny protokolu jsou uložené a synchronizované.');
     return true;
   }catch(err){
     console.error(err);
@@ -6331,12 +6362,14 @@ async function saveQuarterlyEditedProtocolFromWizard(){
     return false;
   }finally{
     protocolSaveInProgress = false;
+    els.content.inert = false;
+    if(button) button.disabled = false;
     if(els.nextBtn) els.nextBtn.disabled = false;
   }
 }
 
 async function closeWizardWithPrompt(){
-  if(protocolSaveInProgress) return;
+  if(protocolSaveInProgress || els.content.querySelector('[data-processing="1"]')) return;
   if(!els.wizard || !els.wizard.classList.contains('show')) return;
   const editingExisting = !!(rec && rec.id && data.some(x => x.id === rec.id));
   if(editingExisting){
@@ -6357,7 +6390,7 @@ function saveQuarterlyDraftFromWizard(){
     showSection('archive');
     render();
   }else{
-    alert('Upravený hotový protokol se jako nový rozpracovaný protokol neukládá. Pro změny použij Uložit na konci průvodce.');
+    alert('Upravený hotový protokol se jako nový rozpracovaný protokol neukládá. Pro změny použij tlačítko Uložit změny.');
   }
 }
 function previewQuarterlyFromWizard(){
@@ -6411,6 +6444,9 @@ function showStep(){
   els.stepChip.textContent = sectionLabel(s.section||'Úvodní údaje');
   els.title.textContent = s.t;
   els.stepDesc.textContent = isGeneralCheckKey(s.k) ? ('Logika sekce C: ' + cLogicLabel(rec) + '.') : '';
+  const editing = data.some(row => row.id === rec.id);
+  document.getElementById('editQuarterlySaveBtn')?.classList.toggle('hidden', !editing);
+  document.getElementById('draftQuarterlyBtn')?.classList.toggle('hidden', editing);
   els.nextBtn.textContent = stepIndex === activeSteps.length-1 ? 'Uložit protokol' : 'Další';
   if(!protocolSaveInProgress) els.nextBtn.disabled = false;
 
@@ -6453,7 +6489,7 @@ function showStep(){
     const size = p.bytes ? ` · ${Math.round(p.bytes/1024)} kB` : '';
     html = `<div class="field"><label>${s.t}</label><input id="photoInput" type="file" accept="image/*" capture="environment"><div class="helper">Max. 500 kB po automatické kompresi. Fotku můžeš přeskočit tlačítkem Další.</div>${src ? `<div class="photo-preview"><img src="${escapeHtml(src)}" data-full-src="${escapeHtml(src)}" onclick="openLightbox(this.dataset.fullSrc)" alt="${escapeHtml(s.t)}"></div><div class="helper">Uloženo v kroku${size}</div><div class="photo-tools"><button class="danger mini" type="button" id="deleteMainPhotoBtn">Smazat tuto fotku</button></div>` : ''}</div>`;
   } else if(s.type === 'externalCustomer'){
-    html = `<label class="external-check"><input id="externalCustomerInput" type="checkbox" ${rec.externalCustomer ? 'checked' : ''}><div><strong>Externí zákazník</strong><span>Zaškrtni jen u zakázek mimo běžnou půjčovnu. Údaje firmy se vyplní jen tady a v protokolu budou vidět.</span></div></label>${externalDetailsHtml('protocol', rec)}`;
+    html = externalCustomerHtml('protocol', rec);
   } else if(s.type === 'protocolSignatures'){
     html = `<div class="protocol-signature-box">
       <div class="protocol-signature-row"><strong>Podpis kontroln&iacute;ho technika</strong><div class="signature-preview"><button id="openProtocolTechSignatureBtn" class="secondary" type="button">Podepsat na displeji</button><button id="clearProtocolTechSignatureBtn" class="ghost" type="button">Vymazat podpis</button><span id="protocolTechSignatureState" class="helper">Podpis nen&iacute; povinn&yacute;.</span><img id="protocolTechSignaturePreview" alt="" hidden></div></div>
@@ -6558,6 +6594,7 @@ function showStep(){
     descInput.addEventListener('input', () => { rec[s.textKey] = descInput.value; scheduleQuarterlyDraftSave('note'); });
   }
   const photoInput = document.getElementById('photoInput');
+  offerProtocolCameraZoom(photoInput);
   if(photoInput){
     photoInput.addEventListener('change', async (e) => {
       if(photoInput.dataset.processing === '1') return;
@@ -6602,6 +6639,7 @@ function showStep(){
     });
   }
   const issuePhotoInput = document.getElementById('issuePhotoInput');
+  offerProtocolCameraZoom(issuePhotoInput);
   if(issuePhotoInput){
     issuePhotoInput.addEventListener('change', async (e) => {
       if(issuePhotoInput.dataset.processing === '1') return;
@@ -6754,6 +6792,92 @@ function scheduleRefreshSuggestions(){
   quarterlySuggestTimer = setTimeout(refreshSuggestions, DEVICE_PROFILE.safeMode ? 150 : 70);
 }
 
+function offerProtocolCameraZoom(input){
+  if(!input || !navigator.mediaDevices?.getSupportedConstraints?.().zoom ||
+     typeof DataTransfer !== 'function' || typeof HTMLDialogElement === 'undefined') return;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'secondary mini';
+  button.textContent = 'Fotoaparát se zoomem';
+  input.insertAdjacentElement('afterend', button);
+  button.onclick = () => { if(!input.disabled) openProtocolZoomCamera(input); };
+}
+async function openProtocolZoomCamera(input){
+  const dialog = document.createElement('dialog');
+  dialog.style.cssText = 'max-width:min(94vw,560px);max-height:90vh;padding:12px';
+  dialog.innerHTML = '<video autoplay muted playsinline style="display:block;max-width:100%;max-height:55vh"></video><p role="status">Otevírám fotoaparát…</p><label hidden>Přiblížení <input type="range"></label><button type="button" disabled>Vyfotit</button> <button type="button">Zavřít</button>';
+  const video = dialog.querySelector('video');
+  const status = dialog.querySelector('[role="status"]');
+  const zoom = dialog.querySelector('input');
+  const [capture, close] = dialog.querySelectorAll('button');
+  let stream;
+  const stop = () => stream?.getTracks().forEach(track => track.stop());
+  dialog.addEventListener('close', () => { stop(); dialog.remove(); });
+  close.onclick = () => dialog.close();
+  document.body.append(dialog);
+  dialog.showModal();
+  try{
+    stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},zoom:true},audio:false});
+    if(!dialog.open){ stop(); return; }
+    const track = stream.getVideoTracks()[0];
+    const range = track.getCapabilities?.().zoom;
+    if(!range || range.max <= range.min) throw new Error('Zoom není dostupný.');
+    const applyZoom = value => track.applyConstraints({advanced:[{zoom:value}]});
+    const showZoom = () => {
+      const value = track.getSettings().zoom;
+      if(!Number.isFinite(value)) throw new Error('Zoom není dostupný.');
+      zoom.value = value;
+      status.textContent = 'Přiblížení ' + value + '×';
+    };
+    zoom.min = range.min;
+    zoom.max = range.max;
+    zoom.step = range.step || 'any';
+    await applyZoom(Math.min(range.max, Math.max(range.min, 1)));
+    if(!dialog.open) return;
+    video.srcObject = stream;
+    await video.play();
+    if(!dialog.open) return;
+    showZoom();
+    zoom.parentElement.hidden = false;
+    capture.disabled = false;
+    zoom.onchange = async () => {
+      zoom.disabled = capture.disabled = true;
+      try{
+        await applyZoom(Number(zoom.value));
+        showZoom();
+      }catch(error){
+        zoom.value = track.getSettings().zoom;
+        status.textContent = 'Přiblížení se nepodařilo změnit.';
+      }finally{
+        zoom.disabled = capture.disabled = false;
+      }
+    };
+    capture.onclick = async () => {
+      capture.disabled = zoom.disabled = true;
+      try{
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+        if(!blob) throw new Error('Snímek je prázdný.');
+        if(!dialog.open || !input.isConnected) return;
+        const files = new DataTransfer();
+        files.items.add(new File([blob], 'foto.jpg', {type:'image/jpeg'}));
+        input.files = files.files;
+        dialog.close();
+        input.dispatchEvent(new Event('change', {bubbles:true}));
+      }catch(error){
+        status.textContent = 'Fotku se nepodařilo pořídit. Zkus to znovu.';
+        capture.disabled = zoom.disabled = false;
+      }
+    };
+  }catch(error){
+    stop();
+    status.textContent = 'Zoom není dostupný. Zavři okno a použij systémový fotoaparát.';
+  }
+}
+
 function shouldShowIssuePhoto(step, value){
   if(!step || step.type !== 'yntextphoto') return false;
   if(step.k === 'B1') return value === 'NE';
@@ -6880,7 +7004,7 @@ window.nextLightboxPhoto = nextLightboxPhoto;
 window.prevLightboxPhoto = prevLightboxPhoto;
 
 async function nextStep(){
-  if(protocolSaveInProgress) return;
+  if(protocolSaveInProgress || els.content.querySelector('[data-processing="1"]')) return;
   hideSuggestions();
   const activeSteps = getStepsForRecord(rec);
   const s = activeSteps[stepIndex];
@@ -6908,6 +7032,7 @@ async function nextStep(){
     showStep();
     return;
   }
+  if(data.some(row => row.id === rec.id)) return saveQuarterlyEditedProtocolFromWizard();
   protocolSaveInProgress = true;
   if(els.nextBtn) els.nextBtn.disabled = true;
   try{
@@ -8202,28 +8327,24 @@ function renderPhotoSection(r){
   const photos = r.photos || {};
   const cells = PHOTO_STEPS.map((s, i) => {
     const p = photos[s.photoKey] || {};
-    const src = p.url || p.dataUrl || '';
+    const src = getPhotoSrc(p);
     return `<div class="photo-mini">${src ? `<img src="${escapeHtml(src)}" data-full-src="${escapeHtml(src)}" onclick="openLightbox(this.dataset.fullSrc)">` : '<div style="height:70px;border:1px dashed #bdbdbd;margin-bottom:5px;background:#fafafa"></div>'}<div>${i+1}. ${escapeHtml(PHOTO_LABELS[s.photoKey])}</div></div>`;
   }).join('');
   return `<div class="photo-section"><div class="section-head">Fotodokumentace</div><div style="padding:6px 8px;font-size:11px;font-weight:600">Přehledové fotografie zařízení (6 ks)</div><div class="photo-strip">${cells}</div></div>`;
 }
-function renderIssuePhotosSection(r){
-  const issuePhotos = r.issuePhotos || {};
-  const flat = [];
-  Object.entries(issuePhotos).forEach(([k,p]) => {
-    const list = Array.isArray(p) ? p : (p ? [p] : []);
-    list.forEach(item => {
-      const src = item ? (item.url || item.dataUrl || '') : '';
-      if(src) flat.push({src, q:item.question || k});
-    });
+function quarterlyIssuePhotoEntries(r){
+  return Object.entries(r.issuePhotos || {}).flatMap(([key, value]) => {
+    const photos = Array.isArray(value) ? value : [value];
+    return photos.map(photo => ({src:getPhotoSrc(photo), q:photo?.question || key})).filter(entry => entry.src);
   });
-  const entries = flat.slice(0,4);
-  const boxes = [0,1,2,3].map(i => {
+}
+function renderIssuePhotosSection(entries){
+  const boxes = Array.from({length:Math.max(4, entries.length)}, (_, i) => {
     const entry = entries[i];
     if(!entry) return `<div class="issue-mini"><div style="height:56px;border:1px dashed #bdbdbd;background:#fafafa;margin-bottom:4px"></div><div>vložit foto</div></div>`;
     return `<div class="issue-mini"><img src="${escapeHtml(entry.src)}" data-full-src="${escapeHtml(entry.src)}" onclick="openLightbox(this.dataset.fullSrc)"><div>${escapeHtml(entry.q)}</div></div>`;
   }).join('');
-  return `<div class="photo-section" style="border-top:none"><div style="padding:6px 8px;font-size:11px;font-weight:600;border-top:1px solid #707070">Fotografie závad (dle potřeby)</div><div class="issue-strip" style="grid-template-columns:repeat(4,1fr)">${boxes}</div></div>`;
+  return `<div class="photo-section"><div class="section-head">Fotografie závad</div><div class="issue-strip">${boxes}</div></div>`;
 }
 function protocolSignatureHtml(dataUrl){
   return dataUrl ? '<img class="protocol-signature-img" src="' + escapeHtml(dataUrl) + '" alt="">' : '<span class="protocol-sign-line"></span>';
@@ -8231,6 +8352,10 @@ function protocolSignatureHtml(dataUrl){
 function renderPaper(r){
   const sections = getSectionsForRecord(r);
   const b1 = yn(r.B1);
+  const issuePhotos = quarterlyIssuePhotoEntries(r);
+  const extraPages = [];
+  for(let i = 4; i < issuePhotos.length; i += 16) extraPages.push(issuePhotos.slice(i, i + 16));
+  const pageCount = 2 + extraPages.length;
   return `
   <div class="paper">
     <div class="paper-doc">
@@ -8274,7 +8399,7 @@ function renderPaper(r){
           <div class="section-head">E. Kontrola funkcí</div>
           <table class="proto-table"><thead><tr><th class="num-col">Č.</th><th class="item-col">Položka</th><th class="yn-col">ANO</th><th class="yn-col">NE</th><th class="note-col">Poznámka</th></tr></thead><tbody>${rowsHtml(sections.E,r,{numbered:true})}</tbody></table>
         </div>
-        <div class="page-number">Strana 1 z 2</div>
+        <div class="page-number">Strana 1 z ${pageCount}</div>
       </section>
       <section class="paper-page">
         <div class="section-card">
@@ -8282,7 +8407,7 @@ function renderPaper(r){
           <div class="findings-box findings-box-lg">${escapeHtml(r.poznamka||'')}<div class="findings-lines"><div></div><div></div><div></div></div></div>
         </div>
         ${renderPhotoSection(r)}
-        ${renderIssuePhotosSection(r)}
+        ${renderIssuePhotosSection(issuePhotos.slice(0,4))}
         <div class="section-card">
           <div class="section-head">Závěr kontroly</div>
           <div>${renderConclusion(r)}</div>
@@ -8293,8 +8418,12 @@ function renderPaper(r){
             <div><strong>Provozovatel / objednatel:</strong><br>${escapeHtml(customerDisplayText(r) || '')}<br><strong>Podpis:</strong>${protocolSignatureHtml(r.customerSignature)}</div>
           </div>
         </div>
-        <div class="page-number">Strana 2 z 2</div>
+        <div class="page-number">Strana 2 z ${pageCount}</div>
       </section>
+      ${extraPages.map((photos, index) => `<section class="paper-page">
+        ${renderIssuePhotosSection(photos)}
+        <div class="page-number">Strana ${index + 3} z ${pageCount}</div>
+      </section>`).join('')}
     </div>
   </div>`;
 }
@@ -8390,37 +8519,22 @@ async function saveRevizePdfFromRecord(record, options={}){
     style.remove();
   }
 }
-async function savePreviewRecord(){
-  if(!currentPreview){ alert('Není otevřený žádný protokol k uložení.'); return; }
-  if(currentPreview._revize){
-    openRevizePrintWindow({title:currentPreview.protokol ? `Revize ZZ ${currentPreview.protokol}` : 'Revize ZZ', bodyHtml:revizePaperHtml(currentPreview), count:1});
-    return;
-  }
-  try{
-    await ensureHtml2PdfLibrary();
-  }catch(e){
-    alert('PDF knihovnu se nepodarilo nacist: ' + errorText(e));
-    return;
-  }
-  els.previewBody.innerHTML = renderPaper(currentPreview);
-  const element = els.previewBody.querySelector('.paper');
-  if(!element){ alert('Nepodařilo se připravit PDF.'); return; }
-  await waitForImages(element);
-  const fileBase = (currentPreview.id || currentPreview.vc || 'protokol').replace(/[^a-z0-9_-]+/gi,'_');
-  if(window.html2pdf){
-    await window.html2pdf().set({ margin:[0,0,0,0], filename:`${fileBase}.pdf`, image:{type:'jpeg', quality:0.96}, html2canvas:{scale:2, useCORS:true, backgroundColor:'#ffffff'}, jsPDF:{unit:'mm', format:'a4', orientation:'portrait'}, pagebreak:{mode:['css','legacy']} }).from(element).save();
-  } else {
-    alert('PDF knihovna se nenačetla.');
-  }
-}
+function savePreviewRecord(){ return printCurrent(); }
 function getPrintStyles(){
   return `
+.paper .mark-box{display:inline-flex;width:12px;height:12px;border:1px solid #111;align-items:center;justify-content:center;vertical-align:middle;font:bold 9px Arial,sans-serif;color:#111}
+.paper .mark-box.checked::after{content:"X"}
+.paper td{overflow-wrap:anywhere}
+.paper .findings-box{white-space:pre-wrap;overflow-wrap:anywhere}
+.paper .issue-mini img,.paper .photo-mini img{object-fit:contain}
+
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,Helvetica,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .paper{width:210mm;margin:0 auto;background:#fff;color:#111}
 .paper-doc{display:block;width:210mm;margin:0;padding:0;background:#fff}
-.paper-page{width:210mm;min-height:297mm;height:297mm;margin:0;padding:8mm 7mm 7mm 7mm;display:flex;flex-direction:column;gap:6px;overflow:hidden;background:#fff;page-break-after:always;break-after:page}
+.paper-page{width:210mm;min-height:296mm;margin:0;padding:8mm 7mm 7mm 7mm;display:flex;flex-direction:column;gap:6px;background:#fff;page-break-after:always;break-after:page}
 .paper-page:last-child{page-break-after:auto;break-after:auto}
+.paper:not(:last-child) .paper-page:last-child{page-break-after:always;break-after:page}
 .paper-header{text-align:center;margin-bottom:4px}.paper-header h2{margin:0 0 4px;font-size:20px;letter-spacing:.2px}.paper-header .subhead{font-size:10.5px;margin:0;color:#333}
 table{width:100%;border-collapse:collapse;table-layout:fixed}.proto-meta{font-size:10px;margin-bottom:4px}.proto-meta td,.proto-meta th,.proto-table td,.proto-table th{border:1px solid #707070;padding:3px 4px;vertical-align:top}.proto-meta td.label{width:16%;font-weight:700;background:#f2f2f2}.proto-meta td.value{width:34%}.proto-table{font-size:9.4px;line-height:1.12}.proto-table th{background:#f3f4f6;font-weight:700}.proto-table .num-col{width:30px;text-align:center}.proto-table .item-col{width:auto}.proto-table .yn-col{width:42px;text-align:center}.proto-table .note-col{width:38%}.box{font-size:13px;line-height:1;display:inline-block}
 .paper-row-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.section-card{display:flex;flex-direction:column;gap:0;page-break-inside:avoid;break-inside:avoid}.section-head{border:1px solid #707070;background:#ededed;padding:4px 6px;font-weight:700;font-size:10.4px}.section-note{float:right;font-weight:600;font-size:9px;color:#333}.status-bad{background:#fee2e2!important}.status-bad td,.status-bad th{background:#fee2e2!important;border-color:#dc2626!important}.muted-note{color:#555;font-size:9px}
@@ -8428,7 +8542,7 @@ table{width:100%;border-collapse:collapse;table-layout:fixed}.proto-meta{font-si
 .conclusion-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:8px}.signature-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0}.signature-grid>div{border:1px solid #707070;border-top:none;padding:8px;min-height:76px;font-size:10px}.signature-grid-lg>div{min-height:84px}.protocol-signature-img{display:block;width:auto;height:auto;max-width:62mm;max-height:20mm;object-fit:contain;margin-top:4px}.protocol-sign-line{display:block;border-bottom:1px solid #555;height:22px;margin-top:10px}.page-number{text-align:right;font-size:9px;color:#333;margin-top:auto}
 .print-toolbar{position:sticky;top:0;z-index:10;background:#0f172a;color:#fff;padding:10px 12px;display:flex;gap:10px;align-items:center;justify-content:space-between;font-family:Arial,Helvetica,sans-serif}.print-toolbar button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;background:#2563eb;color:#fff;cursor:pointer}.print-toolbar .secondary{background:#e5e7eb;color:#111827}.print-toolbar small{color:#cbd5e1}
 @page{size:A4 portrait;margin:0}
-@media print{.print-toolbar{display:none!important}html,body{width:210mm;background:#fff}.paper{width:210mm;margin:0}.paper-doc{width:210mm}.paper-page{width:210mm;height:297mm;min-height:297mm;max-height:297mm}}
+@media print{.print-toolbar{display:none!important}html,body{width:210mm;background:#fff}.paper{width:210mm;margin:0}.paper-doc{width:210mm}.paper-page{width:210mm;display:block}.paper-page > *{margin-bottom:6px}.paper-page .page-number{margin:8px 0 0}.paper .section-card{display:block;break-inside:auto;page-break-inside:auto}.paper tr,.paper .photo-section,.paper .signature-grid{break-inside:avoid;page-break-inside:avoid}}
 `;
 }
 function getRevizePrintStyles(){
@@ -8482,7 +8596,50 @@ html,body{margin:0;padding:0;background:#fff;color:#111;font-family:Arial,Helvet
 }
 
 function waitPrintAssetsScript(){
-  return `<script>async function waitPrintAssets(){const imgs=[...document.images];await Promise.all(imgs.map(img=>img.complete?Promise.resolve():new Promise(res=>{img.onload=res;img.onerror=res;setTimeout(res,1200)})));if(document.fonts&&document.fonts.ready)await Promise.race([document.fonts.ready,new Promise(res=>setTimeout(res,1200))]);await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));}function verifyPrintContent(){const pages=[...document.querySelectorAll('.revize-paper,.paper-page,.paper,.repair-protocol-paper')];if(!pages.length)throw new Error('Tiskový obsah není připraven.');const visible=pages.some(p=>p.getBoundingClientRect().height>20&&p.textContent.trim().length>10);if(!visible)throw new Error('Tiskový obsah je prázdný.');}async function prepareAndPrint(){const s=document.getElementById('printStatus');try{if(s)s.textContent='Připravuji tisk...';await waitPrintAssets();verifyPrintContent();if(s)s.textContent='Spouštím tisk... V dialogu tiskárny zapni oboustranný tisk.';window.focus();setTimeout(()=>window.print(),80);}catch(e){console.error(e);const box=document.createElement('div');box.className='print-error';box.textContent='Tisk se nepodařilo připravit: '+(e&&e.message?e.message:e);document.body.prepend(box);if(s)s.textContent='Tisk se nepodařilo připravit.';}}<\/script>`;
+  return `<script>
+async function waitPrintAssets(){
+  const images = [...document.images];
+  let timeout;
+  try{
+    const loads = images.map(img => img.complete ? Promise.resolve() : new Promise(resolve => {
+      img.addEventListener('load', resolve, {once:true});
+      img.addEventListener('error', resolve, {once:true});
+    }));
+    await Promise.race([Promise.all(loads), new Promise(resolve => { timeout = setTimeout(resolve, 15000); })]);
+  }finally{
+    clearTimeout(timeout);
+  }
+  if(images.some(img => !img.complete || !img.naturalWidth)){
+    throw new Error('Některé obrázky se nepodařilo načíst. Zkontroluj připojení a dostupnost příloh.');
+  }
+  if(document.fonts?.ready){
+    await Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 1200))]);
+  }
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+async function prepareAndPrint(){
+  const status = document.getElementById('printStatus');
+  const previousStatus = status?.textContent;
+  try{
+    if(status) status.textContent = 'Připravuji tisk…';
+    await waitPrintAssets();
+    document.querySelector('.print-error')?.remove();
+    const pages = [...document.querySelectorAll('.revize-paper,.paper-page,.paper,.repair-protocol-paper')];
+    if(!pages.some(page => page.getBoundingClientRect().height > 20 && page.textContent.trim().length > 10)){
+      throw new Error('Tiskový obsah není připraven.');
+    }
+    if(status) status.textContent = previousStatus;
+    window.focus();
+    window.print();
+  }catch(error){
+    const box = document.querySelector('.print-error') || document.createElement('div');
+    box.className = 'print-error';
+    box.textContent = 'Tisk se nepodařilo připravit: ' + error.message;
+    document.body.prepend(box);
+    if(status) status.textContent = 'Tisk se nepodařilo připravit.';
+  }
+}
+<\/script>`;
 }
 function openRevizePrintWindow({title='Revize ZZ', bodyHtml='', count=1}={}){
   const pages = String(bodyHtml || '').match(/class="[^"]*\brevize-paper\b/g)?.length || 0;
@@ -8496,15 +8653,21 @@ function openRevizePrintWindow({title='Revize ZZ', bodyHtml='', count=1}={}){
   w.document.open(); w.document.write(html); w.document.close();
   try{ w.focus(); }catch(e){}
 }
-function openBatchPrintWindow({title, styles, bodyHtml, count}){
-  const html = `<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>${styles}
+function openBatchPrintWindow({title, styles, bodyHtml, count, targetWindow}){
+  const html = `<!doctype html><html lang="cs"><head><meta charset="utf-8"><base href="${escapeHtml(document.baseURI)}"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>${styles}
 .batch-blank{width:210mm;height:297mm;min-height:297mm;max-height:297mm;margin:0 auto;background:#fff;break-after:page;page-break-after:always}
 .batch-blank:last-child{break-after:auto;page-break-after:auto}
 @media print{.batch-blank{width:210mm!important;height:297mm!important;min-height:297mm!important;max-height:297mm!important}}
-</style></head><body><div class="print-toolbar"><div><strong>${escapeHtml(title)}</strong><br><small id="printStatus">Připraveno ${count} protokolů. Pro hromadný oboustranný tisk zvol v tiskovém dialogu oboustranně / duplex.</small></div><div><button onclick="prepareAndPrint()">Tisk / PDF</button><button class="secondary" onclick="window.close()">Zavřít</button></div></div><div id="preview"><div id="previewBody">${bodyHtml}</div></div>${waitPrintAssetsScript()}</body></html>`;
-  const w = window.open('', '_blank');
-  if(!w){ alert('Prohlížeč zablokoval otevření hromadného tisku.'); return; }
-  w.document.open(); w.document.write(html); w.document.close();
+</style></head><body><div class="print-toolbar"><div><strong>${escapeHtml(title)}</strong><br><small id="printStatus">${count === 1 ? 'Pro PDF vyber v tiskovém dialogu možnost Uložit jako PDF.' : 'Pro hromadný oboustranný tisk zvol v tiskovém dialogu oboustranně / duplex.'}</small></div><div><button onclick="prepareAndPrint()">Tisk / PDF</button><button class="secondary" onclick="window.close()">Zavřít</button></div></div><div id="preview"><div id="previewBody">${bodyHtml}</div></div>${waitPrintAssetsScript()}</body></html>`;
+  const url = URL.createObjectURL(new Blob([html], {type:'text/html;charset=utf-8'}));
+  const w = targetWindow || window.open(url, '_blank');
+  if(!w){
+    URL.revokeObjectURL(url);
+    alert('Prohlížeč zablokoval otevření tisku.');
+    return;
+  }
+  if(targetWindow) targetWindow.location.replace(url);
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
   try{ w.focus(); }catch(e){}
   return w;
 }
@@ -8521,14 +8684,46 @@ function quarterlyPrintHtmlWithDuplexPad(record){
   const pages = host.querySelectorAll('.paper-page').length || 2;
   return html + (pages % 2 ? '<div class="batch-blank"></div>' : '');
 }
+function quarterlyPrintPhotoRefs(record){
+  return [...Object.values(record.photos || {}), ...Object.values(record.issuePhotos || {})].flat().filter(Boolean);
+}
+function openQuarterlyPrintWindow(records, title, render){
+  const options = {title, styles:getPrintStyles(), count:records.length};
+  const hasStorageRefs = record => quarterlyPrintPhotoRefs(record).some(photo => photo.path && !getPhotoSrc(photo));
+  if(!records.some(hasStorageRefs)){
+    return openBatchPrintWindow({...options, bodyHtml:records.map(render).join('')});
+  }
+
+  // Open on the initiating click, before waiting for Storage lookup.
+  const targetWindow = window.open('', '_blank');
+  if(!targetWindow){ alert('Prohlížeč zablokoval otevření tisku.'); return; }
+  targetWindow.document.body.textContent = 'Načítám fotografie protokolu…';
+  const resolveRecord = async record => {
+    if(!hasStorageRefs(record)) return record;
+    const copy = cloneForCloudSync(record);
+    await Promise.all(quarterlyPrintPhotoRefs(copy).map(async photo => {
+      if(!photo.path || getPhotoSrc(photo)) return;
+      if(!storageAvailable || !storage || !isAllowedStoragePhotoPath(photo.path) ||
+         !photo.path.startsWith(STORAGE_PREFIX + '/')){
+        throw new Error('Odkaz na fotografii není dostupný.');
+      }
+      photo.url = await withTimeout(storage.ref(photo.path).getDownloadURL(), 15000, 'Načtení fotografie protokolu');
+    }));
+    return copy;
+  };
+  return Promise.all(records.map(resolveRecord)).then(rows => {
+    if(!targetWindow.closed) return openBatchPrintWindow({...options, bodyHtml:rows.map(render).join(''), targetWindow});
+  }).catch(error => {
+    if(!targetWindow.closed) targetWindow.document.body.textContent = 'Tisk se nepodařilo připravit. Fotografie není dostupná: ' + errorText(error);
+  });
+}
 function printSelectedQuarterly(){
   const ids = selectedBulkIds('[data-bulk-quarterly]');
   if(!ids.length){ alert('Vyber alespoň jeden čtvrtletní protokol k tisku.'); return; }
   const rows = ids.map(id => (data || []).find(r => String(r.id) === String(id))).filter(Boolean);
   if(!rows.length){ alert('Vybrané protokoly se nepodařilo najít.'); return; }
   rows.forEach(syncRevizeIssue);
-  const bodyHtml = rows.map(quarterlyPrintHtmlWithDuplexPad).join('');
-  openBatchPrintWindow({title:'Hromadný tisk čtvrtletních kontrol', styles:getPrintStyles(), bodyHtml, count:rows.length});
+  openQuarterlyPrintWindow(rows, 'Hromadný tisk čtvrtletních kontrol', quarterlyPrintHtmlWithDuplexPad);
 }
 function printSelectedRevize(){
   const ids = selectedBulkIds('[data-bulk-revize]');
@@ -8539,181 +8734,13 @@ function printSelectedRevize(){
   openRevizePrintWindow({title:'Hromadný tisk revizí ZZ', bodyHtml, count:rows.length});
 }
 
-async function printCurrent(){
-  if(!currentPreview){ alert('Není otevřený protokol.'); return; }
-  if(currentPreview._revize){
-    openRevizePrintWindow({title:currentPreview.protokol ? `Revize ZZ ${currentPreview.protokol}` : 'Revize ZZ', bodyHtml:revizePaperHtml(currentPreview), count:1});
-    return;
+function printCurrent(){
+  const record = currentPreview;
+  if(!record){ alert('Není otevřený protokol.'); return; }
+  if(record._revize){
+    return openRevizePrintWindow({title:record.protokol ? `Revize ZZ ${record.protokol}` : 'Revize ZZ', bodyHtml:revizePaperHtml(record), count:1});
   }
-
-  // v1.6 / 5.159: Přímý tisk z modalu i PDF generování přes html2pdf v některých prohlížečích vracelo prázdnou stránku.
-  // Proto se protokol otevře jako samostatná čistá tisková stránka s vlastním CSS. Tisk se spustí až z této viditelné stránky.
-  els.previewBody.innerHTML = renderPaper(currentPreview);
-  const element = els.previewBody.querySelector('.paper');
-  if(!element){ alert('Nepodařilo se připravit protokol pro tisk.'); return; }
-  await waitForImages(element);
-
-  const fileBase = (currentPreview.id || currentPreview.vc || 'protokol').replace(/[^a-z0-9_-]+/gi,'_');
-  const html = `<!DOCTYPE html>
-<html lang="cs">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${escapeHtml(fileBase)} - tisk protokolu</title>
-<style>${getPrintStyles()}
-
-/* v1.6 / 5.159: mobilní náhled protokolu bez vodorovného posouvání */
-@media (max-width: 700px){
-  #preview .modal-content{
-    width:100vw!important;
-    max-width:100vw!important;
-    height:100vh!important;
-    max-height:100vh!important;
-    border-radius:0!important;
-  }
-  #preview .preview-shell{
-    padding:8px!important;
-  }
-  #preview .paper-wrap{
-    padding:0!important;
-    overflow-x:hidden!important;
-    border-radius:14px!important;
-  }
-  #preview .paper,
-  #preview .paper-doc,
-  #preview .paper-page{
-    width:100%!important;
-    min-width:0!important;
-    max-width:100%!important;
-    box-sizing:border-box!important;
-  }
-  #preview .paper-page{
-    min-height:0!important;
-    height:auto!important;
-    padding:8px 6px 10px 6px!important;
-    gap:5px!important;
-    overflow:hidden!important;
-  }
-  #preview .paper-header h2{
-    font-size:16px!important;
-    line-height:1.1!important;
-  }
-  #preview .paper-header .subhead{
-    font-size:8.5px!important;
-  }
-  #preview .proto-meta,
-  #preview .proto-table{
-    width:100%!important;
-    table-layout:fixed!important;
-    font-size:8px!important;
-    line-height:1.1!important;
-  }
-  #preview .proto-meta td,
-  #preview .proto-meta th,
-  #preview .proto-table td,
-  #preview .proto-table th{
-    padding:2.5px 3px!important;
-    word-break:break-word!important;
-    overflow-wrap:anywhere!important;
-  }
-  #preview .proto-meta td.label{
-    width:23%!important;
-  }
-  #preview .proto-meta td.value{
-    width:27%!important;
-  }
-  #preview .proto-table .num-col{width:18px!important}
-  #preview .proto-table .yn-col{width:28px!important}
-  #preview .proto-table .note-col{width:30%!important}
-  #preview .section-head{
-    font-size:9px!important;
-    padding:3px 4px!important;
-  }
-  #preview .section-note{
-    font-size:7px!important;
-  }
-  #preview .paper-row-2,
-  #preview .conclusion-grid{
-    grid-template-columns:1fr!important;
-    gap:5px!important;
-  }
-  #preview .photo-strip{
-    grid-template-columns:repeat(6,minmax(0,1fr))!important;
-  }
-  #preview .photo-mini{
-    min-width:0!important;
-    min-height:70px!important;
-    padding:3px 2px!important;
-    font-size:7px!important;
-    line-height:1.05!important;
-  }
-  #preview .photo-mini img{
-    height:42px!important;
-    margin-bottom:3px!important;
-  }
-  #preview .issue-strip{
-    grid-template-columns:repeat(4,minmax(0,1fr))!important;
-  }
-  #preview .issue-mini{
-    min-width:0!important;
-    min-height:55px!important;
-    padding:3px 2px!important;
-    font-size:7px!important;
-  }
-  #preview .issue-mini img{
-    height:36px!important;
-  }
-  #preview .findings-box{
-    min-height:45px!important;
-    padding:4px!important;
-  }
-  #preview .findings-lines{
-    gap:5px!important;
-  }
-  #preview .findings-lines div{
-    height:12px!important;
-  }
-  #preview .signature-grid{
-    grid-template-columns:1fr 1fr 1fr!important;
-  }
-  #preview .signature-grid > div{
-    min-height:48px!important;
-    padding:4px!important;
-    font-size:8px!important;
-    word-break:break-word!important;
-  }
-  #preview .page-number{
-    font-size:8px!important;
-  }
-}
-
-
-
-</style>
-</head>
-<body>
-  <div class="print-toolbar">
-    <div><strong>LiftControl CZ – tisk protokolu</strong><br><small>Nejdřív zkontroluj náhled. Potom klikni na Tisk / PDF.</small></div>
-    <div><button type="button" onclick="window.print()">Tisk / PDF</button> <button type="button" class="secondary" onclick="window.close()">Zavřít</button></div>
-  </div>
-  ${element.outerHTML}
-</body>
-</html>`;
-
-  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const opened = window.open(url, '_blank');
-  if(!opened){
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${fileBase}_tisk.html`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    alert('Prohlížeč zablokoval novou záložku. Stáhl jsem tiskový HTML soubor. Otevři ho a dej Tisk / PDF.');
-  } else {
-    setTimeout(()=>URL.revokeObjectURL(url), 120000);
-  }
+  return openQuarterlyPrintWindow([record], `Čtvrtletní kontrola – ${record.vc || record.id || 'protokol'}`, renderPaper);
 }
 window._printNow = printCurrent;
 
@@ -12438,7 +12465,7 @@ function revizeResult(r){
 function setRevizeMode(mode){ revizeMode = mode === 'archive' ? 'archive' : 'new'; const title=document.getElementById('revizeListTitle'); const hint=document.getElementById('revizeListHint'); const kicker=document.getElementById('revizeModeKicker'); if(kicker) kicker.textContent = revizeMode === 'archive' ? 'HOTOVÉ RZ' : 'ARCHIV RZ'; if(title) title.textContent = revizeMode === 'archive' ? 'Hotové RZ - archiv revizních protokolů' : 'Hotové RZ - uložené revizní protokoly'; if(hint) hint.textContent = 'Uložené revizní protokoly ZZ jsou oddělené od čtvrtletních kontrol, hlášení poruch a hlavního přehledu.'; }
 function openRevizeModal(mode='new'){ setRevizeMode(mode); showSection(mode === 'archive' ? 'revizeArchive' : 'revize'); if(mode === 'archive') closeRevizeForm(); renderRevize(); }
 function openRevizeArchive(){ openRevizeModal('archive'); }
-function closeRevizeModal(){ closeRevizeForm(); showSection('home'); }
+function closeRevizeModal(){ closeRevizeToHome(); }
 function ensureRevizeWizardModal(){
   let modal=document.getElementById('revizeWizardModal');
   if(!modal){
@@ -12501,8 +12528,10 @@ function openRevizeForm(id){
   const row = stored ? cloneForCloudSync(stored) : revizeDefaultRecord();
   completedRevizeEdit = stored && !stored.draft ? {original:cloneForCloudSync(stored)} : null;
   window.currentRevizeDraft = row;
+  window.lastRevizeSerialDefaultValue = '';
   const modal = ensureRevizeWizardModal();
   renderRevizeForm(row);
+  wireExternalDetails('rz', row);
   // Use the rendered values as the comparison baseline. Fields merely
   // normalized for display must not replace their stored counterparts.
   if(completedRevizeEdit) completedRevizeEdit.baseline = cloneForCloudSync(collectRevizeDraft());
@@ -12516,7 +12545,19 @@ function openRevizeForm(id){
   }
 }
 function closeRevizeForm(){ completedRevizeEdit=null; editingRevizeId=null; window.currentRevizeDraft=null; document.getElementById('revizeFormWrap')?.classList.add('hidden'); closeModal(document.getElementById('revizeWizardModal')); }
-function closeRevizeToHome(){ closeRevizeForm(); showSection('home'); }
+function confirmCloseRevizeForm(){
+  if(revizeSaveInProgress) return false;
+  if(completedRevizeEdit && document.getElementById('revizeWizardModal')?.classList.contains('show')){
+    const draft = safeCollectRevizeDraft('revize close');
+    const {updatedAt, ...fields} = draft || {};
+    const {updatedAt: baselineTime, ...baseline} = completedRevizeEdit.baseline;
+    if((!draft || JSON.stringify(fields) !== JSON.stringify(baseline)) &&
+       !confirm('Revize obsahuje neuložené změny. Chceš ji opustit?')) return false;
+  }
+  closeRevizeForm();
+  return true;
+}
+function closeRevizeToHome(){ if(confirmCloseRevizeForm()) showSection('home'); }
 let revizeMachineRowsCache = null;
 let revizeMachineRowsCacheAt = 0;
 function clearRevizeMachineRowsCache(){ revizeMachineRowsCache = null; revizeMachineRowsCacheAt = 0; }
@@ -13353,6 +13394,8 @@ function revizeMachineResolutionWarnings(meta){
 function applyRevizeDefaultsFromSerial(serial){
   serial = String(serial || '').trim();
   if(!serial) return;
+  const serialInput = document.getElementById('rz_vyrobni_cislo');
+  if(serialInput?.dataset.rzDefaultsSerial === serial) return;
   const now = Date.now();
   if(window.lastRevizeSerialDefaultValue === serial && window.lastRevizeSerialDefaultAt && (now - window.lastRevizeSerialDefaultAt) < 800) return;
   window.lastRevizeSerialDefaultValue = serial;
@@ -13363,7 +13406,7 @@ function applyRevizeDefaultsFromSerial(serial){
     const info=revizeLatestMachine(serial);
     if(!info) return;
     window.revizeApplyingDefaults = true;
-    const set=(id,val,force=false)=>{ if((id==='rz_norma' && window.currentRevizeDraft?.normaManual) || (id==='rz_normy_revize' && window.currentRevizeDraft?.normyConfirmed)) return; const el=document.getElementById(id); if(!el || val===undefined || val===null || !String(val).trim()) return; const cur=String(el.value||'').trim(); if(force || !cur || el.dataset.rzAuto==='1'){ const key=id.replace(/^rz_/,''); el.value=revizeInputValue(key,val); el.dataset.rzAuto='1'; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); } };
+    const set=(id,val,force=false)=>{ if((id==='rz_norma' && window.currentRevizeDraft?.normaManual) || (id==='rz_normy_revize' && window.currentRevizeDraft?.normyConfirmed)) return; const el=document.getElementById(id); if(!el || val===undefined || val===null || !String(val).trim()) return; if(id==='rz_model' && el.dataset.rzAuto==='0') return; const cur=String(el.value||'').trim(); if(force || !cur || el.dataset.rzAuto==='1'){ const key=id.replace(/^rz_/,''); el.value=revizeInputValue(key,val); el.dataset.rzAuto='1'; el.dispatchEvent(new Event('input',{bubbles:true})); el.dispatchEvent(new Event('change',{bubbles:true})); } };
     const inferredType=isRevizeOmmeTrailer(info)?'trailer':(info.deviceType||inferRevizeDeviceType([info.type,info.model].filter(Boolean).join(' '))||'scissor');
     const deckDefault = String(info.deck || '').trim() || (inferredType === 'scissor' ? 'ANO' : 'NE');
     const loadSensingDefault = String(info.loadSensing || '').trim() || (isRevizeOmmeTrailer({...info, typ_zarizeni:inferredType}) ? 'NE' : 'ANO');
@@ -13381,7 +13424,7 @@ function applyRevizeDefaultsFromSerial(serial){
     const outdoorSideForce = revizeSideForceValue('', resolved('outdoorSideForce')) || '200';
     const hasOutdoorInfo = ['outdoorWorkHeight','outdoorFloorHeight','outdoorReach','outdoorCapacity','outdoorCapacityPersons'].some(k=>String(resolved(k)||'').trim());
     const outdoorEnabled = revizeYesNoValue(resolved('outdoorLimited')) === 'ANO' || hasOutdoorInfo ? 'ANO' : 'NE';
-    set('rz_vyrobni_cislo', info.serial || serial, true); set('rz_typ_zarizeni', inferredType); set('rz_vyrobce', info.maker); set('rz_norma', info.norma); set('rz_normy_revize', info.normyRevize||revizeDefaultNormy(info.norma)); set('rz_model', info.model||info.type); set('rz_evidencni_cislo', info.evidencni); set('rz_rok_vyroby', info.year); set('rz_motohodiny', info.motohodiny); set('rz_skupina', info.group); set('rz_umisteni', normalizeBranchAddress(info.place, info.owner)); set('rz_provozovatel', info.owner); set('rz_hmotnost', resolved('weight')); set('rz_nosnost', capacity); set('rz_nosnost_osoby', capacityComposition.persons); set('rz_bocni_sila', sideForce); set('rz_snimani_nosnosti', loadSensingDefault); set('rz_pracovni_vyska', resolved('workHeight')); set('rz_vyska_podlahy', resolved('floorHeight')); set('rz_bocni_dosah', resolved('reach')); set('rz_venkovni_omezeni', outdoorEnabled); set('rz_venkovni_vitr', resolved('outdoorWind') || '12,5'); set('rz_venkovni_pracovni_vyska', resolved('outdoorWorkHeight')); set('rz_venkovni_vyska_podlahy', resolved('outdoorFloorHeight')); set('rz_venkovni_bocni_dosah', resolved('outdoorReach')); set('rz_venkovni_nosnost', resolved('outdoorCapacity')); set('rz_venkovni_nosnost_osoby', resolved('outdoorCapacityPersons')); set('rz_venkovni_bocni_sila', outdoorSideForce); const tiltDraft=revizeNormalizeTiltAxes({naklon:normalizeRevizeTiltValue(info.tilt, info)}); set('rz_naklon_x', tiltDraft.naklon_x); set('rz_naklon_y', tiltDraft.naklon_y); syncRevizeLoadInputsFromCapacity(); set('rz_pohon', info.drive); set('rz_napajeni', info.power); set('rz_stabilizatory', info.stabilizers); set('rz_deck', deckDefault); set('rz_nabijec', info.charger); set('rz_zasuvka_kos', info.socket); set('rz_rcd', info.rcd);
+    set('rz_vyrobni_cislo', info.serial || serial, true); set('rz_typ_zarizeni', inferredType); set('rz_vyrobce', info.maker); set('rz_norma', info.norma); set('rz_normy_revize', info.normyRevize||revizeDefaultNormy(info.norma)); set('rz_model', info.model||info.type); set('rz_evidencni_cislo', info.evidencni); set('rz_rok_vyroby', info.year); set('rz_motohodiny', info.motohodiny); set('rz_skupina', info.group); if(!document.getElementById('rzExternalCustomer')?.checked){ set('rz_umisteni', normalizeBranchAddress(info.place, info.owner)); set('rz_provozovatel', info.owner); } set('rz_hmotnost', resolved('weight')); set('rz_nosnost', capacity); set('rz_nosnost_osoby', capacityComposition.persons); set('rz_bocni_sila', sideForce); set('rz_snimani_nosnosti', loadSensingDefault); set('rz_pracovni_vyska', resolved('workHeight')); set('rz_vyska_podlahy', resolved('floorHeight')); set('rz_bocni_dosah', resolved('reach')); set('rz_venkovni_omezeni', outdoorEnabled); set('rz_venkovni_vitr', resolved('outdoorWind') || '12,5'); set('rz_venkovni_pracovni_vyska', resolved('outdoorWorkHeight')); set('rz_venkovni_vyska_podlahy', resolved('outdoorFloorHeight')); set('rz_venkovni_bocni_dosah', resolved('outdoorReach')); set('rz_venkovni_nosnost', resolved('outdoorCapacity')); set('rz_venkovni_nosnost_osoby', resolved('outdoorCapacityPersons')); set('rz_venkovni_bocni_sila', outdoorSideForce); const tiltDraft=revizeNormalizeTiltAxes({naklon:normalizeRevizeTiltValue(info.tilt, info)}); set('rz_naklon_x', tiltDraft.naklon_x); set('rz_naklon_y', tiltDraft.naklon_y); syncRevizeLoadInputsFromCapacity(); set('rz_pohon', info.drive); set('rz_napajeni', info.power); set('rz_stabilizatory', info.stabilizers); set('rz_deck', deckDefault); set('rz_nabijec', info.charger); set('rz_zasuvka_kos', info.socket); set('rz_rcd', info.rcd);
     const outdoorWindInput=document.getElementById('rz_venkovni_vitr'); if(outdoorWindInput) outdoorWindInput.value=revizeOutdoorWindValue(outdoorWindInput.value);
     ['snimani_nosnosti','stabilizatory','deck','nabijec','zasuvka_kos','rcd'].forEach(k=>{ const el=document.getElementById('rz_'+k); if(el && (el.dataset.rzAuto==='1' || !String(el.value||'').trim())) el.value=(k==='nabijec'?revizeChargerValue(el.value):revizeYesNoValue(el.value)); });
     const type=document.getElementById('rz_typ_zarizeni'); if(type && inferredType && REVIZE_DEVICE_TYPES[inferredType] && (!type.value || type.value==='scissor' || type.dataset.rzAuto==='1')){ type.value=inferredType; type.dataset.rzAuto='1'; syncRevizeGroupFromDevice(true); }
@@ -13402,6 +13445,7 @@ function applyRevizeDefaultsFromSerial(serial){
     window.revizeCurrentMachineResolution={serial:info.serial || serial,model:info.model || info.type || '',year:info.year || '',fields:resolutionMeta};
     revizeRenderMachineResolutionWarnings(revizeMachineResolutionWarnings(resolutionMeta));
     syncNormaFromRokVyroby(false);
+    if(serialInput) serialInput.dataset.rzDefaultsSerial = serialInput.value || serial;
   }catch(e){
     console.error('Revize defaults from serial failed', e);
     alert('Předvyplnění podle výrobního čísla se nepodařilo, můžeš pokračovat ručně. Detail je v konzoli.');
@@ -13956,14 +14000,14 @@ function revizeTechnicalFieldsHtml(r){
 function renderRevizeForm(r){ r.venkovni_vitr=revizeOutdoorWindValue(r.venkovni_vitr); const type = r.typ_zarizeni || 'scissor'; const deviceOptions = Object.entries(REVIZE_DEVICE_TYPES).map(([k,v])=>`<option value="${k}" ${type===k?'selected':''}>${escapeHtml(v.label)}</option>`).join(''); const techOptions = ['','Jan Bartoš','Petr Čáp','Lukáš Machačka','Vít Procházka','Ondřej Lakva'].map(x=>`<option value="${escapeHtml(x)}" ${r.rt_jmeno===x?'selected':''}>${escapeHtml(x||'Vyber technika')}</option>`).join('');
   document.getElementById('revizeFormBody').innerHTML = `<div class="revize-form-grid">
     <div class="revize-section-title">Protokol</div><div class="field"><label>Protokol č.</label><input id="rz_protokol" value="${rzVal('protokol')}"></div><div class="field"><label>Datum kontroly</label><input id="rz_datum_kontroly" type="date" value="${rzVal('datum_kontroly')}"></div><div class="field"><label>Platnost do</label><input id="rz_platnost" type="date" value="${rzVal('platnost')}"></div><div class="field"><label>Druh kontroly</label>${revizeDruhKontrolySelect(r.druh_kontroly)}</div><div class="field"><label>Motohodiny</label><input id="rz_motohodiny" type="number" inputmode="numeric" value="${rzVal('motohodiny')}"></div>
-    <div class="revize-section-title">Provozovatel a zařízení</div><div class="field wide"><label>Provozovatel</label><input id="rz_provozovatel" value="${rzVal('provozovatel')}"></div><div class="field wide"><label>Umístění / pobočka</label><input id="rz_umisteni" value="${rzVal('umisteni')}"></div><div class="field"><label>Typ zařízení</label><select id="rz_typ_zarizeni">${deviceOptions}</select></div><div class="field"><label>Výrobce</label><input id="rz_vyrobce" value="${rzVal('vyrobce')}"></div><div class="field"><label>Model</label><input id="rz_model" value="${rzVal('model')}"></div><div class="field"><label>Výrobní číslo</label><input id="rz_vyrobni_cislo" value="${rzVal('vyrobni_cislo')}"></div><div class="field"><label>Evidenční číslo</label><input id="rz_evidencni_cislo" value="${rzVal('evidencni_cislo')}"></div><div class="field"><label>Rok výroby</label><input id="rz_rok_vyroby" value="${rzVal('rok_vyroby')}"></div><div class="field"><label>Použitá norma</label><input id="rz_norma" value="${rzVal('norma')}" placeholder="Automaticky podle roku výroby"></div><div class="field wide"><label>Revize zpracována dle norem</label><textarea id="rz_normy_revize" placeholder="Doplní se podle stroje / poslední revize">${rzVal('normy_revize') || escapeHtml(revizeDefaultNormy(r.norma))}</textarea></div><div class="field"><label>Skupina / typ</label><input id="rz_skupina" value="${rzVal('skupina')}"></div>
+    <div class="revize-section-title">Provozovatel a zařízení</div><div class="field full">${externalCustomerHtml('rz', r)}</div><div class="field wide"><label>Provozovatel</label><input id="rz_provozovatel" value="${rzVal('provozovatel')}"></div><div class="field wide"><label>Umístění / pobočka</label><input id="rz_umisteni" value="${rzVal('umisteni')}"></div><div class="field"><label>Typ zařízení</label><select id="rz_typ_zarizeni">${deviceOptions}</select></div><div class="field"><label>Výrobce</label><input id="rz_vyrobce" value="${rzVal('vyrobce')}"></div><div class="field"><label>Model</label><input id="rz_model" value="${rzVal('model')}"></div><div class="field"><label>Výrobní číslo</label><input id="rz_vyrobni_cislo" value="${rzVal('vyrobni_cislo')}"></div><div class="field"><label>Evidenční číslo</label><input id="rz_evidencni_cislo" value="${rzVal('evidencni_cislo')}"></div><div class="field"><label>Rok výroby</label><input id="rz_rok_vyroby" value="${rzVal('rok_vyroby')}"></div><div class="field"><label>Použitá norma</label><input id="rz_norma" value="${rzVal('norma')}" placeholder="Automaticky podle roku výroby"></div><div class="field wide"><label>Revize zpracována dle norem</label><textarea id="rz_normy_revize" placeholder="Doplní se podle stroje / poslední revize">${rzVal('normy_revize') || escapeHtml(revizeDefaultNormy(r.norma))}</textarea></div><div class="field"><label>Skupina / typ</label><input id="rz_skupina" value="${rzVal('skupina')}"></div>
     ${revizeTechnicalFieldsHtml(r)}
     <div class="revize-section-title">Revizní technik a měřicí přístroje</div><div class="field"><label>Revizní technik</label><select id="rz_rt_jmeno">${techOptions}</select></div><div class="field"><label>ZZ osvědčení</label><input id="rz_rt_zz_osvedceni" value="${rzVal('rt_zz_osvedceni')}"></div><div class="field"><label>ZZ oprávnění</label><input id="rz_rt_zz_opravneni" value="${rzVal('rt_zz_opravneni')}"></div><div class="field"><label>EZ osvědčení</label><input id="rz_rt_ez_osvedceni" value="${rzVal('rt_ez_osvedceni')}"></div><div class="field"><label>Měřicí přístroj</label><input id="rz_pristroj" value="${rzVal('pristroj')}"></div><div class="field"><label>Ev. číslo</label><input id="rz_pristroj_ev" value="${rzVal('pristroj_ev')}"></div><div class="field"><label>Kalibrace platná do</label><input id="rz_kalibrace" value="${rzVal('kalibrace')}"></div>
     <div class="revize-section-title">Kontrolní body - Strana A</div><div class="full"><div class="revize-check-grid">${revizeCheckRows(revizeAllA(r),r,'A')}</div></div>
     <div class="revize-section-title">Elektro měření</div><div class="full">${revizeElectroTable(r)}</div>
     <div class="revize-section-title">Kontrolní body - Strana B / NV 378/2001 Sb.</div><div class="full"><div class="revize-check-grid">${revizeCheckRows(revizeAllB(r),r,'B')}</div></div>
     <div class="revize-section-title">Závady a podpisy</div><div class="field full"><label>Zjištěné závady / opatření</label><textarea id="rz_zavady">${rzVal('zavady')}</textarea></div><div class="field"><label>Předal</label><input id="rz_predal" value="${rzVal('predal')}"></div><div class="field"><label>Datum předání / podpis RT</label><input id="rz_predal_datum" type="date" value="${escapeHtml(r.predal_datum || r.datum_kontroly || todayLocal())}"></div><div class="field"><label>Převzal</label><input id="rz_prevzal" value="${rzVal('prevzal')}"></div><div class="field"><label>Datum převzetí / podpis provozovatele</label><input id="rz_prevzal_datum" type="date" value="${escapeHtml(r.prevzal_datum || r.datum_kontroly || todayLocal())}"></div>
-  </div>`; ['snimani_nosnosti','stabilizatory','deck','nabijec','zasuvka_kos','rcd'].forEach(configureRevizeYesNoField); const loadSensingInput=document.getElementById('rz_snimani_nosnosti'); if(loadSensingInput && !loadSensingInput.value){ loadSensingInput.value=isRevizeOmmeTrailer(r)?'NE':'ANO'; loadSensingInput.dataset.rzAuto='1'; } const deckInput=document.getElementById('rz_deck'); if(deckInput && !deckInput.value && revizeResolvedDeviceType(r)==='scissor'){ deckInput.value='ANO'; deckInput.dataset.rzAuto='1'; } lockRevizeFixedFields(); arrangeRevizeDeviceFirst(); syncRevizeGroupFromDevice(); document.getElementById('rz_typ_zarizeni')?.addEventListener('change',()=>{ syncRevizeGroupFromDevice(true); const d=safeCollectRevizeDraft('revize device type'); if(!d) return; const cfg=REVIZE_DEVICE_TYPES[d.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; d.typ=cfg.label; d.skupina=normalizeRevizeGroupForDevice(d.typ_zarizeni, cfg.skupina); window.currentRevizeDraft=d; syncRevizeLoadInputsFromCapacity(); }); const meterInput=document.getElementById('rz_pristroj'); if(meterInput){ meterInput.value=ensureRevizeMeterText(meterInput.value); syncRevizeMeterFields(); } const placeInput=document.getElementById('rz_umisteni'); const normalizePlaceInput=()=>{ if(placeInput?.value) placeInput.value=normalizeBranchAddress(placeInput.value, document.getElementById('rz_provozovatel')?.value||''); }; placeInput?.addEventListener('change', normalizePlaceInput); placeInput?.addEventListener('blur', normalizePlaceInput); const outdoorToggle=document.getElementById('rz_venkovni_omezeni'); outdoorToggle?.addEventListener('change',()=>{ refreshRevizeOutdoorOptions(); safeCollectRevizeDraft('revize outdoor limits'); }); refreshRevizeOutdoorOptions(); setupRevizeWizard(); refreshRevizeGradeabilityFields(); ['rz_norma','rz_normy_revize'].forEach(id=>{ const el=document.getElementById(id); el?.addEventListener('input', refreshRevizeGradeabilityFields); el?.addEventListener('change', refreshRevizeGradeabilityFields); }); syncRevizeLoadInputsFromCapacity(); document.getElementById('rz_nosnost')?.addEventListener('input', syncRevizeLoadInputsFromCapacity); document.getElementById('rz_nosnost')?.addEventListener('change', syncRevizeLoadInputsFromCapacity); document.getElementById('rz_snimani_nosnosti')?.addEventListener('change',()=>{ safeCollectRevizeDraft('revize load sensing'); syncRevizeLoadInputsFromCapacity(); }); }
+  </div>`; ['snimani_nosnosti','stabilizatory','deck','nabijec','zasuvka_kos','rcd'].forEach(configureRevizeYesNoField); const loadSensingInput=document.getElementById('rz_snimani_nosnosti'); if(loadSensingInput && !loadSensingInput.value){ loadSensingInput.value=isRevizeOmmeTrailer(r)?'NE':'ANO'; loadSensingInput.dataset.rzAuto='1'; } const deckInput=document.getElementById('rz_deck'); if(deckInput && !deckInput.value && revizeResolvedDeviceType(r)==='scissor'){ deckInput.value='ANO'; deckInput.dataset.rzAuto='1'; } lockRevizeFixedFields(); arrangeRevizeDeviceFirst(); syncRevizeGroupFromDevice(); document.getElementById('rz_typ_zarizeni')?.addEventListener('change',()=>{ syncRevizeGroupFromDevice(true); const d=safeCollectRevizeDraft('revize device type'); if(!d) return; const cfg=REVIZE_DEVICE_TYPES[d.typ_zarizeni]||REVIZE_DEVICE_TYPES.scissor; d.typ=cfg.label; d.skupina=normalizeRevizeGroupForDevice(d.typ_zarizeni, cfg.skupina); window.currentRevizeDraft=d; syncRevizeLoadInputsFromCapacity(); }); const meterInput=document.getElementById('rz_pristroj'); if(meterInput){ meterInput.value=ensureRevizeMeterText(meterInput.value); syncRevizeMeterFields(); } const placeInput=document.getElementById('rz_umisteni'); const normalizePlaceInput=()=>{ if(placeInput?.value && !document.getElementById('rzExternalCustomer')?.checked) placeInput.value=normalizeBranchAddress(placeInput.value, document.getElementById('rz_provozovatel')?.value||''); }; placeInput?.addEventListener('change', normalizePlaceInput); placeInput?.addEventListener('blur', normalizePlaceInput); const outdoorToggle=document.getElementById('rz_venkovni_omezeni'); outdoorToggle?.addEventListener('change',()=>{ refreshRevizeOutdoorOptions(); safeCollectRevizeDraft('revize outdoor limits'); }); refreshRevizeOutdoorOptions(); setupRevizeWizard(); refreshRevizeGradeabilityFields(); ['rz_norma','rz_normy_revize'].forEach(id=>{ const el=document.getElementById(id); el?.addEventListener('input', refreshRevizeGradeabilityFields); el?.addEventListener('change', refreshRevizeGradeabilityFields); }); syncRevizeLoadInputsFromCapacity(); document.getElementById('rz_nosnost')?.addEventListener('input', syncRevizeLoadInputsFromCapacity); document.getElementById('rz_nosnost')?.addEventListener('change', syncRevizeLoadInputsFromCapacity); document.getElementById('rz_snimani_nosnosti')?.addEventListener('change',()=>{ safeCollectRevizeDraft('revize load sensing'); syncRevizeLoadInputsFromCapacity(); }); }
 function revizeWorkingEnvelopeInputValue(field,value){
   const formField={capacity:'nosnost',workHeight:'pracovni_vyska',floorHeight:'vyska_podlahy',reach:'bocni_dosah'}[field];
   return formField ? revizeInputValue(formField,value) : String(value ?? '').trim();
@@ -14124,19 +14168,20 @@ async function saveRevizeFromForm(){
     if(!saveResult.local && !saveResult.cloud){
       alert('Revizi se nepodarilo bezpecne ulozit ani do tohoto zarizeni. Formular zustava otevreny. Uvolni misto v telefonu a zkus ulozeni znovu.\n\n' + errorText(saveResult.error));
       editingRevizeId = r.id;
-      window.currentRevizeDraft = r;
+      window.currentRevizeDraft = edit ? collected : r;
       return;
     }
     if(!saveResult.cloud){
       alert('Revize je zatím uložená pouze v tomto zařízení a formulář zůstává otevřený. Firebase uložení selhalo; zkontroluj připojení a zkus tlačítko Uložit revizi znovu.\n\n' + errorText(saveResult.error));
       editingRevizeId = r.id;
-      window.currentRevizeDraft = r;
+      window.currentRevizeDraft = edit ? collected : r;
       renderRevize();
       return;
     }
     closeRevizeForm();
     renderRevize();
     if(!saveResult.local) alert('Revize je ověřeně uložená na serveru, ale místní zálohu se nepodařilo uložit.');
+    else if(edit) alert('Změny revize jsou uložené a synchronizované.');
     // Auxiliary scheduling must not delay visibility of the saved revision.
     try{ await syncQuarterlyAfterRevize(r); }catch(err){ console.warn('Navazující plán kontroly se nepodařilo aktualizovat:', err); }
     await logAuditAction(wasEdit?'update':'create','revize_zz',r,r.rt_jmeno||'','Revize ZZ · '+(r.protokol||''), beforeRecord);
@@ -14323,10 +14368,12 @@ renderRevize = function(){
     if(sf === 'valid_until_asc'){ const av = archiveTimeValue(a?.platnost) || Number.MAX_SAFE_INTEGER; const bv = archiveTimeValue(b?.platnost) || Number.MAX_SAFE_INTEGER; return (av - bv) || archiveStringCompare(sortName(a), sortName(b)); }
     return String(b?.datum_kontroly || '').localeCompare(String(a?.datum_kontroly || '')) || createdTime(b) - createdTime(a);
   };
+  const customerFilter = document.getElementById('revizeCustomerFilter')?.value || 'all';
   const rows = allRows.filter(r => {
+    if(customerFilter !== 'all' && Boolean(r.externalCustomer) !== (customerFilter === 'external')) return false;
     if(tf !== 'all' && r.typ_zarizeni !== tf) return false;
     if(!r.draft && rf !== 'all' && (rf === 'ok' ? revizeResult(r) !== 'VYHOVUJE' : revizeResult(r) !== 'NEVYHOVUJE')) return false;
-    return archiveMatchesQuery(r, q, [r.protokol,r.vyrobni_cislo,r.evidencni_cislo,r.model,r.vyrobce,r.provozovatel,displayPlaceSearchText(r.umisteni),r.typ,r.skupina], [r.vyrobni_cislo,r.evidencni_cislo]);
+    return archiveMatchesQuery(r, q, [r.protokol,r.vyrobni_cislo,r.evidencni_cislo,r.model,r.vyrobce,r.provozovatel,r.customerName,r.customerAddress,displayPlaceSearchText(r.umisteni),r.typ,r.skupina], [r.vyrobni_cislo,r.evidencni_cislo]);
   }).sort(compareRows);
   list.innerHTML=rows.length?rows.map(r=>`<div class="card revize-card ${r.draft?'draft':(revizeResult(r)==='VYHOVUJE'?'ok':'bad')}"><div class="card-head"><label class="bulk-print-check"><input type="checkbox" data-bulk-revize="${escapeHtml(r.id || '')}"><span>Do tisku</span></label><div><strong>${escapeHtml(r.protokol||'Bez čísla')}</strong><div class="meta">${escapeHtml(r.typ||'')} · ${escapeHtml(r.vyrobce||'')} ${escapeHtml(r.model||'')} · v.č. ${escapeHtml(r.vyrobni_cislo||'')}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><span class="badge ${r.draft?'':(revizeResult(r)==='VYHOVUJE'?'badge-ok':'badge-warn')}">${escapeHtml(r.draft?'Rozpracované':revizeResult(r))}</span>${revizeSyncBadgeHtml(r)}</div></div><div class="meta-grid"><div class="meta"><div class="meta-label">Datum</div><div class="meta-value">${escapeHtml(formatDate(r.datum_kontroly))}</div></div><div class="meta"><div class="meta-label">${r.draft?'Uloženo':'Platnost'}</div><div class="meta-value">${escapeHtml(r.draft?formatDate(r.draftSavedAt):formatDate(r.platnost))}</div></div><div class="meta"><div class="meta-label">Provozovatel</div><div class="meta-value">${escapeHtml(r.provozovatel||'')}</div></div><div class="meta"><div class="meta-label">RT</div><div class="meta-value">${escapeHtml(r.rt_jmeno||'')}</div></div></div><div class="card-actions"><button class="secondary mini" data-rz-edit="${r.id}">${r.draft?'Pokračovat':'Upravit'}</button><button class="secondary mini" data-rz-print="${r.id}">Náhled</button><button class="secondary mini" data-rz-docx="${r.id}">DOCX</button><button class="danger mini" data-rz-del="${r.id}">Smazat</button></div></div>`).join(''):'<div class="empty">Zatím není uložená žádná revize ZZ.</div>';
   list.querySelectorAll('[data-rz-edit]').forEach(b=>b.addEventListener('click',()=>openRevizeForm(b.dataset.rzEdit)));
@@ -14510,7 +14557,7 @@ function arrangeRevizeDeviceFirst(){
   };
   makeBlock('Výrobní číslo', [field('vyrobni_cislo')]);
   makeBlock('Zařízení - potvrzení údajů', [field('typ_zarizeni'),field('vyrobce'),field('model'),field('evidencni_cislo'),field('rok_vyroby'),field('norma'),field('normy_revize'),field('skupina')]);
-  makeBlock('Provozovatel a protokol', [field('provozovatel'),field('umisteni'),field('protokol'),field('datum_kontroly'),field('platnost'),field('druh_kontroly')]);
+  makeBlock('Provozovatel a protokol', [field('provozovatel'),field('umisteni'),document.getElementById('rzExternalCustomer')?.closest('.field.full'),field('protokol'),field('datum_kontroly'),field('platnost'),field('druh_kontroly')]);
   makeBlock('ZÁKLADNÍ HODNOTY', REVIZE_WORK_KEYS.map(field));
   makeBlock('SNÍŽENÉ / OMEZENÉ HODNOTY', [...REVIZE_WORK_KEYS.map(k=>field('venkovni_'+k)),field('limitVariantKind')]);
   makeBlock('Další technické údaje', [field('hmotnost'),field('motohodiny'),...revizeTechFieldKeys().filter(k=>!REVIZE_WORK_KEYS.includes(k) && k!=='hmotnost' && !isRevizeLoadField(k)).map(field)]);
@@ -14575,6 +14622,8 @@ function setupRevizeWizard(){
     if(next) next.classList.toggle('hidden', revizeStepIndex>=total-1);
     if(save){
       save.textContent = completedRevizeEdit ? 'Uložit změny' : 'Uložit revizi';
+      save.classList.toggle('secondary', Boolean(completedRevizeEdit));
+      save.classList.toggle('primary', !completedRevizeEdit);
       save.classList.toggle('hidden', !completedRevizeEdit && revizeStepIndex<total-1);
     }
     if(prog) prog.textContent=`${revizeStepIndex+1}/${total}`;
@@ -14612,7 +14661,14 @@ function setupRevizeWizard(){
     nextBtn.onpointerup = null;
     nextBtn.onclick = advanceRevizeStep;
   }
-  if(!completedRevizeEdit) setTimeout(()=>{ applyCurrentSerial(); safeCollectRevizeDraft('revize initial defaults'); },80);
+  if(!completedRevizeEdit){
+    const form = grid.closest('#revizeFormBody');
+    setTimeout(()=>{
+      if(!grid.isConnected || form !== document.getElementById('revizeFormBody') || !window.currentRevizeDraft) return;
+      applyCurrentSerial();
+      safeCollectRevizeDraft('revize initial defaults');
+    },80);
+  }
   paint();
 }
 function revizeActiveFormRoot(){
@@ -14666,7 +14722,7 @@ collectRevizeDraft = function(){
   if(!r.predal_datum) r.predal_datum = r.datum_kontroly;
   if(!r.prevzal_datum) r.prevzal_datum = r.datum_kontroly;
   revizeNormalizeTiltAxes(r);
-  r.umisteni = normalizeBranchAddress(r.umisteni, r.provozovatel);
+  if(!r.externalCustomer) r.umisteni = normalizeBranchAddress(r.umisteni, r.provozovatel);
   const suggestedNorma = normaPodleRokuVyroby(r.rok_vyroby);
   if(suggestedNorma && !r.normaManual && !String(r.norma||'').trim()) r.norma = suggestedNorma;
   revizeSyncElectricalDependencies(r);
@@ -14775,6 +14831,9 @@ function revizeProtocolMainTitle(r){
 }
 revizePaperHtml = function(r){
   const record = applyRevizeCalculatedLoads({...(r||{})});
+  if(record.externalCustomer){
+    record.provozovatel = [record.customerName || record.companyName || record.provozovatel, record.customerAddress || record.companyAddress].filter(Boolean).join(', ');
+  }
   record.venkovni_vitr = revizeOutdoorWindValue(record.venkovni_vitr);
   revizeNormalizeTiltAxes(record);
   const suggestedNorma = normaPodleRokuVyroby(record.rok_vyroby);
@@ -15286,13 +15345,14 @@ document.getElementById('mobilePlanBtn')?.addEventListener('click', openWorkPlan
 document.getElementById('closeRevizeBtn')?.addEventListener('click', closeRevizeModal);
 document.getElementById('closeRevizeTopBtn')?.addEventListener('click', closeRevizeModal);
 document.getElementById('addRevizeBtn')?.addEventListener('click', () => openRevizeForm());
-document.getElementById('cancelRevizeBtn')?.addEventListener('click', closeRevizeForm);
+document.getElementById('cancelRevizeBtn')?.addEventListener('click', confirmCloseRevizeForm);
 document.getElementById('homeRevizeWizardBtn')?.addEventListener('click', closeRevizeToHome);
 document.getElementById('previewRevizeBtn')?.addEventListener('click', previewRevizeFromForm);
 document.getElementById('draftRevizeBtn')?.addEventListener('click', saveRevizeDraftFromForm);
 document.getElementById('saveRevizeBtn')?.addEventListener('click', saveRevizeFromForm);
 document.getElementById('revizeSearch')?.addEventListener('input', renderRevizeDebounced);
 document.getElementById('revizeTypeFilter')?.addEventListener('change', renderRevize);
+document.getElementById('revizeCustomerFilter')?.addEventListener('change', renderRevize);
 document.getElementById('revizeResultFilter')?.addEventListener('change', renderRevize);document.getElementById('revizeSort')?.addEventListener('change', renderRevize);
 document.getElementById('bulkPrintRevizeBtn')?.addEventListener('click', printSelectedRevize);
 function handleRevizeCheckChoice(ev){
@@ -15532,7 +15592,7 @@ document.getElementById('appCheckCacheBtn')?.addEventListener('click', async () 
   if(!confirm('Vyčistit pouze cache aplikace? Uložená data ve Firebase ani lokální záznamy se nemažou.')) return;
   await resetAppShellCacheOnly('app-check-cache');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.398');
+  url.searchParams.set('v','5.399');
   url.searchParams.set('appCheckCache', String(Date.now()));
   location.replace(url.toString());
 });
@@ -15541,7 +15601,7 @@ document.getElementById('closeAppCheckTopBtn')?.addEventListener('click', () => 
 async function forceRefreshApplication(){
   await resetAppShellCacheOnly('manual-refresh');
   const url = new URL(location.href);
-  url.searchParams.set('v','5.398');
+  url.searchParams.set('v','5.399');
   url.searchParams.set('manualRefresh', String(Date.now()));
   location.replace(url.toString());
 }
@@ -15560,6 +15620,7 @@ document.getElementById('importBackupInput')?.addEventListener('change', (e) => 
 
 document.getElementById('closeWizardBtn')?.addEventListener('click', closeWizardWithPrompt);
 document.getElementById('prevStepBtn')?.addEventListener('click', prevStep);
+document.getElementById('editQuarterlySaveBtn')?.addEventListener('click', saveQuarterlyEditedProtocolFromWizard);
 document.getElementById('draftQuarterlyBtn')?.addEventListener('click', saveQuarterlyDraftFromWizard);
 document.getElementById('previewQuarterlyBtn')?.addEventListener('click', previewQuarterlyFromWizard);
 const quarterlyNextButton=document.getElementById('nextBtn');
@@ -15592,13 +15653,14 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
+  if(document.querySelector('dialog[open]')) return;
   if(els.wizard && els.wizard.classList.contains('show')){
     closeWizardWithPrompt();
     return;
   }
   const revizeWizardModal = document.getElementById('revizeWizardModal');
   if(revizeWizardModal && revizeWizardModal.classList.contains('show')){
-    closeRevizeForm();
+    confirmCloseRevizeForm();
     return;
   }
 
@@ -16128,7 +16190,7 @@ setTimeout(() => {
 </script>
 <script>
 if ('serviceWorker' in navigator) {
-  const APP_CURRENT_VERSION = '5.398';
+  const APP_CURRENT_VERSION = '5.399';
   let appUpdateRegistration = null;
   let appUpdateWorker = null;
   let appReloadingForUpdate = false;
@@ -16288,7 +16350,7 @@ if ('serviceWorker' in navigator) {
       const attempted = sessionStorage.getItem(APP_UPDATE_ATTEMPT_KEY) || '';
       if(attempted && compareAppVersions(APP_CURRENT_VERSION, attempted) >= 0) sessionStorage.removeItem(APP_UPDATE_ATTEMPT_KEY);
     }catch(e){}
-    navigator.serviceWorker.register(new URL('./sw.js?v=5.398', location.href), {scope:'./', updateViaCache:'none'})
+    navigator.serviceWorker.register(new URL('./sw.js?v=5.399', location.href), {scope:'./', updateViaCache:'none'})
       .then(registration => {
         installUpdateWatcher(registration);
         registration.update().catch(err => console.warn('Service worker update check failed', err));
